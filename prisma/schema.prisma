@@ -1,0 +1,407 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Company {
+  id                   Int             @id @default(autoincrement())
+  name                 String
+  tradeName            String
+  ruc                  String          @unique
+  logo                 String?
+  soapSendId           String          @default("01")
+  soapTypeId           String          @default("02")
+  soapUsername         String?
+  soapPassword         String?
+  soapUrl              String?
+  soapSunatUsername    String?
+  soapSunatPassword    String?
+  certificate          String?
+  certificatePem       String?         @db.Text
+  certificatePassword  String?
+  certificateDue       DateTime?
+  apiSunatId           String?
+  apiSunatSecret       String?
+  sireClientId         String?
+  sireClientSecret     String?
+  sireUsername         String?
+  sirePassword         String?
+  pse                  Boolean         @default(false)
+  pseUrl               String?
+  pseToken             String?
+  clientIdPse          String?
+  sendDocumentToPse    Boolean         @default(false)
+  typeSendPse          Int             @default(2)
+  isRus                Boolean         @default(false)
+  operationAmazonia    Boolean         @default(false)
+  detractionAccount    String?
+  footerTextTemplate   String?
+  configSystemEnv      Int             @default(0)
+  pendingRucCert       Boolean         @default(false)
+  pendingRucSoap       Boolean         @default(false)
+  pendingRucName       Boolean         @default(false)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  establishments       Establishment[]
+}
+
+model Establishment {
+  id          Int            @id @default(autoincrement())
+  code        String         @default("0000")
+  description String
+  address     String?
+  email       String?
+  telephone   String?
+  active      Boolean        @default(true)
+  companyId   Int
+  company     Company        @relation(fields: [companyId], references: [id])
+  users       User[]
+  series      Series[]
+  documents   Document[]
+  cashBoxes   CashRegister[]
+}
+
+model User {
+  id              Int           @id @default(autoincrement())
+  name            String
+  email           String        @unique
+  password        String
+  type            String        @default("admin")
+  permissions     String?
+  active          Boolean       @default(true)
+  establishmentId Int
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  documents       Document[]    @relation("SellerDocuments")
+  createdAt       DateTime      @default(now())
+}
+
+model Series {
+  id              Int           @id @default(autoincrement())
+  number          String
+  documentTypeId  String
+  establishmentId Int
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  currentNumber   Int           @default(0)
+
+  @@unique([number, establishmentId])
+}
+
+model Category {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  items       Item[]
+}
+
+model Customer {
+  id                       Int          @id @default(autoincrement())
+  identityDocumentTypeId   String       @default("6")
+  name                     String
+  number                   String
+  verificationCode         String?
+  sex                      String?
+  birthDate                String?
+  email                    String?
+  telephone                String?
+  address                  String?
+  tradeName                String?
+  country                  String?
+  ubigeo                   String?
+  creditDays               Int          @default(0)
+  internalCode             String?
+  barcode                  String?
+  nationality              String?
+  zone                     String?
+  observations             String?
+  googleMaps               String?
+  contactName              String?
+  contactPhone             String?
+  contactDocument          String?
+  applyRetention           Boolean      @default(false)
+  secondaryAddress         String?
+  secondaryPhone           String?
+  deliveryReference        String?
+  guarantorName            String?
+  guarantorDocument        String?
+  guarantorPhone           String?
+  guarantorAddress         String?
+  hasVehicle               Boolean      @default(false)
+  vehicles                 String?
+  documents                Document[]
+  dispatches               Dispatch[]
+  saleNotes                SaleNote[]
+  quotations               Quotation[]
+  orderNotes               OrderNote[]
+  createdAt                DateTime     @default(now())
+}
+
+model Supplier {
+  id                     Int        @id @default(autoincrement())
+  name                   String
+  number                 String
+  identityDocumentTypeId String     @default("6")
+  tradeName              String?
+  email                  String?
+  telephone              String?
+  address                String?
+  country                String?
+  ubigeo                 String?
+  observations           String?
+  internalCode           String?
+  barcode                String?
+  purchases              Purchase[]
+  createdAt              DateTime   @default(now())
+}
+
+model Item {
+  id                    Int                 @id @default(autoincrement())
+  sourceRemoteId        Int?                @unique
+  internalId            String?
+  description           String
+  secondaryName         String?
+  descriptionDetail     String?
+  model                 String?
+  unitTypeId            String              @default("NIU")
+  kind                  String              @default("product")
+  saleUnitPrice         Float               @default(0)
+  purchasePrice         Float               @default(0)
+  stock                 Float               @default(0)
+  stockMin              Float               @default(0)
+  location              String?
+  active                Boolean             @default(true)
+  imageUrl              String?
+  barcode               String?
+  brand                 String?
+  hasIgv                Boolean             @default(true)
+  saleAffectationTypeId String              @default("10")
+  categoryId            Int?
+  category           Category?           @relation(fields: [categoryId], references: [id])
+  documentItems      DocumentItem[]
+  inventoryMovements InventoryMovement[]
+  createdAt          DateTime            @default(now())
+}
+
+model Document {
+  id              Int            @id @default(autoincrement())
+  documentTypeId  String
+  series          String
+  number          Int
+  fullNumber      String         @unique
+  customerId      Int
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  sellerId        Int
+  seller          User           @relation("SellerDocuments", fields: [sellerId], references: [id])
+  establishmentId Int
+  establishment   Establishment  @relation(fields: [establishmentId], references: [id])
+  dateOfIssue     DateTime
+  dateOfDue       DateTime
+  currencyTypeId  String         @default("PEN")
+  exchangeRate    Float          @default(1)
+  operationTypeId String         @default("0101")
+  totalTaxed      Float          @default(0)
+  totalIgv        Float          @default(0)
+  totalExonerated Float          @default(0)
+  total           Float          @default(0)
+  plate           String?
+  stateTypeId     String         @default("01")
+  hasXml          Boolean        @default(false)
+  hasPdf          Boolean        @default(true)
+  hasCdr          Boolean        @default(false)
+  items           DocumentItem[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model DocumentItem {
+  id          Int      @id @default(autoincrement())
+  documentId  Int
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  itemId      Int?
+  item        Item?    @relation(fields: [itemId], references: [id])
+  description String
+  unitTypeId  String   @default("NIU")
+  quantity    Float
+  unitValue   Float
+  unitPrice   Float
+  totalValue  Float
+  totalPrice  Float
+}
+
+model SaleNote {
+  id             Int            @id @default(autoincrement())
+  number         String         @unique
+  customerId     Int
+  customer       Customer       @relation(fields: [customerId], references: [id])
+  date           DateTime       @default(now())
+  total          Float          @default(0)
+  state          String         @default("Registrado")
+  plate          String?
+  currencyTypeId String         @default("PEN")
+  paymentStatus  String?
+  purchaseOrder  String?
+  modifiedPrice  String         @default("NO")
+  items          SaleNoteItem[]
+  createdAt      DateTime       @default(now())
+}
+
+model SaleNoteItem {
+  id          Int      @id @default(autoincrement())
+  saleNoteId  Int
+  saleNote    SaleNote @relation(fields: [saleNoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float
+  unitPrice   Float
+  total       Float
+}
+
+model Quotation {
+  id         Int              @id @default(autoincrement())
+  number     String           @unique
+  customerId Int
+  customer   Customer         @relation(fields: [customerId], references: [id])
+  date       DateTime         @default(now())
+  total      Float            @default(0)
+  state      String           @default("Pendiente")
+  items      QuotationItem[]
+  createdAt  DateTime         @default(now())
+}
+
+model QuotationItem {
+  id           Int       @id @default(autoincrement())
+  quotationId  Int
+  quotation    Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  description  String
+  quantity     Float
+  unitPrice    Float
+  total        Float
+}
+
+model Purchase {
+  id         Int            @id @default(autoincrement())
+  number     String         @unique
+  supplierId Int
+  supplier   Supplier       @relation(fields: [supplierId], references: [id])
+  date       DateTime       @default(now())
+  total      Float          @default(0)
+  state      String         @default("Registrado")
+  items      PurchaseItem[]
+  createdAt  DateTime       @default(now())
+}
+
+model PurchaseItem {
+  id          Int      @id @default(autoincrement())
+  purchaseId  Int
+  purchase    Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float
+  unitPrice   Float
+  total       Float
+}
+
+model CashRegister {
+  id              Int           @id @default(autoincrement())
+  description     String
+  reference       String?
+  sellerName      String?
+  establishmentId Int
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  isOpen          Boolean       @default(false)
+  openingBalance  Float         @default(0)
+  currentBalance  Float         @default(0)
+  closingBalance  Float         @default(0)
+  realBalance     Float         @default(0)
+  openedAt        DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime      @default(now())
+}
+
+model InventoryMovement {
+  id          Int      @id @default(autoincrement())
+  itemId      Int
+  item        Item     @relation(fields: [itemId], references: [id])
+  type        String
+  quantity    Float
+  description String?
+  reference   String?
+  createdAt   DateTime @default(now())
+}
+
+model AppSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model Dispatch {
+  id             Int            @id @default(autoincrement())
+  number         String         @unique
+  customerId     Int
+  customer       Customer       @relation(fields: [customerId], references: [id])
+  dateOfIssue    DateTime       @default(now())
+  transferReason String         @default("Venta")
+  modeTransport  String         @default("01")
+  originAddress  String?
+  destAddress    String?
+  plate          String?
+  driverName     String?
+  driverDocument String?
+  vehiclePlate   String?
+  totalWeight    Float          @default(0)
+  state          String         @default("Registrado")
+  items          DispatchItem[]
+  createdAt      DateTime       @default(now())
+}
+
+model DispatchItem {
+  id          Int      @id @default(autoincrement())
+  dispatchId  Int
+  dispatch    Dispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float
+  unitTypeId  String   @default("NIU")
+}
+
+model OrderNote {
+  id         Int             @id @default(autoincrement())
+  number     String          @unique
+  customerId Int
+  customer   Customer        @relation(fields: [customerId], references: [id])
+  date       DateTime        @default(now())
+  total      Float           @default(0)
+  state      String          @default("Pendiente")
+  items      OrderNoteItem[]
+  createdAt  DateTime        @default(now())
+}
+
+model OrderNoteItem {
+  id           Int       @id @default(autoincrement())
+  orderNoteId  Int
+  orderNote    OrderNote @relation(fields: [orderNoteId], references: [id], onDelete: Cascade)
+  description  String
+  quantity     Float
+  unitPrice    Float
+  total        Float
+}
+
+model Account {
+  id   Int    @id @default(autoincrement())
+  code String @unique
+  name String
+  type String
+}
+
+model JournalEntry {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  description String
+  reference   String?
+  accountCode String
+  accountName String
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+}

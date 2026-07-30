@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "code": "0000",
+    "description": "Oficina Principal",
+    "template_documents": "pdf_new_3",
+    "template_sale_notes": null,
+    "template_dispatches": "pdf_new_3",
+    "template_quotations": null,
+    "users": 3,
+    "active": true,
+    "gekawa_url": "https://gekawa.com",
+    "gekawa_1": null,
+    "gekawa_2": null,
+    "restrict_stock_quantity": null,
+    "warehouse_priority": null
+  }
+]

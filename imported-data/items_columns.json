@@ -1,0 +1,13 @@
+{
+  "description": "Nombre",
+  "internal_id": "Código interno",
+  "unit_type_id": "Unidad de medida",
+  "barcode": "Código de barras",
+  "factory_code": "Especificaciones",
+  "model": "Modelo",
+  "brand": "Marca",
+  "date_of_due": "Fecha vencimiento",
+  "lot_code": "Código lote",
+  "category": "Categoria",
+  "commission": "Comisión"
+}

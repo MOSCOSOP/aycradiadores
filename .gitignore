@@ -30,8 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env
+.env
+.env*.local
+
+# database
+/data/
+*.db
+*.db-journal
 
 # vercel
 .vercel
@@ -39,3 +45,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# HTML extraído con datos sensibles — no commitear
+extracted*.html
+scripts/*.html
+scripts/app.js.raw
+scripts/*-sample.json
+
+# Salida del clonador Python
+extracted-ui/
+
+/src/generated/prisma

@@ -1,0 +1,1001 @@
+[
+  {
+    "path": "/account/format",
+    "slug": "account__format",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/account/ledger_accounts",
+    "slug": "account__ledger_accounts",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/account/ple",
+    "slug": "account__ple",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/account/sub_diaries/create",
+    "slug": "account__sub_diaries__create",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/account/sub_diaries/create_automatic",
+    "slug": "account__sub_diaries__create_automatic",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/accounting/books-excel",
+    "slug": "accounting__books-excel",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/accounting/books",
+    "slug": "accounting__books",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/accounting/chart",
+    "slug": "accounting__chart",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/accounting/daily",
+    "slug": "accounting__daily",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/accounting/entries",
+    "slug": "accounting__entries",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/backup",
+    "slug": "backup",
+    "has_content_shell": true,
+    "is_vue_spa": false,
+    "embeddable": true,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/bill-of-exchange-pay",
+    "slug": "bill-of-exchange-pay",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/bill-of-exchange",
+    "slug": "bill-of-exchange",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/brands",
+    "slug": "brands",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/cash",
+    "slug": "cash",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/categories",
+    "slug": "categories",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/complaint",
+    "slug": "complaint",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/complaints-book",
+    "slug": "complaints-book",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/contingencies",
+    "slug": "contingencies",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/cuenta/payment_index",
+    "slug": "cuenta__payment_index",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/cupones",
+    "slug": "cupones",
+    "has_content_shell": true,
+    "is_vue_spa": false,
+    "embeddable": true,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/dashboard",
+    "slug": "dashboard",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/delivery-orders",
+    "slug": "delivery-orders",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/devolutions",
+    "slug": "devolutions",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/discount-types",
+    "slug": "discount-types",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/dispatch_carrier",
+    "slug": "dispatch_carrier",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/dispatchers",
+    "slug": "dispatchers",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/dispatches-carrier",
+    "slug": "dispatches-carrier",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/dispatches",
+    "slug": "dispatches",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/dispatches/create",
+    "slug": "dispatches__create",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/documents-recurrence",
+    "slug": "documents-recurrence",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/documents",
+    "slug": "documents",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/documents/create",
+    "slug": "documents__create",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/documents/not-sent",
+    "slug": "documents__not-sent",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/documents/regularize-shipping",
+    "slug": "documents__regularize-shipping",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/drivers",
+    "slug": "drivers",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/establishments",
+    "slug": "establishments",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/exchange-rates",
+    "slug": "exchange-rates",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/exchange_currency",
+    "slug": "exchange_currency",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/expenses",
+    "slug": "expenses",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/finances/balance",
+    "slug": "finances__balance",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/finances/global-payments",
+    "slug": "finances__global-payments",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/finances/income",
+    "slug": "finances__income",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/finances/movements",
+    "slug": "finances__movements",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/finances/payment-method-types",
+    "slug": "finances__payment-method-types",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/finances/to-collect",
+    "slug": "finances__to-collect",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/finances/to-pay",
+    "slug": "finances__to-pay",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/finances/unpaid",
+    "slug": "finances__unpaid",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/fixed-asset/items",
+    "slug": "fixed-asset__items",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/fixed-asset/purchases",
+    "slug": "fixed-asset__purchases",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/ingredient-attributes",
+    "slug": "ingredient-attributes",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/ingredients",
+    "slug": "ingredients",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/inventory-references",
+    "slug": "inventory-references",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/inventory",
+    "slug": "inventory",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/inventory/validate",
+    "slug": "inventory__validate",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/item-cost-history",
+    "slug": "item-cost-history",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/item-lots-group",
+    "slug": "item-lots-group",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/item-lots",
+    "slug": "item-lots",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/item-sets",
+    "slug": "item-sets",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/items",
+    "slug": "items",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/line-attributes",
+    "slug": "line-attributes",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/lines",
+    "slug": "lines",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/list-reports",
+    "slug": "list-reports",
+    "has_content_shell": true,
+    "is_vue_spa": false,
+    "embeddable": true,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/list-settings",
+    "slug": "list-settings",
+    "has_content_shell": true,
+    "is_vue_spa": false,
+    "embeddable": true,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/order-delivery",
+    "slug": "order-delivery",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/order-forms",
+    "slug": "order-forms",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/order-notes",
+    "slug": "order-notes",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/order-notes/create",
+    "slug": "order-notes__create",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/origin-addresses",
+    "slug": "origin-addresses",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/origin_addresses",
+    "slug": "origin_addresses",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/payments",
+    "slug": "payments",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/payroll",
+    "slug": "payroll",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/perceptions",
+    "slug": "perceptions",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/person-types",
+    "slug": "person-types",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/persons/customers",
+    "slug": "persons__customers",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/persons/suppliers",
+    "slug": "persons__suppliers",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/pos",
+    "slug": "pos",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/price-adjustments",
+    "slug": "price-adjustments",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/purchase-orders",
+    "slug": "purchase-orders",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/purchase-quotations",
+    "slug": "purchase-quotations",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/purchase-settlements",
+    "slug": "purchase-settlements",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/purchases",
+    "slug": "purchases",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/purchases/create",
+    "slug": "purchases__create",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/quotations",
+    "slug": "quotations",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/quotations/create",
+    "slug": "quotations__create",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports",
+    "slug": "reports",
+    "has_content_shell": true,
+    "is_vue_spa": false,
+    "embeddable": true,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports/historical-stock",
+    "slug": "reports__historical-stock",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports/inventory",
+    "slug": "reports__inventory",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports/kardex-average-cost",
+    "slug": "reports__kardex-average-cost",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports/kardex-valorized",
+    "slug": "reports__kardex-valorized",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports/kardex",
+    "slug": "reports__kardex",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports/kardexaverage",
+    "slug": "reports__kardexaverage",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports/stock_date",
+    "slug": "reports__stock_date",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/reports/valued-kardex",
+    "slug": "reports__valued-kardex",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/retentions",
+    "slug": "retentions",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/sale-notes",
+    "slug": "sale-notes",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/sale-notes/create",
+    "slug": "sale-notes__create",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/services",
+    "slug": "services",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/sire/annexes",
+    "slug": "sire__annexes",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/sire/appendix",
+    "slug": "sire__appendix",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/sire/purchase",
+    "slug": "sire__purchase",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/sire/purchases",
+    "slug": "sire__purchases",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/sire/sale",
+    "slug": "sire__sale",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/sire/sales",
+    "slug": "sire__sales",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/summaries",
+    "slug": "summaries",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/technical-services",
+    "slug": "technical-services",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/transfers",
+    "slug": "transfers",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/transports",
+    "slug": "transports",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/users",
+    "slug": "users",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/voided",
+    "slug": "voided",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  },
+  {
+    "path": "/zones",
+    "slug": "zones",
+    "has_content_shell": true,
+    "is_vue_spa": true,
+    "embeddable": false,
+    "title": "",
+    "status": 0
+  }
+]

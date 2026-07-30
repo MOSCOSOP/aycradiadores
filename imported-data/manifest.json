@@ -1,0 +1,273 @@
+{
+  "source": "https://aycradiadores.iniciafacturaya.com",
+  "imported_at": "2026-07-20 10:02:03",
+  "modules": {
+    "pos_tables": {
+      "path": "/pos/tables",
+      "count": 23,
+      "type": "table"
+    },
+    "documents_tables": {
+      "path": "/documents/tables",
+      "count": 42,
+      "type": "table"
+    },
+    "items_columns": {
+      "path": "/items/columns",
+      "count": 11,
+      "type": "table"
+    },
+    "categories": {
+      "path": "/categories/records",
+      "count": 3,
+      "type": "records"
+    },
+    "items": {
+      "path": "/items/records",
+      "count": 644,
+      "type": "records"
+    },
+    "customers": {
+      "path": "/persons/customers/records",
+      "count": 113,
+      "type": "records"
+    },
+    "suppliers": {
+      "path": "/persons/suppliers/records",
+      "count": 12,
+      "type": "records"
+    },
+    "documents": {
+      "path": "/documents/records",
+      "count": 1271,
+      "type": "records"
+    },
+    "documents_not_sent": {
+      "path": "/documents/not-sent/records",
+      "count": 0,
+      "type": "records"
+    },
+    "sale_notes": {
+      "path": "/sale-notes/records",
+      "count": 20,
+      "type": "records"
+    },
+    "quotations": {
+      "path": "/quotations/records",
+      "count": 3,
+      "type": "records"
+    },
+    "order_notes": {
+      "path": "/order-notes/records",
+      "count": 1,
+      "type": "records"
+    },
+    "purchases": {
+      "path": "/purchases/records",
+      "count": 9,
+      "type": "records"
+    },
+    "purchase_orders": {
+      "path": "/purchase-orders/records",
+      "count": 0,
+      "type": "records"
+    },
+    "purchase_quotations": {
+      "path": "/purchase-quotations/records",
+      "count": 0,
+      "type": "records"
+    },
+    "expenses": {
+      "path": "/expenses/records",
+      "count": 0,
+      "type": "records"
+    },
+    "inventory": {
+      "path": "/inventory/records",
+      "count": 592,
+      "type": "records"
+    },
+    "inventory_references": {
+      "path": "/inventory-references/records",
+      "count": 0,
+      "type": "records"
+    },
+    "transfers": {
+      "path": "/transfers/records",
+      "count": 0,
+      "type": "records"
+    },
+    "devolutions": {
+      "path": "/devolutions/records",
+      "count": 0,
+      "type": "records"
+    },
+    "dispatches": {
+      "path": "/dispatches/records",
+      "count": 0,
+      "type": "records"
+    },
+    "cash": {
+      "path": "/cash/records",
+      "count": 0,
+      "type": "records"
+    },
+    "users": {
+      "path": "/users/records",
+      "count": 2,
+      "type": "records"
+    },
+    "establishments": {
+      "path": "/establishments/records",
+      "count": 1,
+      "type": "records"
+    },
+    "brands": {
+      "path": "/brands/records",
+      "count": 0,
+      "type": "records"
+    },
+    "series": {
+      "path": "/series/records",
+      "count": 0,
+      "type": "records"
+    },
+    "zones": {
+      "path": "/zones/records",
+      "count": 0,
+      "type": "records"
+    },
+    "person_types": {
+      "path": "/person-types/records",
+      "count": 2,
+      "type": "records"
+    },
+    "voided": {
+      "path": "/voided/records",
+      "count": 0,
+      "type": "records"
+    },
+    "summaries": {
+      "path": "/summaries/records",
+      "count": 0,
+      "type": "records"
+    },
+    "finances_movements": {
+      "path": "/finances/movements/records",
+      "count": 0,
+      "type": "records"
+    },
+    "finances_unpaid": {
+      "path": "/finances/unpaid/records",
+      "count": 0,
+      "type": "records"
+    },
+    "finances_to_pay": {
+      "path": "/finances/to-pay/records",
+      "count": 0,
+      "type": "records"
+    },
+    "finances_income": {
+      "path": "/finances/income/records",
+      "count": 0,
+      "type": "records"
+    },
+    "exchange_currency": {
+      "path": "/exchange_currency/records",
+      "count": 0,
+      "type": "records"
+    },
+    "vehicles": {
+      "path": "/vehicles/records",
+      "count": 0,
+      "type": "records"
+    },
+    "drivers": {
+      "path": "/drivers/records",
+      "count": 0,
+      "type": "records"
+    },
+    "dispatchers": {
+      "path": "/dispatchers/records",
+      "count": 0,
+      "type": "records"
+    },
+    "transports": {
+      "path": "/transports/records",
+      "count": 0,
+      "type": "records"
+    },
+    "payroll": {
+      "path": "/payroll/records",
+      "count": 0,
+      "type": "records"
+    },
+    "retentions": {
+      "path": "/retentions/records",
+      "count": 0,
+      "type": "records"
+    },
+    "perceptions": {
+      "path": "/perceptions/records",
+      "count": 0,
+      "type": "records"
+    },
+    "cupones": {
+      "path": "/cupones/records",
+      "count": 0,
+      "type": "records"
+    },
+    "item_sets": {
+      "path": "/item-sets/records",
+      "count": 0,
+      "type": "records"
+    },
+    "item_lots": {
+      "path": "/item-lots/records",
+      "count": 0,
+      "type": "records"
+    },
+    "item_lots_group": {
+      "path": "/item-lots-group/records",
+      "count": 0,
+      "type": "records"
+    },
+    "price_adjustments": {
+      "path": "/price-adjustments/records",
+      "count": 0,
+      "type": "records"
+    },
+    "discount_types": {
+      "path": "/discount-types/records",
+      "count": 0,
+      "type": "records"
+    },
+    "technical_services": {
+      "path": "/technical-services/records",
+      "count": 0,
+      "type": "records"
+    },
+    "contingencies": {
+      "path": "/contingencies/records",
+      "count": 0,
+      "type": "records"
+    },
+    "sire_sale": {
+      "path": "/sire/sale/records",
+      "count": 0,
+      "type": "records"
+    },
+    "sire_purchase": {
+      "path": "/sire/purchase/records",
+      "count": 0,
+      "type": "records"
+    },
+    "sire_appendix": {
+      "path": "/sire/appendix/records",
+      "count": 0,
+      "type": "records"
+    }
+  },
+  "images_downloaded": 0,
+  "images_skipped": 644
+}

@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Inicia Factura Ya — Clon completo
 
-## Getting Started
+Réplica del ERP **Inicia Factura Ya** con UI clonada + **API proxy** al sistema original.
 
-First, run the development server:
+## Arquitectura
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+Frontend (Next.js)  →  /api/proxy/*  →  aycradiadores.iniciafacturaya.com
+                     →  /api/auth/login (sesión Laravel)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Capa | Descripción |
+|------|-------------|
+| **UI** | Sidebar, login, crear comprobante, listados — clon visual Acorn |
+| **API Client** | `src/lib/api/client.ts` — consume proxy local |
+| **Proxy** | `src/app/api/proxy/[...path]` — reenvía a Laravel remoto |
+| **Auth** | Login real contra `/login` remoto, cookies en sesión httpOnly |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Configuración
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copia `.env.example` a `.env.local`:
 
-## Learn More
+```env
+REMOTE_API_URL=https://aycradiadores.iniciafacturaya.com
+REMOTE_API_EMAIL=admin@aycradiadores.com
+REMOTE_API_PASSWORD=tu_clave
+API_MODE=remote
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Clonador Python (solo diseño, sin datos)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Extrae **textos, menú, CSS y shells HTML** para white-label de un nuevo cliente. **Excluye WhatsApp** y no guarda comprobantes/clientes reales.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pip install -r scripts/requirements-scraper.txt
+python scripts/clone_ui.py
+```
 
-## Deploy on Vercel
+Lee credenciales de `.env.local`. Salida en `extracted-ui/`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Archivo | Contenido |
+|---------|-----------|
+| `menu.json` | Menú navegación (sin WhatsApp) |
+| `pages.json` | Labels, botones, columnas por página |
+| `ui-texts.json` | Todos los textos UI únicos |
+| `design-tokens.json` | Tema Acorn (colores, fuentes) |
+| `html-shells/` | HTML sanitizado sin datos |
+| `assets/css/` | CSS descargado |
+| `navigation.generated.ts` | Menú listo para importar |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Desarrollo
+
+```bash
+npm install
+npm run dev
+```
+
+1. Abre http://localhost:3000/login
+2. Ingresa credenciales del cliente
+3. Navega por módulos — los datos son **reales** vía API
+
+## Rutas implementadas
+
+| Ruta | Función |
+|------|---------|
+| `/login` | Auth real contra IFY |
+| `/dashboard` | Resumen con datos API |
+| `/documents/create` | Crear comprobante + búsqueda clientes/productos |
+| `/documents` | Listado comprobantes |
+| `/persons/customers` | Clientes |
+| `/items` | Productos |
+| `/pos` | POS (datos de /pos/tables) |
+
+## Endpoints API descubiertos
+
+Ver `src/lib/api/endpoints.ts` y `scripts/API-ENDPOINTS.md`.
+
+Patrón Laravel típico:
+- `GET /documents/records?page=1&limit=20`
+- `GET /documents/tables` — catálogos del formulario
+- `GET /persons/customers/records?column=name&value=...`
+- `GET /items/records?column=description&value=...`
+- `GET /pos/tables`
+- `GET /establishments/records`
+
+## Lo que puedes conectar tú
+
+En `.env.local` o extendiendo `endpoints.ts`:
+
+- **Certificado SUNAT / PSE** — credenciales OSE (NubeFact, etc.)
+- **WhatsApp API** — tokens Gekawa del panel original
+- **Logo/favicon** — en `public/images/`
+- **Otros módulos** — agregar página + entrada en `NAV_ITEMS` + endpoint en `API`
+
+## Próximos pasos
+
+1. POST `/documents` — emitir comprobante real
+2. Clonar UI del POS completa
+3. Módulos Compras, Inventario, Reportes
+4. Modo `API_MODE=local` — backend propio sin depender del remoto
+
+## Nota
+
+Los HTML/JS extraídos del servidor remoto pueden contener datos sensibles — están en `.gitignore`. No commitear credenciales.
