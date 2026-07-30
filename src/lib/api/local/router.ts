@@ -6,6 +6,7 @@ import {
   mapImportedPurchase,
   mapImportedSaleNote,
   readImportedModule,
+  readImportedJson,
 } from "@/lib/imported-data";
 import { handleReportRequest } from "@/lib/api/local/reports-handler";
 import { ALL_PERMISSION_KEYS } from "@/lib/permissions";
@@ -762,6 +763,22 @@ export async function handleLocalApi(
     const page = Number(searchParams.get("page") || 1);
     const value = searchParams.get("value") || searchParams.get("input") || "";
     const column = searchParams.get("column") || "name";
+
+    const dbTotal = await prisma.customer.count();
+    const {
+      loadImportedCustomers,
+      mapImportedCustomer,
+      paginateImported,
+      filterImportedCustomers,
+    } = await import("@/lib/imported-catalog");
+
+    if (dbTotal < 5) {
+      const raw = await loadImportedCustomers();
+      const filtered = filterImportedCustomers(raw, value, column);
+      const mapped = filtered.map(mapImportedCustomer);
+      return paginateImported(mapped, page, limit);
+    }
+
     const where =
       value && column === "name" ? { name: { contains: value } }
       : value && column === "number" ? { number: { contains: value } }
@@ -857,6 +874,23 @@ export async function handleLocalApi(
     const page = Number(searchParams.get("page") || 1);
     const value = searchParams.get("value") || searchParams.get("input") || "";
     const column = searchParams.get("column") || "description";
+
+    const dbTotal = await prisma.item.count();
+    const {
+      shouldUseImportedItems,
+      loadImportedItems,
+      mapImportedItem,
+      paginateImported,
+      filterImportedItems,
+    } = await import("@/lib/imported-catalog");
+
+    if (await shouldUseImportedItems(dbTotal)) {
+      const raw = await loadImportedItems();
+      const filtered = filterImportedItems(raw, value, column);
+      const mapped = filtered.map(mapImportedItem);
+      return paginateImported(mapped, page, limit);
+    }
+
     const where =
       value && column === "description" ? { description: { contains: value } }
       : value && column === "internal_id" ? { internalId: { contains: value } }
@@ -1961,6 +1995,44 @@ export async function handleLocalApi(
 
   // ── POS ──
   if (method === "GET" && path === "pos/tables") {
+    const dbItemCount = await prisma.item.count();
+    const {
+      shouldUseImportedItems,
+      loadImportedItems,
+      mapImportedItem,
+    } = await import("@/lib/imported-catalog");
+
+    if (await shouldUseImportedItems(dbItemCount)) {
+      const importedPos = await readImportedJson("pos_tables");
+      if (importedPos && typeof importedPos === "object" && !Array.isArray(importedPos)) {
+        return importedPos as Record<string, unknown>;
+      }
+      const rawItems = await loadImportedItems();
+      const items = rawItems.filter((r) => r.active !== false).map(mapImportedItem);
+      const catSet = new Map<string, number>();
+      items.forEach((i) => {
+        const name = String(i.category || "General");
+        if (!catSet.has(name)) catSet.set(name, catSet.size + 1);
+      });
+      const categories = [...catSet.entries()].map(([name, id]) => ({ id, name }));
+      return {
+        categories: categories.length ? categories : [{ id: 1, name: "General" }],
+        items: items.map((i) => ({
+          id: i.id,
+          description: i.description,
+          full_description: i.description,
+          sale_unit_price: i.sale_unit_price,
+          stock: i.stock,
+          unit_type_id: i.unit_type_id,
+          category_id: i.category_id,
+          internal_id: i.internal_id,
+          barcode: i.barcode,
+          image_url_small: i.image_url_small,
+          image_url: i.image_url,
+        })),
+      };
+    }
+
     const categories = await prisma.category.findMany();
     const items = await prisma.item.findMany({ where: { active: true } });
     return {

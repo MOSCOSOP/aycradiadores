@@ -53,14 +53,20 @@ En **Project → Settings → Environment Variables**, agrega:
 
 ## 4. Base de datos (una sola vez)
 
-Desde tu PC, con las mismas variables de Supabase:
+Desde tu PC, con las mismas variables de Supabase en `.env.local`:
 
 ```bash
 npx prisma db push
-npm run db:seed
+npm run db:import
 ```
 
-Opcional: importar datos del ERP original con `npm run clone:data`.
+`db:import` vuelca **644 productos**, clientes, documentos, notas de venta, POS, etc. desde `imported-data/` (clon del ERP original) hacia Supabase.
+
+Si solo quieres datos mínimos de prueba: `npm run db:seed` (5 productos demo).
+
+**Sin importar:** Vercel puede leer `imported-data/*.json` del repo como respaldo temporal (listados y POS), pero ventas/inventario en BD requieren `db:import` para funcionar al 100%.
+
+Opcional: re-descargar datos frescos del ERP con `npm run clone:data` y luego `npm run db:import`.
 
 ## 5. Deploy
 

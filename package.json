@@ -15,7 +15,9 @@
     "preview:extracted": "python scripts/serve_extracted.py",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:import": "tsx prisma/import-from-clone.ts",
     "db:setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
+    "db:full": "prisma generate && prisma db push && tsx prisma/import-from-clone.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

@@ -25,6 +25,22 @@ export async function readImportedModule(moduleKey: string): Promise<Record<stri
   return null;
 }
 
+/** Lee JSON importado (objeto o arreglo) — p. ej. pos_tables, documents_tables */
+export async function readImportedJson(moduleKey: string): Promise<unknown | null> {
+  const row = await prisma.appSetting.findUnique({ where: { key: `imported_${moduleKey}` } });
+  if (row?.value) {
+    const data = parseJson(row.value);
+    if (data != null && (Array.isArray(data) ? data.length > 0 : typeof data === "object")) return data;
+  }
+  const filePath = path.join(process.cwd(), "imported-data", `${moduleKey}.json`);
+  if (fs.existsSync(filePath)) {
+    const raw = fs.readFileSync(filePath, "utf-8");
+    const data = parseJson(raw);
+    if (data != null && (Array.isArray(data) ? data.length > 0 : typeof data === "object")) return data;
+  }
+  return null;
+}
+
 export function mapImportedDocument(d: Record<string, unknown>) {
   return {
     id: d.id,
