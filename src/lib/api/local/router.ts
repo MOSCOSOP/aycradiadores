@@ -2056,11 +2056,21 @@ export async function handleLocalApi(
   if (method === "POST" && path === "pos/sale") {
     const p = body as Record<string, unknown>;
     const cart = (p.items as Record<string, unknown>[]) || [];
-    const customer = await prisma.customer.findFirst();
-    const user = await prisma.user.findFirst();
-    const establishment = await prisma.establishment.findFirst();
-    const series = await prisma.series.findFirst({ where: { documentTypeId: "03" } });
-    if (!customer || !user || !establishment || !series) throw new Error("Configuración incompleta");
+    const {
+      ensurePosInfrastructure,
+      resolvePosCustomerId,
+      resolvePosItemId,
+    } = await import("@/lib/pos-infrastructure");
+
+    const { user, establishment, series } = await ensurePosInfrastructure();
+    const customerId = await resolvePosCustomerId(p.customer_id);
+
+    const resolvedCart = await Promise.all(
+      cart.map(async (it) => ({
+        ...it,
+        item_id: await resolvePosItemId(it.id ?? it.item_id),
+      }))
+    ) as Record<string, unknown>[];
 
     return handleLocalApi(
       "POST",
@@ -2069,7 +2079,7 @@ export async function handleLocalApi(
       {
         document_type_id: "03",
         series_id: series.id,
-        customer_id: p.customer_id || customer.id,
+        customer_id: customerId,
         seller_id: user.id,
         establishment_id: establishment.id,
         date_of_issue: formatDate(new Date()),
@@ -2078,8 +2088,8 @@ export async function handleLocalApi(
         exchange_rate: Number(p.exchange_rate || 3.396),
         operation_type_id: "0101",
         plate: p.plate ? String(p.plate) : undefined,
-        items: cart.map((it) => ({
-          item_id: it.id,
+        items: resolvedCart.map((it) => ({
+          item_id: it.item_id,
           description: it.description,
           unit_type_id: it.unit_type_id || "NIU",
           quantity: it.quantity || 1,
