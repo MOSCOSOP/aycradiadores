@@ -30,7 +30,7 @@ const UNIT_TYPES = [
   { id: "ZZ", symbol: "SERV", description: "Servicio" },
 ];
 
-const CATEGORIES = ["RADIADORES", "MANGUERA", "VENTILADOR", "REFRIGERANTE", "A/C", "General"];
+const CATEGORIES = ["RADIADORES", "MANGUERA", "VENTILADOR", "REFRIGERANTE", "General"];
 
 const ACCOUNTS = [
   { code: "10111", name: "Caja", type: "Activo" },

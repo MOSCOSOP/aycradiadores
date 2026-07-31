@@ -1013,13 +1013,17 @@ export async function handleLocalApi(
 
   // ── Categorías ──
   if (method === "GET" && path === "categories/records") {
+    const { ensureDefaultCategories, mergeCategoriesList } = await import("@/lib/default-categories");
+    await ensureDefaultCategories();
     const data = await prisma.category.findMany({ include: { _count: { select: { items: true } } } });
+    const merged = mergeCategoriesList(data.map((c) => ({ id: c.id, name: c.name })));
+    const countByName = Object.fromEntries(data.map((c) => [c.name.toUpperCase(), c._count.items]));
     return {
-      data: data.map((c) => ({
+      data: merged.map((c) => ({
         id: c.id,
         name: c.name,
-        description: c.description,
-        items_count: c._count.items,
+        description: c.name,
+        items_count: countByName[c.name.toUpperCase()] ?? 0,
       })),
     };
   }
@@ -2035,21 +2039,25 @@ export async function handleLocalApi(
       }));
 
       if (importedPos && typeof importedPos === "object" && !Array.isArray(importedPos)) {
+        const { ensureDefaultCategories, mergeCategoriesList } = await import("@/lib/default-categories");
+        await ensureDefaultCategories();
+        const dbCats = await prisma.category.findMany();
+        const categories = mergeCategoriesList(dbCats.map((c) => ({ id: c.id, name: c.name })));
         return {
           ...(importedPos as Record<string, unknown>),
+          categories,
           series: seriesPayload.length ? seriesPayload : (importedPos as Record<string, unknown>).series,
         };
       }
       const rawItems = await loadImportedItems();
       const items = rawItems.filter((r) => r.active !== false).map(mapImportedItem);
-      const catSet = new Map<string, number>();
-      items.forEach((i) => {
-        const name = String(i.category || "General");
-        if (!catSet.has(name)) catSet.set(name, catSet.size + 1);
-      });
-      const categories = [...catSet.entries()].map(([name, id]) => ({ id, name }));
+      const { ensureDefaultCategories, mergeCategoriesList } = await import("@/lib/default-categories");
+      await ensureDefaultCategories();
+      const dbCats = await prisma.category.findMany();
+      const categories = mergeCategoriesList(dbCats.map((c) => ({ id: c.id, name: c.name })));
+      const nameToId = Object.fromEntries(categories.map((c) => [c.name.toUpperCase(), c.id]));
       return {
-        categories: categories.length ? categories : [{ id: 1, name: "General" }],
+        categories,
         series: seriesPayload,
         items: items.map((i) => ({
           id: i.id,
@@ -2058,7 +2066,8 @@ export async function handleLocalApi(
           sale_unit_price: i.sale_unit_price,
           stock: i.stock,
           unit_type_id: i.unit_type_id,
-          category_id: i.category_id,
+          category_id: nameToId[String(i.category || "").toUpperCase()] ?? i.category_id,
+          category_name: String(i.category || ""),
           internal_id: i.internal_id,
           barcode: i.barcode,
           image_url_small: i.image_url_small,
@@ -2067,11 +2076,15 @@ export async function handleLocalApi(
       };
     }
 
-    const categories = await prisma.category.findMany();
-    const items = await prisma.item.findMany({ where: { active: true } });
+    const { ensureDefaultCategories, mergeCategoriesList } = await import("@/lib/default-categories");
+    await ensureDefaultCategories();
+    const categories = mergeCategoriesList(
+      (await prisma.category.findMany()).map((c) => ({ id: c.id, name: c.name }))
+    );
+    const items = await prisma.item.findMany({ where: { active: true }, include: { category: true } });
     const seriesRows = await prisma.series.findMany();
     return {
-      categories: categories.map((c) => ({ id: c.id, name: c.name })),
+      categories,
       series: seriesRows.map((s) => ({ id: s.id, number: s.number, document_type_id: s.documentTypeId })),
       items: items.map((i) => ({
         id: i.id,
@@ -2081,6 +2094,7 @@ export async function handleLocalApi(
         stock: i.stock,
         unit_type_id: i.unitTypeId,
         category_id: i.categoryId,
+        category_name: i.category?.name ?? "",
         internal_id: i.internalId,
         barcode: i.barcode,
         image_url_small: i.imageUrl,

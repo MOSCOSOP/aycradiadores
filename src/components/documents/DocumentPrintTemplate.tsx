@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { COMPANY_INFO } from "@/lib/company-info";
+import { formatReceiptNumber } from "@/lib/receipt-format";
 
 export type ReceiptData = {
   kind: string;
@@ -34,91 +36,175 @@ function amountWords(total: number) {
   return `${ent} CON ${String(dec).padStart(2, "0")}/100 Soles`;
 }
 
-export function DocumentPrintTemplate({ receipt, printId = "doc-print-area" }: { receipt: ReceiptData; printId?: string }) {
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
-    `${COMPANY_INFO.ruc}|${receipt.number}|${receipt.total.toFixed(2)}`
+function payMethodLabel(method: string) {
+  const map: Record<string, string> = {
+    efectivo: "Efectivo",
+    yape: "Yape",
+    transferencia: "Transferencia",
+    contado: "Contado",
+  };
+  return map[method] ?? method;
+}
+
+export function DocumentPrintTemplate({
+  receipt,
+  printId = "doc-print-area",
+  scale = "normal",
+}: {
+  receipt: ReceiptData;
+  printId?: string;
+  scale?: "normal" | "a5";
+}) {
+  const number = formatReceiptNumber(receipt.number);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
+    `${COMPANY_INFO.ruc}|${number}|${receipt.total.toFixed(2)}`
   )}`;
+  const idDoc = receipt.customer_number.length === 11 ? "RUC" : "DNI";
 
   return (
-    <div id={printId} className="doc-print mx-auto max-w-[720px] bg-white p-6 text-[11px] text-black">
-      <div className="mb-4 flex gap-4 border-b pb-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border text-[9px] font-bold text-[var(--primary)]">
-          A&amp;C
-        </div>
-        <div className="flex-1">
-          <h2 className="text-base font-bold uppercase">{COMPANY_INFO.tradeName}</h2>
-          <p className="text-[10px]">De: {COMPANY_INFO.name}</p>
-          <p className="text-[10px]">RUC {COMPANY_INFO.ruc}</p>
-          <p className="text-[10px]">{COMPANY_INFO.address}</p>
-          <p className="text-[10px]">{COMPANY_INFO.email}</p>
-        </div>
-        <div className="w-44 shrink-0 border border-gray-400 p-2 text-center text-[10px]">
-          <p>R.U.C. {COMPANY_INFO.ruc}</p>
-          <p className="my-1 font-bold">{receipt.document_type_label}</p>
-          <p className="font-bold">Nro. {receipt.number}</p>
-        </div>
-      </div>
+    <div
+      id={printId}
+      className={`doc-print-sheet mx-auto bg-white text-black shadow-sm ${scale === "a5" ? "doc-print-a5" : "doc-print-a4"}`}
+    >
+      <div className="doc-print-inner">
+        <header className="doc-print-header">
+          <div className="doc-print-brand">
+            <Image
+              src="/images/logo-client.png"
+              alt={COMPANY_INFO.tradeName}
+              width={72}
+              height={72}
+              className="doc-print-logo"
+              unoptimized
+            />
+            <div>
+              <h1 className="doc-print-company">{COMPANY_INFO.tradeName}</h1>
+              <p className="doc-print-meta">De: {COMPANY_INFO.name}</p>
+              <p className="doc-print-meta">RUC {COMPANY_INFO.ruc}</p>
+              <p className="doc-print-meta">{COMPANY_INFO.address}</p>
+              <p className="doc-print-meta">{COMPANY_INFO.email}</p>
+            </div>
+          </div>
+          <div className="doc-print-docbox">
+            <p>R.U.C. {COMPANY_INFO.ruc}</p>
+            <p className="doc-print-doc-type">{receipt.document_type_label}</p>
+            <p className="doc-print-doc-number">Nro. {number}</p>
+          </div>
+        </header>
 
-      <div className="mb-3 grid grid-cols-2 gap-2 text-[10px]">
-        <p><strong>Señor(es):</strong> {receipt.customer_name}</p>
-        <p><strong>Fecha Emisión</strong> {fmtDate(receipt.date_of_issue)}</p>
-        <p><strong>{receipt.customer_number.length === 11 ? "RUC" : "DNI"}:</strong> {receipt.customer_number}</p>
-        <p><strong>Forma de pago:</strong> {receipt.payment_condition === "credito" ? "Crédito" : "Contado"} — {receipt.payment_method}</p>
-        {receipt.plate ? <p><strong>Placa:</strong> {receipt.plate}</p> : null}
-        <p><strong>Ubicación:</strong> {receipt.customer_address || "HUÁNUCO"}</p>
-      </div>
+        <section className="doc-print-customer">
+          <div>
+            <p><span className="doc-print-label">Señor(es):</span> {receipt.customer_name}</p>
+            <p><span className="doc-print-label">{idDoc}:</span> {receipt.customer_number}</p>
+            <p><span className="doc-print-label">Ubicación:</span> {receipt.customer_address || "HUÁNUCO - HUÁNUCO - HUÁNUCO"}</p>
+            {receipt.plate ? <p><span className="doc-print-label">Placa:</span> {receipt.plate}</p> : null}
+          </div>
+          <div>
+            <p><span className="doc-print-label">Fecha Emisión</span> {fmtDate(receipt.date_of_issue)}</p>
+            <p>
+              <span className="doc-print-label">Forma de pago:</span>{" "}
+              {receipt.payment_condition === "credito" ? "Crédito" : "Contado"} — {payMethodLabel(receipt.payment_method)}
+            </p>
+          </div>
+        </section>
 
-      <table className="mb-3 w-full border-collapse text-[10px]">
-        <thead>
-          <tr className="border-b border-t">
-            <th className="py-1 text-left">Cant.</th>
-            <th className="py-1 text-left">Descripción</th>
-            <th className="py-1 text-right">P.U.</th>
-            <th className="py-1 text-right">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {receipt.items.map((it, i) => (
-            <tr key={i} className="border-b border-gray-200">
-              <td className="py-1">{it.quantity}</td>
-              <td className="py-1">{it.description}</td>
-              <td className="py-1 text-right">{it.unit_price.toFixed(2)}</td>
-              <td className="py-1 text-right">{it.total.toFixed(2)}</td>
+        <table className="doc-print-table">
+          <thead>
+            <tr>
+              <th>Cant.</th>
+              <th>Descripción</th>
+              <th className="text-right">P.U.</th>
+              <th className="text-right">Total</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {receipt.items.map((it, i) => (
+              <tr key={i}>
+                <td>{it.quantity}</td>
+                <td>{it.description}</td>
+                <td className="text-right">{it.unit_price.toFixed(2)}</td>
+                <td className="text-right">{it.total.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-      <div className="flex justify-end">
-        <div className="w-56 text-[10px]">
-          <div className="flex justify-between"><span>OP. GRAVADAS:</span><span>S/ {receipt.total_taxed.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>I.G.V. 18%:</span><span>S/ {receipt.total_igv.toFixed(2)}</span></div>
-          <div className="mt-1 flex justify-between border-t pt-1 text-sm font-bold"><span>TOTAL:</span><span>S/ {receipt.total.toFixed(2)}</span></div>
+        <div className="doc-print-totals-wrap">
+          <div className="doc-print-totals">
+            <div className="doc-print-total-row"><span>OP. GRAVADAS:</span><span>S/ {receipt.total_taxed.toFixed(2)}</span></div>
+            <div className="doc-print-total-row"><span>I.G.V. 18%:</span><span>S/ {receipt.total_igv.toFixed(2)}</span></div>
+            <div className="doc-print-total-row doc-print-total-final"><span>TOTAL:</span><span>S/ {receipt.total.toFixed(2)}</span></div>
+          </div>
         </div>
-      </div>
 
-      <p className="mt-3 text-[10px]">Son: {amountWords(receipt.total)}</p>
+        <p className="doc-print-words">Son: {amountWords(receipt.total)}</p>
 
-      <div className="mt-4 flex items-end justify-between border-t pt-3">
-        <div className="text-[9px]">
-          <p>{COMPANY_INFO.bank}</p>
-          <p>Cta. {COMPANY_INFO.bankAccount}</p>
-          <p>CCI {COMPANY_INFO.bankCci}</p>
-        </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qrUrl} alt="QR SUNAT" width={90} height={90} className="border" />
+        <footer className="doc-print-footer">
+          <div className="doc-print-bank">
+            <p>{COMPANY_INFO.bank}</p>
+            <p>Cta. {COMPANY_INFO.bankAccount}</p>
+            <p>CCI {COMPANY_INFO.bankCci}</p>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qrUrl} alt="QR SUNAT" width={100} height={100} className="doc-print-qr" />
+        </footer>
       </div>
     </div>
   );
 }
 
-export function printDocument(elementId = "doc-print-area") {
+const PRINT_CSS = `
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 12mm; color: #111; }
+  .doc-print-sheet { width: 100%; max-width: 210mm; margin: 0 auto; }
+  .doc-print-inner { padding: 8mm; border: 1px solid #ddd; }
+  .doc-print-header { display: flex; gap: 12px; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px; }
+  .doc-print-brand { display: flex; gap: 10px; flex: 1; align-items: flex-start; }
+  .doc-print-logo { width: 64px; height: 64px; object-fit: contain; }
+  .doc-print-company { font-size: 15px; font-weight: 700; text-transform: uppercase; margin: 0 0 4px; }
+  .doc-print-meta { font-size: 9px; margin: 1px 0; line-height: 1.3; }
+  .doc-print-docbox { width: 170px; border: 1px solid #666; padding: 8px; text-align: center; font-size: 9px; flex-shrink: 0; }
+  .doc-print-doc-type { font-weight: 700; margin: 6px 0; font-size: 10px; }
+  .doc-print-doc-number { font-weight: 700; font-size: 10px; }
+  .doc-print-customer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 9px; margin-bottom: 10px; }
+  .doc-print-label { font-weight: 700; }
+  .doc-print-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 10px; }
+  .doc-print-table th, .doc-print-table td { border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; padding: 4px 6px; }
+  .doc-print-table th { text-align: left; font-weight: 700; }
+  .text-right { text-align: right; }
+  .doc-print-totals-wrap { display: flex; justify-content: flex-end; }
+  .doc-print-totals { width: 220px; font-size: 9px; }
+  .doc-print-total-row { display: flex; justify-content: space-between; padding: 2px 0; }
+  .doc-print-total-final { font-size: 12px; font-weight: 700; border-top: 1px solid #333; margin-top: 4px; padding-top: 4px; }
+  .doc-print-words { font-size: 9px; margin: 10px 0; }
+  .doc-print-footer { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #ccc; padding-top: 10px; }
+  .doc-print-bank { font-size: 8px; line-height: 1.4; }
+  .doc-print-qr { width: 90px; height: 90px; border: 1px solid #ccc; }
+  @page { size: A4; margin: 10mm; }
+`;
+
+export function printDocument(elementId = "doc-print-area", pageSize: "A4" | "A5" = "A4") {
   const el = document.getElementById(elementId);
-  if (!el) return;
-  const w = window.open("", "_blank", "width=800,height=900");
-  if (!w) return;
-  w.document.write(`<html><head><title>Comprobante</title><style>body{font-family:Arial,sans-serif;margin:16px}table{width:100%}</style></head><body>${el.innerHTML}</body></html>`);
+  if (!el) {
+    window.print();
+    return;
+  }
+  const w = window.open("", "_blank", "width=900,height=1100");
+  if (!w) {
+    alert("Permite ventanas emergentes para imprimir el comprobante.");
+    return;
+  }
+  const pageRule = pageSize === "A5" ? "@page { size: A5; margin: 8mm; }" : "@page { size: A4; margin: 10mm; }";
+  w.document.write(
+    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Comprobante</title><style>${PRINT_CSS}${pageRule}</style></head><body>${el.outerHTML}</body></html>`
+  );
   w.document.close();
-  w.focus();
-  w.print();
+  w.onload = () => {
+    w.focus();
+    w.print();
+  };
+  setTimeout(() => {
+    w.focus();
+    w.print();
+  }, 400);
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Modal, Field } from "@/components/ui/Modal";
 import { api } from "@/lib/api/client";
+import { mergeCategoriesList } from "@/lib/default-categories";
 import {
   AFFECTATION_TYPES,
   UNIT_TYPES,
@@ -33,7 +34,7 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
     if (!open) return;
     setForm({ ...emptyItemForm, ...initial });
     setTab(0);
-    api.categories.records().then((r) => setCategories(r.data ?? []));
+    api.categories.records().then((r) => setCategories(mergeCategoriesList((r.data ?? []) as { id: number; name: string }[])));
     api.establishments.records().then((r) => setEstablishments(r.data ?? []));
     fetch("/api/local/person-types/records")
       .then((r) => r.json())

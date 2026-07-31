@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { CustomerModal } from "@/components/customers/CustomerModal";
 import { Modal } from "@/components/ui/Modal";
 import { PosCheckoutModal } from "@/components/pos/PosCheckoutModal";
 import { PosSuccessModal } from "@/components/pos/PosSuccessModal";
 import type { ReceiptData } from "@/components/documents/DocumentPrintTemplate";
+import { mergeCategoriesList } from "@/lib/default-categories";
 import { api } from "@/lib/api/client";
 
 type CartItem = {
@@ -21,6 +21,15 @@ type CartItem = {
 };
 
 const PAGE_SIZE = 30;
+const DEFAULT_CUSTOMER_NUMBER = "99999999";
+
+function pickDefaultCustomer(list: Record<string, unknown>[]) {
+  return (
+    list.find((c) => String(c.number) === DEFAULT_CUSTOMER_NUMBER) ??
+    list.find((c) => String(c.name).toLowerCase().includes("varios")) ??
+    null
+  );
+}
 
 function productImage(url?: string | null) {
   if (!url) return "/images/logo-client.png";
@@ -38,7 +47,7 @@ export function PosView() {
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [exchangeRate, setExchangeRate] = useState("3.408");
   const [customers, setCustomers] = useState<Record<string, unknown>[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Record<string, unknown> | null>(null);
+  const [selectedCustomerNumber, setSelectedCustomerNumber] = useState<string>(DEFAULT_CUSTOMER_NUMBER);
   const [customerModal, setCustomerModal] = useState(false);
   const [plate, setPlate] = useState("");
   const [currencyPen, setCurrencyPen] = useState(true);
@@ -58,25 +67,38 @@ export function PosView() {
     Promise.all([api.pos.tables(), reloadCustomers()])
       .then(([pos, list]) => {
         setData(pos);
-        setSelectedCustomer(list[0] ?? null);
+        const def = pickDefaultCustomer(list);
+        if (def) setSelectedCustomerNumber(String(def.number));
       })
       .finally(() => setLoading(false));
   }, []);
 
+  const selectedCustomer = useMemo(
+    () => customers.find((c) => String(c.number) === selectedCustomerNumber) ?? null,
+    [customers, selectedCustomerNumber]
+  );
+
   const allItems = (data?.items as Record<string, unknown>[]) ?? [];
-  const categories = (data?.categories as { id: number; name: string }[]) ?? [];
+  const rawCategories = (data?.categories as { id: number; name: string }[]) ?? [];
+  const categories = useMemo(() => mergeCategoriesList(rawCategories), [rawCategories]);
   const series = (data?.series as { number: string; document_type_id: string }[]) ?? [];
 
-  const filteredItems = useMemo(() => allItems.filter((i) => {
-    const matchCat = !categoryId || Number(i.category_id) === categoryId;
-    const q = search.trim().toLowerCase();
-    const matchSearch =
-      !q ||
-      String(i.description ?? "").toLowerCase().includes(q) ||
-      String(i.internal_id ?? "").toLowerCase().includes(q) ||
-      String(i.barcode ?? "").toLowerCase().includes(q);
-    return matchCat && matchSearch;
-  }), [allItems, categoryId, search]);
+  const filteredItems = useMemo(() => {
+    const cat = categories.find((c) => c.id === categoryId);
+    return allItems.filter((i) => {
+      const matchCat =
+        !categoryId ||
+        Number(i.category_id) === categoryId ||
+        (cat && String(i.category_name ?? "").toUpperCase() === cat.name.toUpperCase());
+      const q = search.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        String(i.description ?? "").toLowerCase().includes(q) ||
+        String(i.internal_id ?? "").toLowerCase().includes(q) ||
+        String(i.barcode ?? "").toLowerCase().includes(q);
+      return matchCat && matchSearch;
+    });
+  }, [allItems, categoryId, search, categories]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const pageItems = filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -142,8 +164,8 @@ export function PosView() {
     try {
       const res = await api.pos.sale({
         customer_id: selectedCustomer?.id,
-        customer_number: selectedCustomer?.number,
-        customer_name: selectedCustomer?.name,
+        customer_number: selectedCustomer?.number ?? selectedCustomerNumber,
+        customer_name: selectedCustomer?.name ?? "Clientes - Varios",
         plate,
         currency_type_id: currencyPen ? "PEN" : "USD",
         exchange_rate: rate,
@@ -199,18 +221,17 @@ export function PosView() {
               <div className="relative min-w-[200px] flex-1">
                 <select
                   className="ify-select w-full text-xs"
-                  value={String(selectedCustomer?.id ?? "")}
-                  onChange={(e) => {
-                    const c = customers.find((x) => String(x.id) === e.target.value);
-                    setSelectedCustomer(c ?? null);
-                  }}
+                  value={selectedCustomerNumber}
+                  onChange={(e) => setSelectedCustomerNumber(e.target.value)}
                 >
-                  <option value="">— Consumidor final —</option>
-                  {customers.map((c) => (
-                    <option key={String(c.id)} value={String(c.id)}>
-                      {String(c.number)} - {String(c.name)}
-                    </option>
-                  ))}
+                  <option value={DEFAULT_CUSTOMER_NUMBER}>99999999 - Clientes - Varios</option>
+                  {customers
+                    .filter((c) => String(c.number) !== DEFAULT_CUSTOMER_NUMBER)
+                    .map((c) => (
+                      <option key={String(c.number)} value={String(c.number)}>
+                        {String(c.number)} - {String(c.name)}
+                      </option>
+                    ))}
                 </select>
               </div>
               <button type="button" className="ify-btn-primary px-2 py-1 text-xs" onClick={() => setCustomerModal(true)}>
@@ -238,7 +259,7 @@ export function PosView() {
             <div className="flex flex-wrap gap-1">
               <button type="button" className={`rounded px-2 py-1 text-[11px] ${!categoryId ? "bg-[var(--primary)] text-white" : "bg-[var(--border-light)]"}`} onClick={() => setCategoryId(null)}>Todos</button>
               {categories.map((c) => (
-                <button key={c.id} type="button" className={`rounded px-2 py-1 text-[11px] ${categoryId === c.id ? "bg-[var(--primary)] text-white" : "bg-[var(--border-light)]"}`} onClick={() => setCategoryId(c.id)}>{c.name}</button>
+                <button key={`${c.id}-${c.name}`} type="button" className={`rounded px-2 py-1 text-[11px] ${categoryId === c.id ? "bg-[var(--primary)] text-white" : "bg-[var(--border-light)]"}`} onClick={() => setCategoryId(c.id)}>{c.name}</button>
               ))}
             </div>
           </div>
@@ -322,9 +343,13 @@ export function PosView() {
       <CustomerModal
         open={customerModal}
         onClose={() => setCustomerModal(false)}
-        onSaved={(c) => {
-          setSelectedCustomer(c);
-          reloadCustomers();
+        onSaved={async (c) => {
+          const savedNumber = String(c.number ?? "").trim();
+          const list = await reloadCustomers();
+          const match = list.find((x) => String(x.number) === savedNumber);
+          if (savedNumber) setSelectedCustomerNumber(savedNumber);
+          else if (match) setSelectedCustomerNumber(String(match.number));
+          setCustomerModal(false);
         }}
       />
 

@@ -64,12 +64,12 @@ export function PosCheckoutModal({ open, mode, cart, total, series, onClose, onC
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-black/40">
-      <div className="flex min-h-0 flex-1 flex-col bg-[#f4f6f8] lg:flex-row">
-        {/* Resumen carrito */}
-        <div className="flex w-full flex-col border-r bg-white lg:w-[340px]">
-          <div className="border-b p-3 text-sm font-bold">Resumen de venta</div>
-          <div className="flex-1 overflow-auto p-3">
+    <div className="fixed inset-0 z-50 flex items-stretch bg-black/40 p-2 md:p-4">
+      <div className="flex min-h-0 w-full max-h-full flex-1 flex-col overflow-hidden rounded-lg bg-[#f4f6f8] shadow-xl lg:flex-row">
+        {/* Resumen carrito — footer fijo visible */}
+        <div className="flex max-h-[45vh] w-full shrink-0 flex-col border-b bg-white lg:max-h-full lg:w-[360px] lg:border-b-0 lg:border-r">
+          <div className="shrink-0 border-b p-3 text-sm font-bold">Resumen de venta</div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {cart.map((c) => (
               <div key={c.id} className="mb-2 border-b pb-2 text-xs">
                 <p className="font-semibold">{c.quantity} {c.description}</p>
@@ -77,26 +77,28 @@ export function PosCheckoutModal({ open, mode, cart, total, series, onClose, onC
               </div>
             ))}
           </div>
-          <div className="border-t p-3 text-xs">
-            <div className="flex justify-between"><span>Subtotal gravado</span><span>S/ {taxed.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span>IGV 18%</span><span>S/ {igv.toFixed(2)}</span></div>
-            <div className="mt-2 flex justify-between bg-[var(--primary)] px-2 py-2 text-base font-bold text-white">
-              <span>TOTAL</span><span>S/ {total.toFixed(2)}</span>
+          <div className="shrink-0 border-t bg-white">
+            <div className="space-y-1 p-3 text-xs">
+              <div className="flex justify-between"><span>Subtotal gravado</span><span>S/ {taxed.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>IGV 18%</span><span>S/ {igv.toFixed(2)}</span></div>
+              <div className="mt-2 flex justify-between rounded bg-[var(--primary)] px-3 py-2.5 text-base font-bold text-white">
+                <span>TOTAL</span><span>S/ {total.toFixed(2)}</span>
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 p-3">
-            <button type="button" className="ify-btn-primary py-3 text-xs" disabled={processing} onClick={() => onConfirm(buildPayload())}>
-              {processing ? "..." : "PAGAR"}
-            </button>
-            <button type="button" className="ify-btn-primary py-3 text-xs opacity-90" disabled={processing} onClick={() => onConfirm(buildPayload("credito"))}>
-              CRÉDITO
-            </button>
-            <button type="button" className="rounded bg-red-600 py-3 text-xs font-bold text-white" onClick={onClose}>CANCELAR</button>
+            <div className="grid grid-cols-3 gap-2 border-t p-3">
+              <button type="button" className="ify-btn-primary py-3 text-xs font-bold" disabled={processing} onClick={() => onConfirm(buildPayload())}>
+                {processing ? "..." : "PAGAR"}
+              </button>
+              <button type="button" className="rounded bg-[#2563eb] py-3 text-xs font-bold text-white disabled:opacity-50" disabled={processing} onClick={() => onConfirm(buildPayload("credito"))}>
+                CRÉDITO
+              </button>
+              <button type="button" className="rounded bg-red-600 py-3 text-xs font-bold text-white" onClick={onClose}>CANCELAR</button>
+            </div>
           </div>
         </div>
 
         {/* Panel pago */}
-        <div className="flex flex-1 flex-col overflow-auto bg-white p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white p-4">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {DOC_TABS.map((t) => (
               <button
@@ -177,8 +179,8 @@ export function PosCheckoutModal({ open, mode, cart, total, series, onClose, onC
             <label className="ify-label">Monto descuento<input className="ify-input mt-1" value={discount} onChange={(e) => setDiscount(e.target.value)} /></label>
           </div>
 
-          <div className="mt-6">
-            <button type="button" className="ify-btn-primary px-8 py-3" disabled={processing} onClick={() => onConfirm(buildPayload(mode === "credit" ? "credito" : "contado"))}>
+          <div className="mt-6 pb-4">
+            <button type="button" className="ify-btn-primary px-8 py-3 font-bold" disabled={processing} onClick={() => onConfirm(buildPayload(mode === "credit" ? "credito" : "contado"))}>
               {processing ? "Procesando..." : "Confirmar pago e imprimir"}
             </button>
           </div>

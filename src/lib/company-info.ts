@@ -15,6 +15,4 @@ export const DEFAULT_CATEGORIES = [
   "MANGUERA",
   "VENTILADOR",
   "REFRIGERANTE",
-  "A/C",
-  "General",
 ];

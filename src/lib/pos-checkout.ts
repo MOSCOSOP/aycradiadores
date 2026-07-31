@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { splitIgv, valueFromPrice } from "@/lib/tax";
+import { formatReceiptNumber } from "@/lib/receipt-format";
 import { resolvePosCustomerId, resolvePosItemId, ensurePosInfrastructure } from "@/lib/pos-infrastructure";
 
 type CartLine = {
@@ -237,7 +238,7 @@ function buildResult(
     receipt: {
       kind,
       id,
-      number,
+      number: formatReceiptNumber(number),
       document_type_id: docTypeId,
       document_type_label: docLabel(kind),
       series_label: seriesLabel,
