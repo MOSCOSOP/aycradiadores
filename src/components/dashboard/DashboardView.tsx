@@ -21,7 +21,7 @@ type DashStats = {
   top_customers?: { rank: number; name: string; count: number; total: number }[];
   monthly_history?: { month: string; sunat_sales: number; internal_sales: number; purchases_expenses: number }[];
   establishments?: { id: number; description: string }[];
-  filters?: { date_from: string; date_to: string; year: number };
+  insights?: { level: string; text: string }[];
 };
 
 function fmtMoney(n: number) {
@@ -236,7 +236,11 @@ export function DashboardView() {
     <div className="dash-page">
       <div className="dash-title-row">
         <h1 className="dash-title">Dashboard</h1>
+        <p className="text-sm text-[var(--muted)]">KPIs y análisis inteligente en tiempo real</p>
       </div>
+
+      <div className="dash-main-with-insights">
+        <div className="dash-main-col">
 
       {/* KPI cards — estilo Acorn original */}
       <div className="dash-kpi-card ify-card mb-0">
@@ -526,6 +530,20 @@ export function DashboardView() {
             ]}
           />
         </section>
+      </div>
+        </div>
+
+        <aside className="dash-insights-panel ify-card">
+          <h2 className="dash-small-title">Análisis inteligente</h2>
+          <ul className="dash-insights-list">
+            {(stats?.insights ?? []).map((item, i) => (
+              <li key={i} className={`dash-insight dash-insight-${item.level}`}>
+                <span className="dash-insight-dot" aria-hidden />
+                {item.text}
+              </li>
+            ))}
+          </ul>
+        </aside>
       </div>
     </div>
   );

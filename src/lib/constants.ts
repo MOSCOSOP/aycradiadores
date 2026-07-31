@@ -2,16 +2,16 @@ export const APP_VERSION = "11.716.1340";
 export const APP_COMMIT = "d7d19ca";
 
 export const COMPANY = {
-  name: process.env.NEXT_PUBLIC_COMPANY_NAME || "MI EMPRESA S.A.C.",
-  tradeName: process.env.NEXT_PUBLIC_COMPANY_TRADE_NAME || "Mi Empresa",
-  loginTitle: process.env.NEXT_PUBLIC_COMPANY_TRADE_NAME || "Mi Empresa",
+  name: process.env.NEXT_PUBLIC_COMPANY_NAME || "ALVARES ROSALES ARCIBES BENITO",
+  tradeName: process.env.NEXT_PUBLIC_COMPANY_TRADE_NAME || "A&c RADIADORES",
+  loginTitle: process.env.NEXT_PUBLIC_COMPANY_TRADE_NAME || "A&c RADIADORES",
   user: "ADMINISTRADOR",
   seller: "ADMINISTRADOR",
-  ruc: process.env.NEXT_PUBLIC_COMPANY_RUC || "20123456789",
+  ruc: process.env.NEXT_PUBLIC_COMPANY_RUC || "10447860428",
   establishment: "Oficina Principal",
-  address: "Av. Principal 123",
-  email: "contacto@miempresa.com",
-  phone: "+51 999 999 999",
+  address: "AV. UNIVERSITARIA 2760, PILLCO MARCA, HUÁNUCO - HUÁNUCO",
+  email: "arcibesalvares@gmail.com",
+  phone: "",
 };
 
 export type NavChild = {

@@ -213,7 +213,7 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
           </Field>
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input type="checkbox" defaultChecked />
-            ¿La compra tiene el 10% de IGV?
+            ¿La compra tiene el 18% de IGV?
           </label>
         </div>
       )}

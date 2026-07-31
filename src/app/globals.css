@@ -815,3 +815,53 @@ html.ify-nav-locked.ify-dark .ify-nav {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.dash-main-with-insights {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+@media (min-width: 1200px) {
+  .dash-main-with-insights {
+    grid-template-columns: 1fr 280px;
+  }
+}
+
+.dash-insights-panel {
+  position: sticky;
+  top: 0.75rem;
+  padding: 1rem;
+}
+
+.dash-insights-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dash-insight {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.dash-insight-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+}
+
+.dash-insight-danger .dash-insight-dot { background: #dc3545; }
+.dash-insight-warning .dash-insight-dot { background: #fd7e14; }
+.dash-insight-info .dash-insight-dot { background: #0d6efd; }
+.dash-insight-success .dash-insight-dot { background: #198754; }

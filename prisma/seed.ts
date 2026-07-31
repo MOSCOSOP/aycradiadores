@@ -30,7 +30,7 @@ const UNIT_TYPES = [
   { id: "ZZ", symbol: "SERV", description: "Servicio" },
 ];
 
-const CATEGORIES = ["General", "Repuestos", "Servicios", "Accesorios"];
+const CATEGORIES = ["RADIADORES", "MANGUERA", "VENTILADOR", "REFRIGERANTE", "A/C", "General"];
 
 const ACCOUNTS = [
   { code: "10111", name: "Caja", type: "Activo" },
@@ -46,8 +46,8 @@ async function main() {
   const companyName = process.env.COMPANY_NAME || "ALVARES ROSALES ARCIBES BENITO";
   const tradeName = process.env.COMPANY_TRADE_NAME || "A&c RADIADORES";
   const ruc = process.env.COMPANY_RUC || "10447860428";
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@aycradiadores.com";
-  const adminPassword = process.env.ADMIN_PASSWORD || "PERU20230623";
+  const adminEmail = process.env.ADMIN_EMAIL || "arcibesalvares@gmail.com";
+  const adminPassword = process.env.ADMIN_PASSWORD || "ARCHI2052";
   const adminName = process.env.ADMIN_NAME || "ADMINISTRADOR";
 
   const soapUser = process.env.SUNAT_SOAP_USERNAME || "10447860428F3M9QC0C";
@@ -113,9 +113,9 @@ async function main() {
     data: {
       code: "0000",
       description: "Oficina Principal",
-      address: "Av. Principal 123",
-      email: "contacto@miempresa.com",
-      telephone: "+51 999 999 999",
+      address: "AV. UNIVERSITARIA 2760, PILLCO MARCA, HUÁNUCO - HUÁNUCO",
+      email: "arcibesalvares@gmail.com",
+      telephone: "",
       companyId: company.id,
     },
   });

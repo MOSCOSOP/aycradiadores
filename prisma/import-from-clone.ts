@@ -43,8 +43,8 @@ async function clearBusinessData() {
 }
 
 async function ensureBaseStructure() {
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@aycradiadores.com";
-  const adminPassword = process.env.ADMIN_PASSWORD || "PERU20230623";
+  const adminEmail = process.env.ADMIN_EMAIL || "arcibesalvares@gmail.com";
+  const adminPassword = process.env.ADMIN_PASSWORD || "ARCHI2052";
   const adminName = process.env.ADMIN_NAME || "ADMINISTRADOR";
 
   let company = await prisma.company.findFirst();
@@ -53,7 +53,7 @@ async function ensureBaseStructure() {
       data: {
         name: process.env.COMPANY_NAME || "MI EMPRESA S.A.C.",
         tradeName: process.env.COMPANY_TRADE_NAME || "Mi Empresa",
-        ruc: process.env.COMPANY_RUC || "20123456789",
+        ruc: process.env.COMPANY_RUC || "10447860428",
       },
     });
   }

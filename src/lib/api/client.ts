@@ -371,7 +371,7 @@ export const api = {
   pos: {
     tables: () => apiFetch<Record<string, unknown>>(local(API.pos.tables)),
     sale: (payload: Record<string, unknown>) =>
-      apiFetch(local("/pos/sale"), {
+      apiFetch<{ success: boolean; receipt?: Record<string, unknown> }>(local("/pos/sale"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

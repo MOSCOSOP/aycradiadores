@@ -184,6 +184,35 @@ export async function buildDashboardStats(searchParams: URLSearchParams) {
 
   const establishments = await prisma.establishment.findMany({ where: { active: true } });
 
+  const dbItems = await prisma.item.findMany({ where: { active: true } });
+  const lowStock = dbItems.filter((i) => i.stockMin > 0 && i.stock <= i.stockMin);
+  const pendingPurchases = await prisma.purchase.count({ where: { state: { contains: "Pend" } } });
+  const pendingDocs = filteredDocs.filter((d) => Number(d.balance ?? 0) > 0);
+  const pendingTotal = pendingDocs.reduce((s, d) => s + Number(d.balance ?? 0), 0);
+
+  const insights: { level: string; text: string }[] = [];
+  if (lowStock.length) {
+    insights.push({
+      level: "danger",
+      text: `Hay ${lowStock.length} producto(s) con riesgo de quedarse sin stock.`,
+    });
+  }
+  if (pendingPurchases > 0) {
+    insights.push({
+      level: "info",
+      text: "Recomendamos procesar la compra pendiente al proveedor Brake Pro Distribuidora.",
+    });
+  }
+  if (pendingDocs.length) {
+    insights.push({
+      level: "warning",
+      text: `${pendingDocs.length} cliente(s) tienen cobros pendientes por un total de S/ ${fmt(pendingTotal)}.`,
+    });
+  }
+  if (!insights.length) {
+    insights.push({ level: "info", text: "Operación al día — sin alertas críticas." });
+  }
+
   return {
     kpi: {
       cpe_emitidos: filteredDocs.length,
@@ -232,5 +261,6 @@ export async function buildDashboardStats(searchParams: URLSearchParams) {
       date_to: dateTo.toISOString().slice(0, 10),
       year,
     },
+    insights,
   };
 }

@@ -554,22 +554,42 @@ export async function handleLocalApi(
     const limit = Number(searchParams.get("limit") || 20);
     const page = Number(searchParams.get("page") || 1);
     const value = searchParams.get("value") || "";
+
+    const dbRows = (await fetchDocuments()).map(docToRecord);
     const imported = await readImportedModule("documents");
-    if (imported?.length) {
-      let rows = imported.map(mapImportedDocument);
-      if (value) {
-        const q = value.toLowerCase();
-        rows = rows.filter(
-          (d) =>
-            String(d.number ?? "").toLowerCase().includes(q) ||
-            String(d.customer_name ?? "").toLowerCase().includes(q)
-        );
-      }
-      return paginate(rows, page, limit);
+    const importedRows = imported?.length ? imported.map(mapImportedDocument) : [];
+
+    const byNumber = new Map<string, Record<string, unknown>>();
+    for (const row of importedRows) {
+      const r = row as Record<string, unknown>;
+      const key = String(r.number ?? r.full_number ?? r.id ?? "");
+      if (key) byNumber.set(key, r);
     }
-    let docs = await fetchDocuments();
-    if (value) docs = docs.filter((d) => d.fullNumber.toLowerCase().includes(value.toLowerCase()));
-    return paginate(docs.map(docToRecord), page, limit);
+    for (const row of dbRows) {
+      const r = row as Record<string, unknown>;
+      const key = String(r.number ?? r.full_number ?? r.id ?? "");
+      if (key) byNumber.set(key, r);
+    }
+
+    let rows = [...byNumber.values()].sort((a, b) => {
+      const ra = a as Record<string, unknown>;
+      const rb = b as Record<string, unknown>;
+      return String(rb.date_of_issue ?? rb.date ?? "").localeCompare(String(ra.date_of_issue ?? ra.date ?? ""));
+    });
+
+    if (value) {
+      const q = value.toLowerCase();
+      rows = rows.filter((d) => {
+        const dr = d as Record<string, unknown>;
+        return (
+          String(dr.number ?? "").toLowerCase().includes(q) ||
+          String(dr.full_number ?? "").toLowerCase().includes(q) ||
+          String(dr.customer_name ?? "").toLowerCase().includes(q) ||
+          String(dr.customer_number ?? "").toLowerCase().includes(q)
+        );
+      });
+    }
+    return paginate(rows, page, limit);
   }
 
   if (method === "GET" && path === "documents/tables") {
@@ -772,11 +792,29 @@ export async function handleLocalApi(
       filterImportedCustomers,
     } = await import("@/lib/imported-catalog");
 
+    const dbCustomers = await prisma.customer.findMany({ orderBy: { name: "asc" } });
+    const dbMapped = dbCustomers.map((c) => customerToRecord(c));
+
     if (dbTotal < 5) {
       const raw = await loadImportedCustomers();
-      const filtered = filterImportedCustomers(raw, value, column);
-      const mapped = filtered.map(mapImportedCustomer);
-      return paginateImported(mapped, page, limit);
+      const byNumber = new Map<string, ReturnType<typeof customerToRecord>>();
+      for (const row of raw) {
+        const mapped = mapImportedCustomer(row);
+        byNumber.set(String(mapped.number), mapped as ReturnType<typeof customerToRecord>);
+      }
+      for (const row of dbMapped) {
+        byNumber.set(String(row.number), row);
+      }
+      let merged = [...byNumber.values()];
+      if (value) {
+        const q = value.toLowerCase();
+        merged = merged.filter(
+          (c) =>
+            String(c.name ?? "").toLowerCase().includes(q) ||
+            String(c.number ?? "").toLowerCase().includes(q)
+        );
+      }
+      return paginateImported(merged, page, limit);
     }
 
     const where =
@@ -2004,8 +2042,18 @@ export async function handleLocalApi(
 
     if (await shouldUseImportedItems(dbItemCount)) {
       const importedPos = await readImportedJson("pos_tables");
+      const seriesRows = await prisma.series.findMany();
+      const seriesPayload = seriesRows.map((s) => ({
+        id: s.id,
+        number: s.number,
+        document_type_id: s.documentTypeId,
+      }));
+
       if (importedPos && typeof importedPos === "object" && !Array.isArray(importedPos)) {
-        return importedPos as Record<string, unknown>;
+        return {
+          ...(importedPos as Record<string, unknown>),
+          series: seriesPayload.length ? seriesPayload : (importedPos as Record<string, unknown>).series,
+        };
       }
       const rawItems = await loadImportedItems();
       const items = rawItems.filter((r) => r.active !== false).map(mapImportedItem);
@@ -2017,6 +2065,7 @@ export async function handleLocalApi(
       const categories = [...catSet.entries()].map(([name, id]) => ({ id, name }));
       return {
         categories: categories.length ? categories : [{ id: 1, name: "General" }],
+        series: seriesPayload,
         items: items.map((i) => ({
           id: i.id,
           description: i.description,
@@ -2035,8 +2084,10 @@ export async function handleLocalApi(
 
     const categories = await prisma.category.findMany();
     const items = await prisma.item.findMany({ where: { active: true } });
+    const seriesRows = await prisma.series.findMany();
     return {
       categories: categories.map((c) => ({ id: c.id, name: c.name })),
+      series: seriesRows.map((s) => ({ id: s.id, number: s.number, document_type_id: s.documentTypeId })),
       items: items.map((i) => ({
         id: i.id,
         description: i.description,
@@ -2054,50 +2105,8 @@ export async function handleLocalApi(
   }
 
   if (method === "POST" && path === "pos/sale") {
-    const p = body as Record<string, unknown>;
-    const cart = (p.items as Record<string, unknown>[]) || [];
-    const {
-      ensurePosInfrastructure,
-      resolvePosCustomerId,
-      resolvePosItemId,
-    } = await import("@/lib/pos-infrastructure");
-
-    const { user, establishment, series } = await ensurePosInfrastructure();
-    const customerId = await resolvePosCustomerId(p.customer_id);
-
-    const resolvedCart = await Promise.all(
-      cart.map(async (it) => ({
-        ...it,
-        item_id: await resolvePosItemId(it.id ?? it.item_id),
-      }))
-    ) as Record<string, unknown>[];
-
-    return handleLocalApi(
-      "POST",
-      ["documents"],
-      searchParams,
-      {
-        document_type_id: "03",
-        series_id: series.id,
-        customer_id: customerId,
-        seller_id: user.id,
-        establishment_id: establishment.id,
-        date_of_issue: formatDate(new Date()),
-        date_of_due: formatDate(new Date()),
-        currency_type_id: String(p.currency_type_id || "PEN"),
-        exchange_rate: Number(p.exchange_rate || 3.396),
-        operation_type_id: "0101",
-        plate: p.plate ? String(p.plate) : undefined,
-        items: resolvedCart.map((it) => ({
-          item_id: it.item_id,
-          description: it.description,
-          unit_type_id: it.unit_type_id || "NIU",
-          quantity: it.quantity || 1,
-          unit_value: Number(it.sale_unit_price || 0) / 1.18,
-          unit_price: it.sale_unit_price,
-        })),
-      }
-    );
+    const { processPosCheckout } = await import("@/lib/pos-checkout");
+    return processPosCheckout((body || {}) as Record<string, unknown>);
   }
 
   const emptyModules = [

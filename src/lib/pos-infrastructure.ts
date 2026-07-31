@@ -73,8 +73,29 @@ export async function ensurePosInfrastructure() {
   return { company, establishment, user, customer, series };
 }
 
-export async function resolvePosCustomerId(customerId?: unknown): Promise<number> {
+export async function resolvePosCustomerId(
+  customerId?: unknown,
+  customerNumber?: string | null,
+  customerName?: string | null
+): Promise<number> {
   await ensurePosInfrastructure();
+
+  if (customerNumber) {
+    const num = String(customerNumber).trim();
+    const byNum = await prisma.customer.findFirst({ where: { number: num } });
+    if (byNum) return byNum.id;
+
+    if (customerName && num !== "99999999") {
+      const created = await prisma.customer.create({
+        data: {
+          name: String(customerName).trim(),
+          number: num,
+          identityDocumentTypeId: num.length === 11 ? "6" : "1",
+        },
+      });
+      return created.id;
+    }
+  }
 
   if (customerId != null && customerId !== "") {
     const id = Number(customerId);
