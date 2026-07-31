@@ -70,15 +70,21 @@ async function ensureBaseStructure() {
   }
 
   const user = await prisma.user.findUnique({ where: { email: adminEmail } });
+  const hash = await bcrypt.hash(adminPassword, 10);
   if (!user) {
     await prisma.user.create({
       data: {
         name: adminName,
         email: adminEmail,
-        password: await bcrypt.hash(adminPassword, 10),
+        password: hash,
         type: "admin",
         establishmentId: establishment.id,
       },
+    });
+  } else {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { email: adminEmail, password: hash, name: adminName, type: "admin" },
     });
   }
 

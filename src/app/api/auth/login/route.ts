@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { localLogin } from "@/lib/api/local/router";
+import { localLogin } from "@/lib/auth/admin-user";
 import { isLocalMode } from "@/lib/db/prisma";
 import { remoteLogin } from "@/lib/api/remote";
 import { clearSession, setSession } from "@/lib/auth/session";

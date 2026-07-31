@@ -9,6 +9,7 @@ import {
   readImportedJson,
 } from "@/lib/imported-data";
 import { handleReportRequest } from "@/lib/api/local/reports-handler";
+import { localLogin } from "@/lib/auth/admin-user";
 import { ALL_PERMISSION_KEYS } from "@/lib/permissions";
 
 function parseJsonSetting(value: string) {
@@ -385,23 +386,7 @@ async function createJournalForSale(
   });
 }
 
-export async function localLogin(email: string, password: string) {
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: { establishment: { include: { company: true } } },
-  });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    throw new Error("Credenciales inválidas");
-  }
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    type: user.type,
-    establishment_id: user.establishmentId,
-    company: user.establishment.company,
-  };
-}
+export { localLogin } from "@/lib/auth/admin-user";
 
 export async function handleLocalApi(
   method: string,
