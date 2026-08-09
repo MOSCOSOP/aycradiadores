@@ -26,7 +26,7 @@ export function ExtractedShellPage({ pathname }: ExtractedShellPageProps) {
 
   return (
     <div className="flex h-[calc(100vh-56px)] flex-col">
-      <div className="border-b bg-white px-4 py-2 md:hidden">
+      <div className="pos-panel border-b px-4 py-2 md:hidden">
         <PageHeader title={title} subtitle="Vista clonada del sistema original" />
       </div>
       <iframe

@@ -250,7 +250,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
   color: var(--foreground);
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--input-radius);
   outline: none;
@@ -325,8 +325,8 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.5rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--muted);
-  background: #fff;
+  color: var(--foreground);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--input-radius);
   cursor: pointer;
@@ -334,6 +334,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .ify-btn-ghost:hover {
   background: var(--border-light);
+  color: var(--foreground);
 }
 
 .ify-card {
@@ -355,7 +356,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.75rem;
   color: var(--muted);
   text-align: left;
-  background: #f4f6f8;
+  background: var(--border-light);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
@@ -367,7 +368,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .ify-table tbody tr:hover {
-  background: #fafbfc;
+  background: var(--nav-active-bg);
+}
+
+.ify-table tbody tr:hover td {
+  color: var(--foreground);
 }
 
 .ify-link {
@@ -532,8 +537,64 @@ html.ify-dark .ify-table td {
 
 html.ify-dark .ify-btn-outline {
   background: var(--card);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+html.ify-dark .ify-btn-outline:hover {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+html.ify-dark .ify-btn-ghost {
+  background: var(--card);
   color: var(--foreground);
   border-color: var(--border);
+}
+
+html.ify-dark .ify-btn-ghost:hover {
+  background: var(--border-light);
+  color: var(--foreground);
+}
+
+html.ify-dark .ify-table tbody tr:hover {
+  background: var(--nav-active-bg);
+}
+
+html.ify-dark .ify-table tbody tr:hover td {
+  color: var(--foreground);
+}
+
+html.ify-dark option {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+html.ify-dark a:not(.ify-btn-primary):not(.ify-menu-link) {
+  color: var(--primary);
+}
+
+html.ify-dark .pos-cat-btn:hover,
+html.ify-dark .pos-page-btn:hover {
+  background: var(--nav-active-bg);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+html.ify-dark .pos-cat-btn.active,
+html.ify-dark .pos-page-btn.active {
+  color: #fff;
+}
+
+html.ify-dark .pos-icon-btn {
+  background: var(--primary);
+  color: #fff;
+}
+
+html.ify-dark .pos-icon-btn:hover {
+  background: var(--primary-darker);
+  color: #fff;
 }
 
 html.ify-dark .ify-nav-user-menu {
@@ -708,6 +769,114 @@ html.ify-dark .pos-checkout-summary span {
 
 html.ify-dark .pos-checkout-summary .font-semibold {
   color: var(--primary);
+}
+
+/* ── POS carrito lateral (estilo original) ── */
+.pos-cart-sidebar {
+  min-height: 0;
+}
+
+.pos-cart-line {
+  color: var(--foreground);
+}
+
+.pos-cart-line p,
+.pos-cart-line span {
+  color: inherit;
+}
+
+.pos-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--input-radius);
+  cursor: pointer;
+}
+
+.pos-icon-btn:hover {
+  background: var(--primary-darker);
+}
+
+.pos-icon-btn.danger {
+  background: #dc3545;
+}
+
+.pos-icon-btn.danger:hover {
+  background: #b02a37;
+}
+
+.pos-pay-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(180deg, #2ba3eb 0%, var(--primary) 100%);
+  border: none;
+  border-radius: var(--input-radius);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(36, 147, 216, 0.35);
+}
+
+.pos-pay-main:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-darker) 100%);
+}
+
+.pos-pay-main:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pos-credit-btn {
+  padding: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: transparent;
+  border: 1px solid var(--primary);
+  border-radius: var(--input-radius);
+  cursor: pointer;
+}
+
+.pos-credit-btn:hover:not(:disabled) {
+  color: #fff;
+  background: var(--primary);
+}
+
+.pos-credit-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pos-cart-qty-btn {
+  min-width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pos-cart-qty-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--nav-active-bg);
 }
 
 /* Comprobante impreso siempre fondo blanco */

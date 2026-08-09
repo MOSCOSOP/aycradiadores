@@ -130,17 +130,19 @@ export function CreateDispatchForm() {
         <div className="relative mb-3">
           <input className="ify-input" placeholder="Buscar producto..." value={search} onChange={(e) => setSearch(e.target.value)} />
           {results.length > 0 && (
-            <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded border bg-white shadow-lg">
+            <ul className="ify-autocomplete-list absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded shadow-lg">
               {results.map((p) => (
-                <button key={String(p.id)} type="button" className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                  onClick={() => {
-                    setItems((prev) => [...prev, { id: Date.now(), description: String(p.description), quantity: 1, unit_type_id: String(p.unit_type_id || "NIU") }]);
-                    setSearch(""); setResults([]);
-                  }}>
-                  {String(p.description)}
-                </button>
+                <li key={String(p.id)}>
+                  <button type="button" className="ify-autocomplete-item"
+                    onClick={() => {
+                      setItems((prev) => [...prev, { id: Date.now(), description: String(p.description), quantity: 1, unit_type_id: String(p.unit_type_id || "NIU") }]);
+                      setSearch(""); setResults([]);
+                    }}>
+                    {String(p.description)}
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
         <div className="flex gap-2">

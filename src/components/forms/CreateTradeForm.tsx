@@ -151,9 +151,9 @@ export function CreateTradeForm({
           <input className="ify-input" placeholder="Buscar producto..." value={productSearch}
             onChange={(e) => setProductSearch(e.target.value)} />
           {productResults.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full rounded border bg-white shadow-lg">
+            <div className="ify-autocomplete-list absolute z-10 mt-1 w-full rounded shadow-lg">
               {productResults.map((p) => (
-                <button key={String(p.id)} type="button" className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                <button key={String(p.id)} type="button" className="ify-autocomplete-item"
                   onClick={() => addProduct(p)}>
                   {String(p.description)} — S/ {Number(p.sale_unit_price).toFixed(2)}
                 </button>

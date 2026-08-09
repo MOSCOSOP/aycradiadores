@@ -8,6 +8,7 @@ import { PosCheckoutModal } from "@/components/pos/PosCheckoutModal";
 import { PosSuccessModal } from "@/components/pos/PosSuccessModal";
 import type { ReceiptData } from "@/components/documents/DocumentPrintTemplate";
 import { mergeCategoriesList } from "@/lib/default-categories";
+import { splitIgv } from "@/lib/tax";
 import { api } from "@/lib/api/client";
 
 type CartItem = {
@@ -157,6 +158,7 @@ export function PosView() {
   const rate = Number(exchangeRate) || 1;
   const totalPen = cart.reduce((s, i) => s + i.quantity * i.sale_unit_price, 0);
   const displayTotal = currencyPen ? totalPen : totalPen / rate;
+  const { taxed, igv } = useMemo(() => splitIgv(totalPen), [totalPen]);
 
   const confirmCheckout = async (extra: Record<string, unknown>) => {
     if (cart.length === 0) return;
@@ -201,49 +203,15 @@ export function PosView() {
   return (
     <div className="pos-shell flex h-[calc(100dvh-52px)] flex-col">
       <div className="pos-panel flex flex-wrap items-center gap-3 border-b px-4 py-2">
-        <label className="flex items-center gap-2 text-xs">
+        <label className="flex items-center gap-2 text-xs text-[var(--foreground)]">
           <input type="checkbox" checked={barcodeMode} onChange={(e) => setBarcodeMode(e.target.checked)} />
           Buscar con escáner de código de barra
         </label>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1 text-xs">
-            T/C
-            <input className="ify-input w-20 py-1 text-xs" value={exchangeRate} onChange={(e) => setExchangeRate(e.target.value)} />
-          </label>
-          <span className="text-xs font-semibold text-[var(--primary)]">ADMINISTRADOR</span>
-        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="pos-panel border-b px-4 py-3">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <div className="relative min-w-[200px] flex-1">
-                <select
-                  className="ify-select w-full text-xs"
-                  value={selectedCustomerNumber}
-                  onChange={(e) => setSelectedCustomerNumber(e.target.value)}
-                >
-                  <option value={DEFAULT_CUSTOMER_NUMBER}>99999999 - Clientes - Varios</option>
-                  {customers
-                    .filter((c) => String(c.number) !== DEFAULT_CUSTOMER_NUMBER)
-                    .map((c) => (
-                      <option key={String(c.number)} value={String(c.number)}>
-                        {String(c.number)} - {String(c.name)}
-                      </option>
-                    ))}
-                </select>
-              </div>
-              <button type="button" className="ify-btn-primary px-2 py-1 text-xs" onClick={() => setCustomerModal(true)}>
-                <i className="bi bi-plus-lg" />
-              </button>
-              <input
-                className="ify-input max-w-[140px] text-xs uppercase"
-                placeholder="N° placa"
-                value={plate}
-                onChange={(e) => setPlate(e.target.value.toUpperCase())}
-              />
-            </div>
             <div className="mb-2 flex gap-2">
               <input
                 className="ify-input flex-1 text-sm"
@@ -252,9 +220,6 @@ export function PosView() {
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleSearchKey}
               />
-              <button type="button" className="ify-btn-primary px-4" onClick={() => cart.length && setCheckoutMode("pay")} disabled={!cart.length}>
-                Pagar S/ {displayTotal.toFixed(2)}
-              </button>
             </div>
             <div className="flex flex-wrap gap-1">
               <button type="button" className={`pos-cat-btn rounded px-2 py-1 text-[11px] ${!categoryId ? "active" : ""}`} onClick={() => setCategoryId(null)}>Todos</button>
@@ -296,35 +261,109 @@ export function PosView() {
           </div>
         </div>
 
-        <div className="pos-panel flex w-full flex-col border-t lg:w-[300px] lg:border-l lg:border-t-0">
-          <div className="grid grid-cols-2 gap-1 p-2">
-            <button type="button" className="bg-[var(--primary)] py-3 text-xs font-bold text-white" disabled={!cart.length} onClick={() => setCheckoutMode("pay")}>PAGAR</button>
-            <button type="button" className="bg-[#2563eb] py-3 text-xs font-bold text-white" disabled={!cart.length} onClick={() => setCheckoutMode("credit")}>CRÉDITO</button>
+        <div className="pos-cart-sidebar pos-panel flex w-full min-h-0 flex-col border-t lg:w-[340px] lg:shrink-0 lg:border-l lg:border-t-0">
+          <div className="flex shrink-0 items-center gap-2 border-b border-[var(--border)] px-3 py-2">
+            <span className="text-xs font-bold">T/C</span>
+            <input
+              className="ify-input w-16 py-1 text-center text-xs"
+              value={exchangeRate}
+              onChange={(e) => setExchangeRate(e.target.value)}
+            />
+            <span className="ml-auto text-xs font-bold uppercase text-[var(--primary)]">Administrador</span>
           </div>
-          <div className="flex-1 overflow-auto p-3">
+
+          <div className="flex shrink-0 items-center gap-1 border-b border-[var(--border)] p-2">
+            <select
+              className="ify-select min-w-0 flex-1 text-xs"
+              value={selectedCustomerNumber}
+              onChange={(e) => setSelectedCustomerNumber(e.target.value)}
+            >
+              <option value={DEFAULT_CUSTOMER_NUMBER}>99999999 - Clientes - Varios</option>
+              {customers
+                .filter((c) => String(c.number) !== DEFAULT_CUSTOMER_NUMBER)
+                .map((c) => (
+                  <option key={String(c.number)} value={String(c.number)}>
+                    {String(c.number)} - {String(c.name)}
+                  </option>
+                ))}
+            </select>
+            <button type="button" className="pos-icon-btn" title="Nuevo cliente" onClick={() => setCustomerModal(true)}>
+              <i className="bi bi-plus-lg" />
+            </button>
+            <button type="button" className="pos-icon-btn danger" title="Vaciar carrito" disabled={!cart.length} onClick={() => setCart([])}>
+              <i className="bi bi-trash" />
+            </button>
+            <button
+              type="button"
+              className="pos-icon-btn"
+              title={currencyPen ? "Cambiar a USD" : "Cambiar a PEN"}
+              onClick={() => setCurrencyPen((v) => !v)}
+            >
+              {currencyPen ? "S/" : "$"}
+            </button>
+          </div>
+
+          <input
+            className="ify-input mx-2 mt-2 max-w-[calc(100%-1rem)] text-xs uppercase"
+            placeholder="N° placa"
+            value={plate}
+            onChange={(e) => setPlate(e.target.value.toUpperCase())}
+          />
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
             {cart.length === 0 ? (
-              <p className="py-8 text-center text-sm text-[var(--muted)]">Carrito vacío</p>
+              <p className="py-10 text-center text-sm text-[var(--muted)]">Carrito vacío — agregue productos</p>
             ) : (
               cart.map((c) => (
-                <div key={c.id} className="pos-cart-item mb-2 rounded p-2 text-xs">
-                  <div className="flex justify-between gap-2">
-                    <span className="font-semibold">{c.description}</span>
-                    <button type="button" className="text-red-400" onClick={() => setCart((p) => p.filter((x) => x.id !== c.id))}><i className="bi bi-trash" /></button>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <button type="button" className="pos-page-btn rounded px-1.5" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: Math.max(1, x.quantity - 1) } : x)))}>-</button>
-                      <span>{c.quantity}</span>
-                      <button type="button" className="pos-page-btn rounded px-1.5" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: x.quantity + 1 } : x)))}>+</button>
+                <div key={c.id} className="pos-cart-line border-b border-[var(--border)] py-2">
+                  <p className="text-[11px] font-bold leading-snug">{c.description}</p>
+                  <div className="mt-1.5 grid grid-cols-[2.5rem_1fr_3.5rem_3.5rem] items-center gap-1 text-[11px]">
+                    <span className="text-[var(--muted)]">{c.unit_type_id || "UND"}</span>
+                    <div className="flex items-center justify-center gap-1">
+                      <button type="button" className="pos-cart-qty-btn" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: Math.max(1, x.quantity - 1) } : x)))}>-</button>
+                      <span className="min-w-[1.25rem] text-center font-bold">{c.quantity}</span>
+                      <button type="button" className="pos-cart-qty-btn" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: x.quantity + 1 } : x)))}>+</button>
                     </div>
-                    <strong className="text-[var(--primary)]">S/ {(c.quantity * c.sale_unit_price).toFixed(2)}</strong>
+                    <span className="text-right text-[var(--primary)]">{c.sale_unit_price.toFixed(2)}</span>
+                    <span className="text-right font-bold text-[var(--primary)]">{(c.quantity * c.sale_unit_price).toFixed(2)}</span>
                   </div>
                 </div>
               ))
             )}
           </div>
-          <div className="border-t p-3 text-center text-lg font-bold text-[var(--primary)]">
-            TOTAL S/ {displayTotal.toFixed(2)}
+
+          <div className="shrink-0 space-y-1 border-t border-[var(--border)] px-3 py-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-[var(--muted)]">OP. GRAVADAS</span>
+              <span className="font-semibold text-[var(--primary)]">S/ {taxed.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--muted)]">IGV 18%</span>
+              <span className="font-semibold text-[var(--primary)]">S/ {igv.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between pt-1 text-sm font-bold">
+              <span>TOTAL</span>
+              <span className="text-[var(--primary)]">S/ {displayTotal.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div className="shrink-0 space-y-2 border-t border-[var(--border)] p-3">
+            <button
+              type="button"
+              className="pos-pay-main"
+              disabled={!cart.length}
+              onClick={() => setCheckoutMode("pay")}
+            >
+              PAGAR S/ {displayTotal.toFixed(2)} →
+            </button>
+            <button
+              type="button"
+              className="pos-credit-btn w-full"
+              disabled={!cart.length}
+              onClick={() => setCheckoutMode("credit")}
+            >
+              CRÉDITO
+            </button>
           </div>
         </div>
       </div>
