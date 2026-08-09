@@ -548,6 +548,174 @@ html.ify-nav-locked.ify-dark .ify-nav {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
 }
 
+/* ── Superficies reutilizables (claro / oscuro) ── */
+.ify-surface {
+  background: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.ify-surface-muted {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.ify-modal-panel {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.ify-autocomplete-list {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.ify-autocomplete-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.ify-autocomplete-item:hover,
+.ify-autocomplete-item:focus {
+  background: var(--nav-active-bg);
+  color: var(--primary);
+}
+
+html.ify-dark .ify-autocomplete-list {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+/* ── POS (punto de venta) ── */
+.pos-shell {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.pos-panel {
+  background: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.pos-product-card {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.pos-product-img {
+  background: var(--border-light);
+}
+
+.pos-cart-item {
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.pos-cart-item strong,
+.pos-cart-item .font-semibold {
+  color: var(--foreground);
+}
+
+.pos-cat-btn {
+  background: var(--border-light);
+  color: var(--foreground);
+}
+
+.pos-cat-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.pos-page-btn {
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  background: var(--card);
+}
+
+.pos-page-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.pos-checkout-overlay {
+  z-index: 250;
+}
+
+.pos-checkout-shell {
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.pos-checkout-summary {
+  background: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.pos-checkout-pay {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.pos-pay-chip {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.pos-pay-chip.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--nav-active-bg);
+}
+
+.pos-doc-tab {
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  background: var(--card);
+}
+
+.pos-doc-tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+html.ify-dark .pos-panel,
+html.ify-dark .pos-checkout-summary,
+html.ify-dark .pos-checkout-pay {
+  border-color: var(--border);
+}
+
+html.ify-dark .pos-cart-item span,
+html.ify-dark .pos-checkout-summary span {
+  color: var(--foreground);
+}
+
+html.ify-dark .pos-checkout-summary .font-semibold {
+  color: var(--primary);
+}
+
+/* Comprobante impreso siempre fondo blanco */
+.doc-print-sheet {
+  background: #fff !important;
+  color: #111 !important;
+}
+
 /* ── Dashboard Acorn ── */
 .dash-page {
   padding: 1.25rem 1.5rem 2rem;

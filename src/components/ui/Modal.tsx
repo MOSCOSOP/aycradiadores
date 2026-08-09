@@ -24,7 +24,7 @@ export function Modal({ open, title, onClose, children, footer, size = "md" }: M
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Cerrar" />
-      <div className={`relative z-10 w-full rounded-lg bg-white shadow-xl ${size === "xl" ? "max-w-4xl" : size === "lg" ? "max-w-2xl" : "max-w-lg"}`}>
+      <div className={`relative z-10 w-full rounded-lg ify-modal-panel shadow-xl ${size === "xl" ? "max-w-4xl" : size === "lg" ? "max-w-2xl" : "max-w-lg"}`}>
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h2 className="font-bold">{title}</h2>
           <button type="button" onClick={onClose} className="text-[var(--muted)] hover:text-[var(--foreground)]">

@@ -30,7 +30,7 @@ export function PosSuccessModal({ receipt, onNewSale }: Props) {
   const handlePrint = () => printDocument("doc-print-area", printSize);
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#eef2f6]">
+    <div className="pos-checkout-overlay fixed inset-0 z-[250] flex flex-col pos-shell">
       <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--primary)] px-4 py-3 text-white">
         <div className="flex items-center gap-2">
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-xs">✓</span>
@@ -39,7 +39,7 @@ export function PosSuccessModal({ receipt, onNewSale }: Props) {
         <div className="text-xs opacity-90">Estado: No enviado a Sunat · Envío automático: Activado</div>
       </div>
 
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-white px-4 py-3 shadow-sm">
+      <div className="pos-panel sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b px-4 py-3 shadow-sm">
         <button type="button" className="ify-btn-primary px-5 py-2 text-sm font-bold" onClick={handlePrint}>
           <i className="bi bi-printer" /> Imprimir
         </button>
@@ -66,7 +66,7 @@ export function PosSuccessModal({ receipt, onNewSale }: Props) {
         <DocumentPrintTemplate receipt={receipt} scale={printSize === "A5" ? "a5" : "normal"} />
       </div>
 
-      <div className="shrink-0 border-t bg-white p-4">
+      <div className="pos-panel shrink-0 border-t p-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <input
             className="ify-input max-w-xs"

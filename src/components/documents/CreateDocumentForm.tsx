@@ -410,12 +410,12 @@ export function CreateDocumentForm() {
               </button>
             </div>
             {customerResults.length > 0 && (
-              <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-[var(--border)] bg-white shadow-lg">
+              <ul className="ify-autocomplete-list absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md shadow-lg">
                 {customerResults.map((c) => (
                   <li key={String(c.id)}>
                     <button
                       type="button"
-                      className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--border-light)]"
+                      className="ify-autocomplete-item"
                       onClick={() => {
                         setSelectedCustomer(c);
                         setClientSearch("");
@@ -441,12 +441,12 @@ export function CreateDocumentForm() {
                 onChange={(e) => setProductSearch(e.target.value)}
               />
               {productResults.length > 0 && (
-                <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-[var(--border)] bg-white shadow-lg">
+                <ul className="ify-autocomplete-list absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md shadow-lg">
                   {productResults.map((p) => (
                     <li key={String(p.id)}>
                       <button
                         type="button"
-                        className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--border-light)]"
+                        className="ify-autocomplete-item"
                         onClick={() => addProductFromApi(p)}
                       >
                         {String(p.description)} — S/ {Number(p.sale_unit_price ?? 0).toFixed(2)}

@@ -199,8 +199,8 @@ export function PosView() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-52px)] flex-col bg-[#f4f6f8]">
-      <div className="flex flex-wrap items-center gap-3 border-b bg-white px-4 py-2">
+    <div className="pos-shell flex h-[calc(100dvh-52px)] flex-col">
+      <div className="pos-panel flex flex-wrap items-center gap-3 border-b px-4 py-2">
         <label className="flex items-center gap-2 text-xs">
           <input type="checkbox" checked={barcodeMode} onChange={(e) => setBarcodeMode(e.target.checked)} />
           Buscar con escáner de código de barra
@@ -216,7 +216,7 @@ export function PosView() {
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="border-b bg-white px-4 py-3">
+          <div className="pos-panel border-b px-4 py-3">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <div className="relative min-w-[200px] flex-1">
                 <select
@@ -257,9 +257,9 @@ export function PosView() {
               </button>
             </div>
             <div className="flex flex-wrap gap-1">
-              <button type="button" className={`rounded px-2 py-1 text-[11px] ${!categoryId ? "bg-[var(--primary)] text-white" : "bg-[var(--border-light)]"}`} onClick={() => setCategoryId(null)}>Todos</button>
+              <button type="button" className={`pos-cat-btn rounded px-2 py-1 text-[11px] ${!categoryId ? "active" : ""}`} onClick={() => setCategoryId(null)}>Todos</button>
               {categories.map((c) => (
-                <button key={`${c.id}-${c.name}`} type="button" className={`rounded px-2 py-1 text-[11px] ${categoryId === c.id ? "bg-[var(--primary)] text-white" : "bg-[var(--border-light)]"}`} onClick={() => setCategoryId(c.id)}>{c.name}</button>
+                <button key={`${c.id}-${c.name}`} type="button" className={`pos-cat-btn rounded px-2 py-1 text-[11px] ${categoryId === c.id ? "active" : ""}`} onClick={() => setCategoryId(c.id)}>{c.name}</button>
               ))}
             </div>
           </div>
@@ -267,8 +267,8 @@ export function PosView() {
           <div className="flex-1 overflow-auto p-3">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {pageItems.map((item) => (
-                <div key={String(item.id)} className="ify-card overflow-hidden bg-white">
-                  <div className="relative flex h-24 items-center justify-center bg-[#fafafa] p-2">
+                <div key={String(item.id)} className="pos-product-card overflow-hidden rounded">
+                  <div className="pos-product-img relative flex h-24 items-center justify-center p-2">
                     <Image src={productImage(String(item.image_url_small || item.image_url || ""))} alt={String(item.description)} width={80} height={80} className="max-h-20 w-auto object-contain" unoptimized />
                   </div>
                   <div className="border-t p-2">
@@ -283,20 +283,20 @@ export function PosView() {
             </div>
           </div>
 
-          <div className="border-t bg-white px-4 py-2 text-center">
+          <div className="pos-panel border-t px-4 py-2 text-center">
             <div className="inline-flex items-center gap-2 text-xs">
-              <span>Total {filteredItems.length}</span>
-              <button type="button" className="rounded border px-2 py-1 disabled:opacity-40" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>‹</button>
+              <span className="text-[var(--muted)]">Total {filteredItems.length}</span>
+              <button type="button" className="pos-page-btn rounded px-2 py-1 disabled:opacity-40" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>‹</button>
               {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map((p) => (
-                <button key={p} type="button" className={`rounded px-2 py-1 ${page === p ? "bg-[var(--primary)] text-white" : "border"}`} onClick={() => setPage(p)}>{p}</button>
+                <button key={p} type="button" className={`pos-page-btn rounded px-2 py-1 ${page === p ? "active" : ""}`} onClick={() => setPage(p)}>{p}</button>
               ))}
-              {totalPages > 7 ? <span>...</span> : null}
-              <button type="button" className="rounded border px-2 py-1 disabled:opacity-40" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>›</button>
+              {totalPages > 7 ? <span className="text-[var(--muted)]">...</span> : null}
+              <button type="button" className="pos-page-btn rounded px-2 py-1 disabled:opacity-40" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>›</button>
             </div>
           </div>
         </div>
 
-        <div className="flex w-full flex-col border-t border-[var(--border)] bg-white lg:w-[300px] lg:border-l lg:border-t-0">
+        <div className="pos-panel flex w-full flex-col border-t lg:w-[300px] lg:border-l lg:border-t-0">
           <div className="grid grid-cols-2 gap-1 p-2">
             <button type="button" className="bg-[var(--primary)] py-3 text-xs font-bold text-white" disabled={!cart.length} onClick={() => setCheckoutMode("pay")}>PAGAR</button>
             <button type="button" className="bg-[#2563eb] py-3 text-xs font-bold text-white" disabled={!cart.length} onClick={() => setCheckoutMode("credit")}>CRÉDITO</button>
@@ -306,18 +306,18 @@ export function PosView() {
               <p className="py-8 text-center text-sm text-[var(--muted)]">Carrito vacío</p>
             ) : (
               cart.map((c) => (
-                <div key={c.id} className="mb-2 rounded border p-2 text-xs">
+                <div key={c.id} className="pos-cart-item mb-2 rounded p-2 text-xs">
                   <div className="flex justify-between gap-2">
                     <span className="font-semibold">{c.description}</span>
-                    <button type="button" className="text-red-500" onClick={() => setCart((p) => p.filter((x) => x.id !== c.id))}><i className="bi bi-trash" /></button>
+                    <button type="button" className="text-red-400" onClick={() => setCart((p) => p.filter((x) => x.id !== c.id))}><i className="bi bi-trash" /></button>
                   </div>
                   <div className="mt-1 flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <button type="button" className="rounded border px-1.5" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: Math.max(1, x.quantity - 1) } : x)))}>-</button>
+                      <button type="button" className="pos-page-btn rounded px-1.5" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: Math.max(1, x.quantity - 1) } : x)))}>-</button>
                       <span>{c.quantity}</span>
-                      <button type="button" className="rounded border px-1.5" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: x.quantity + 1 } : x)))}>+</button>
+                      <button type="button" className="pos-page-btn rounded px-1.5" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: x.quantity + 1 } : x)))}>+</button>
                     </div>
-                    <strong>S/ {(c.quantity * c.sale_unit_price).toFixed(2)}</strong>
+                    <strong className="text-[var(--primary)]">S/ {(c.quantity * c.sale_unit_price).toFixed(2)}</strong>
                   </div>
                 </div>
               ))
