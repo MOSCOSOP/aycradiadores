@@ -76,7 +76,7 @@ export function CreateDispatchForm() {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Nueva guía de remisión remitente" actions={
         <button type="button" className="ify-btn-outline" onClick={() => router.back()}>← Volver</button>
       } />

@@ -39,7 +39,7 @@ export function DispatchDetail() {
   if (!doc) return <div className="p-5">Guía no encontrada</div>;
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title={`Guía ${doc.number}`}
         subtitle="Guía de remisión remitente"

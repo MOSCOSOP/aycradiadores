@@ -58,7 +58,7 @@ export function SettingDetailPage({ title, settingKey, columns }: SettingDetailP
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title={title}
         actions={

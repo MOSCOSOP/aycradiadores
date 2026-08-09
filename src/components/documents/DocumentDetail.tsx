@@ -62,7 +62,7 @@ export function DocumentDetail() {
   if (!doc) return <div className="p-5">Comprobante no encontrado</div>;
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title={`Comprobante ${doc.number}`}
         subtitle={String(doc.document_type_description)}

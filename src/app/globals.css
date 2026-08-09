@@ -17,6 +17,10 @@
   --nav-bg: #ffffff;
   --nav-active-bg: rgba(36, 147, 216, 0.1);
   --nav-active-border: #2493d8;
+  --radius-lg: 10px;
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --transition-base: 0.18s ease;
 }
 
 @theme inline {
@@ -284,16 +288,28 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.9375rem;
   font-weight: 700;
   color: #fff;
-  background: var(--primary);
+  background: linear-gradient(180deg, #2ba3eb 0%, var(--primary) 100%);
   border: 1px solid var(--primary);
   border-radius: var(--input-radius);
   cursor: pointer;
-  transition: background 0.15s ease;
+  box-shadow: 0 2px 8px rgba(36, 147, 216, 0.28);
+  transition: all var(--transition-base);
 }
 
 .ify-btn-primary:hover {
-  background: var(--primary-darker);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-darker) 100%);
   border-color: var(--primary-darker);
+  box-shadow: 0 4px 12px rgba(36, 147, 216, 0.35);
+}
+
+.ify-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.ify-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .ify-btn-outline {
@@ -340,8 +356,17 @@ h1, h2, h3, h4, h5, h6 {
 .ify-card {
   background: var(--card);
   border: 1px solid var(--border-light);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.ify-card.ify-card-flat:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.ify-card:not(.ify-card-flat):hover {
+  box-shadow: var(--shadow-card-hover);
 }
 
 .ify-table {
@@ -387,6 +412,20 @@ h1, h2, h3, h4, h5, h6 {
   text-decoration: underline;
 }
 
+.ify-alert-error {
+  border-radius: var(--input-radius);
+  border: 1px solid rgba(220, 53, 69, 0.35);
+  background: rgba(220, 53, 69, 0.08);
+  color: #c82333;
+  padding: 0.5rem 0.75rem;
+}
+
+html.ify-dark .ify-alert-error {
+  background: rgba(220, 53, 69, 0.15);
+  color: #f5a8b0;
+  border-color: rgba(220, 53, 69, 0.45);
+}
+
 /* Login */
 .auth-bg {
   background: url("/images/fondo-6.png") no-repeat center center fixed;
@@ -395,9 +434,25 @@ h1, h2, h3, h4, h5, h6 {
 
 .bg-card-login {
   background: rgba(255, 255, 255, 0.92);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.5rem;
+  box-shadow: var(--shadow-card-hover);
+}
+
+html.ify-dark .bg-card-login {
+  background: rgba(30, 36, 44, 0.92);
+  border-color: var(--border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+html.ify-dark .auth-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: none;
 }
 
 .filled-input {
@@ -885,9 +940,91 @@ html.ify-dark .pos-checkout-summary .font-semibold {
   color: #111 !important;
 }
 
+/* ── Layout páginas (global) ── */
+.ify-page {
+  padding: 1.25rem 1.5rem 2rem;
+  animation: ify-page-in 0.28s ease;
+}
+
+@keyframes ify-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ify-page-header {
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.ify-page-title {
+  font-family: var(--font-montserrat), Montserrat, sans-serif;
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+
+.ify-page-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.ify-filter-bar {
+  background: var(--card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 0.875rem 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+.ify-filter-bar .ify-label,
+.ify-card .ify-label {
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+}
+
+.ify-table th {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.6875rem;
+}
+
+html.ify-dark .ify-card {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+html.ify-dark .ify-card:not(.ify-card-flat):hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+html.ify-dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.ify-dark ::-webkit-scrollbar-thumb {
+  background: #3d4450;
+  border-radius: 4px;
+}
+
+html.ify-dark ::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
 /* ── Dashboard Acorn ── */
 .dash-page {
   padding: 1.25rem 1.5rem 2rem;
+  animation: ify-page-in 0.28s ease;
 }
 
 .dash-title-row {
@@ -927,17 +1064,18 @@ html.ify-dark .pos-checkout-summary .font-semibold {
 .dash-stat-card {
   background: var(--card);
   border: 1px solid var(--border-light);
-  border-radius: var(--input-radius);
+  border-radius: var(--radius-lg);
   padding: 1.25rem 1rem;
   text-align: center;
   height: 100%;
-  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
   cursor: pointer;
 }
 
 .dash-stat-card:hover {
-  transform: scale(1.03);
-  box-shadow: 0 4px 16px rgba(36, 147, 216, 0.12);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .dash-stat-icon {

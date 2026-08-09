@@ -18,7 +18,7 @@ function useRecords(fetcher: () => Promise<{ data: Record<string, unknown>[] }>)
 
 export function ReportsHub() {
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Reportes" subtitle="Análisis comercial, ventas, compras e inventario" />
       <div className="space-y-6">
         {REPORT_SECTIONS.map((section) => (
@@ -82,7 +82,7 @@ export function DocumentsNotSentList() {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title="Comprobantes no enviados"
         subtitle="Pendientes de envío a SUNAT"
@@ -126,7 +126,7 @@ export function ServicesList() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Servicios" actions={
         <button type="button" className="ify-btn-primary" onClick={() => setModalOpen(true)}><i className="bi bi-plus-lg" /> Nuevo servicio</button>
       } />
@@ -169,7 +169,7 @@ export function DispatchesList() {
   });
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Guías de remisión" actions={
         <Link href="/dispatches/create" className="ify-btn-primary"><i className="bi bi-plus-lg" /> Nueva guía</Link>
       } />
@@ -197,7 +197,7 @@ export function DispatchesList() {
 export function OrderNotesList() {
   const { rows, loading } = useRecords(() => api.orderNotes.records());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Pedidos" actions={
         <Link href="/order-notes/create" className="ify-btn-primary"><i className="bi bi-plus-lg" /> Nuevo pedido</Link>
       } />
@@ -214,7 +214,7 @@ export function OrderNotesList() {
 export function SireSalesList() {
   const { rows, loading } = useRecords(() => api.sire.sales());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="SIRE — Ventas" subtitle="Registro para declaración SUNAT" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "period", label: "Periodo" }, { key: "document_type", label: "Tipo" },
@@ -229,7 +229,7 @@ export function SireSalesList() {
 export function SirePurchasesList() {
   const { rows, loading } = useRecords(() => api.sire.purchases());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="SIRE — Compras" subtitle="Registro para declaración SUNAT" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "period", label: "Periodo" }, { key: "number", label: "Número" },
@@ -244,7 +244,7 @@ export function SirePurchasesList() {
 export function SireAnnexesList() {
   const { rows, loading } = useRecords(() => api.sire.annexes());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="SIRE — Anexos" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "name", label: "Anexo" }, { key: "records", label: "Registros" }, { key: "status", label: "Estado" },
@@ -256,7 +256,7 @@ export function SireAnnexesList() {
 export function AccountingChartList() {
   const { rows, loading } = useRecords(() => api.accounting.chart());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Plan de cuentas" subtitle="PCGE simplificado" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "code", label: "Código" }, { key: "name", label: "Cuenta" }, { key: "type", label: "Tipo" },
@@ -268,7 +268,7 @@ export function AccountingChartList() {
 export function AccountingDailyList() {
   const { rows, loading } = useRecords(() => api.accounting.daily());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Libro diario" subtitle="Asientos generados automáticamente por ventas" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "date", label: "Fecha" }, { key: "reference", label: "Referencia" },
@@ -283,7 +283,7 @@ export function AccountingDailyList() {
 export function AccountingEntriesList() {
   const { rows, loading } = useRecords(() => api.accounting.entries());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Asientos automáticos" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "reference", label: "Referencia" }, { key: "entries", label: "Líneas" }, { key: "type", label: "Tipo" },
@@ -295,7 +295,7 @@ export function AccountingEntriesList() {
 export function FinancesToPayList() {
   const { rows, loading } = useRecords(() => api.finances.toPay());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Letras por pagar" subtitle="Obligaciones con proveedores" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "date", label: "Fecha" }, { key: "supplier", label: "Proveedor" },
@@ -310,7 +310,7 @@ export function FinancesToPayList() {
 export function FinancesToCollectList() {
   const { rows, loading } = useRecords(() => api.finances.toCollect());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Letras por cobrar" subtitle="Cuentas por cobrar a clientes" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "date", label: "Fecha" }, { key: "customer", label: "Cliente" },
@@ -325,7 +325,7 @@ export function FinancesToCollectList() {
 export function FinancesIncomeList() {
   const { rows, loading } = useRecords(() => api.finances.income());
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Ingresos diversos" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "date", label: "Fecha" }, { key: "description", label: "Descripción" },

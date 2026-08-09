@@ -71,7 +71,7 @@ export function SuppliersList() {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title="Proveedores"
         actions={

@@ -210,7 +210,7 @@ export function CreateSaleNoteForm() {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       {/* Encabezado — igual al original */}
       <div className="ify-card mb-3 p-4">
         <div className="flex items-start gap-4">

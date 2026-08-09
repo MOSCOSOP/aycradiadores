@@ -44,7 +44,7 @@ export function RegularizeShippingList() {
   });
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title="CPE por rectificar (envío)"
         subtitle="Comprobantes pendientes de regularización de envío SUNAT"

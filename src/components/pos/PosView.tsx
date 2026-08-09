@@ -49,6 +49,9 @@ export function PosView() {
   const [exchangeRate, setExchangeRate] = useState("3.408");
   const [customers, setCustomers] = useState<Record<string, unknown>[]>([]);
   const [selectedCustomerNumber, setSelectedCustomerNumber] = useState<string>(DEFAULT_CUSTOMER_NUMBER);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [customerRemote, setCustomerRemote] = useState<Record<string, unknown>[]>([]);
   const [customerModal, setCustomerModal] = useState(false);
   const [plate, setPlate] = useState("");
   const [currencyPen, setCurrencyPen] = useState(true);
@@ -58,7 +61,7 @@ export function PosView() {
   const [successReceipt, setSuccessReceipt] = useState<ReceiptData | null>(null);
 
   const reloadCustomers = () =>
-    api.customers.records({ page: 1, limit: 200 }).then((cust) => {
+    api.customers.records({ page: 1, limit: 500 }).then((cust) => {
       const list = cust.data ?? [];
       setCustomers(list);
       return list;
@@ -78,6 +81,52 @@ export function PosView() {
     () => customers.find((c) => String(c.number) === selectedCustomerNumber) ?? null,
     [customers, selectedCustomerNumber]
   );
+
+  const defaultCustomerRow = useMemo(
+    () => ({ number: DEFAULT_CUSTOMER_NUMBER, name: "Clientes - Varios", id: 0 }),
+    []
+  );
+
+  const customerSuggestions = useMemo(() => {
+    const q = customerQuery.trim().toLowerCase();
+    const pool = [
+      defaultCustomerRow,
+      ...customers.filter((c) => String(c.number) !== DEFAULT_CUSTOMER_NUMBER),
+    ];
+    const source = customerRemote.length && q.length >= 2 ? customerRemote : pool;
+    if (!q) return source.slice(0, 10);
+    return source
+      .filter(
+        (c) =>
+          String(c.name ?? "").toLowerCase().includes(q) ||
+          String(c.number ?? "").includes(q)
+      )
+      .slice(0, 12);
+  }, [customers, customerQuery, customerRemote, defaultCustomerRow]);
+
+  useEffect(() => {
+    const q = customerQuery.trim();
+    if (q.length < 2) {
+      setCustomerRemote([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      api.customers.search(q, 15).then((r) => setCustomerRemote(r.data ?? []));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [customerQuery]);
+
+  const selectCustomer = (c: Record<string, unknown>) => {
+    setSelectedCustomerNumber(String(c.number));
+    setCustomerQuery("");
+    setCustomerSearchOpen(false);
+    setCustomerRemote([]);
+  };
+
+  const customerInputDisplay =
+    customerSearchOpen || customerQuery
+      ? customerQuery
+      : `${selectedCustomer?.number ?? DEFAULT_CUSTOMER_NUMBER} - ${selectedCustomer?.name ?? "Clientes - Varios"}`;
 
   const allItems = (data?.items as Record<string, unknown>[]) ?? [];
   const rawCategories = (data?.categories as { id: number; name: string }[]) ?? [];
@@ -272,35 +321,60 @@ export function PosView() {
             <span className="ml-auto text-xs font-bold uppercase text-[var(--primary)]">Administrador</span>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 border-b border-[var(--border)] p-2">
-            <select
-              className="ify-select min-w-0 flex-1 text-xs"
-              value={selectedCustomerNumber}
-              onChange={(e) => setSelectedCustomerNumber(e.target.value)}
-            >
-              <option value={DEFAULT_CUSTOMER_NUMBER}>99999999 - Clientes - Varios</option>
-              {customers
-                .filter((c) => String(c.number) !== DEFAULT_CUSTOMER_NUMBER)
-                .map((c) => (
-                  <option key={String(c.number)} value={String(c.number)}>
-                    {String(c.number)} - {String(c.name)}
-                  </option>
-                ))}
-            </select>
-            <button type="button" className="pos-icon-btn" title="Nuevo cliente" onClick={() => setCustomerModal(true)}>
-              <i className="bi bi-plus-lg" />
-            </button>
-            <button type="button" className="pos-icon-btn danger" title="Vaciar carrito" disabled={!cart.length} onClick={() => setCart([])}>
-              <i className="bi bi-trash" />
-            </button>
-            <button
-              type="button"
-              className="pos-icon-btn"
-              title={currencyPen ? "Cambiar a USD" : "Cambiar a PEN"}
-              onClick={() => setCurrencyPen((v) => !v)}
-            >
-              {currencyPen ? "S/" : "$"}
-            </button>
+          <div className="shrink-0 border-b border-[var(--border)] p-2">
+            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Cliente</label>
+            <div className="flex items-start gap-1">
+              <div className="relative min-w-0 flex-1">
+                <i className="bi bi-search pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                <input
+                  className="ify-input py-1 pl-7 text-xs"
+                  placeholder="Buscar DNI, RUC o nombre..."
+                  value={customerInputDisplay}
+                  onChange={(e) => {
+                    setCustomerQuery(e.target.value);
+                    setCustomerSearchOpen(true);
+                  }}
+                  onFocus={() => setCustomerSearchOpen(true)}
+                  onBlur={() => window.setTimeout(() => setCustomerSearchOpen(false), 180)}
+                />
+                {customerSearchOpen && (customerQuery || customerSuggestions.length > 0) && (
+                  <ul className="ify-autocomplete-list absolute z-30 mt-1 max-h-52 w-full overflow-auto rounded-md shadow-lg">
+                    {customerSuggestions.length === 0 ? (
+                      <li className="px-3 py-2 text-xs text-[var(--muted)]">Sin coincidencias</li>
+                    ) : (
+                      customerSuggestions.map((c) => (
+                        <li key={String(c.number)}>
+                          <button
+                            type="button"
+                            className="ify-autocomplete-item text-xs"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => selectCustomer(c)}
+                          >
+                            <span className="font-semibold text-[var(--primary)]">{String(c.number)}</span>
+                            {" — "}
+                            {String(c.name)}
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                )}
+              </div>
+              <button type="button" className="pos-icon-btn" title="Nuevo cliente" onClick={() => setCustomerModal(true)}>
+                <i className="bi bi-plus-lg" />
+              </button>
+              <button type="button" className="pos-icon-btn danger" title="Vaciar carrito" disabled={!cart.length} onClick={() => setCart([])}>
+                <i className="bi bi-trash" />
+              </button>
+              <button
+                type="button"
+                className="pos-icon-btn"
+                title={currencyPen ? "Cambiar a USD" : "Cambiar a PEN"}
+                onClick={() => setCurrencyPen((v) => !v)}
+              >
+                {currencyPen ? "S/" : "$"}
+              </button>
+            </div>
           </div>
 
           <input
@@ -386,8 +460,10 @@ export function PosView() {
           const savedNumber = String(c.number ?? "").trim();
           const list = await reloadCustomers();
           const match = list.find((x) => String(x.number) === savedNumber);
-          if (savedNumber) setSelectedCustomerNumber(savedNumber);
-          else if (match) setSelectedCustomerNumber(String(match.number));
+          if (savedNumber) {
+            setSelectedCustomerNumber(savedNumber);
+            setCustomerQuery("");
+          } else if (match) setSelectedCustomerNumber(String(match.number));
           setCustomerModal(false);
         }}
       />

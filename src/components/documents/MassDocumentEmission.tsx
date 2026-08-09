@@ -112,7 +112,7 @@ export function MassDocumentEmission() {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title="Emisión masiva de comprobantes"
         subtitle="Genera varias boletas/facturas en un solo proceso"

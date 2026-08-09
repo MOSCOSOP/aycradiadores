@@ -69,7 +69,7 @@ export default function LoginPage() {
           <div className="bg-card-login">
             <form onSubmit={handleSubmit} className="text-end">
               {error && (
-                <div className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-left text-sm text-red-700">
+                <div className="ify-alert-error mb-3 text-left text-sm">
                   {error}
                 </div>
               )}

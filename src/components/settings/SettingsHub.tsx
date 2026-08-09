@@ -6,7 +6,7 @@ import { SETTINGS_SECTIONS } from "@/lib/settings-catalog";
 
 export function SettingsHub() {
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Configuración" subtitle="Parámetros generales del sistema" />
       <div className="space-y-6">
         {SETTINGS_SECTIONS.map((section) => (

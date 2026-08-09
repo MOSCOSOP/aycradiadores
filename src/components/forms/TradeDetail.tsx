@@ -31,7 +31,7 @@ export function TradeDetail({ title, listPath, fetchFn, partyKey = "customer_nam
   if (!data) return <div className="p-5">Registro no encontrado</div>;
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title={`${title} ${data.number}`}
         actions={<Link href={listPath} className="ify-btn-outline">← Volver</Link>}

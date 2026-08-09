@@ -41,7 +41,7 @@ export function DocumentsList() {
   }, []);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-bold">Facturas - Boletas</h1>

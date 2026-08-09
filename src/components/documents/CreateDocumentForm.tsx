@@ -265,7 +265,7 @@ export function CreateDocumentForm() {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       {apiError && (
         <div className="mb-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           API: {apiError}. <a href="/login" className="underline">Inicia sesión</a> primero.

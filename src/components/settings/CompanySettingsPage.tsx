@@ -103,11 +103,11 @@ export function CompanySettingsPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-5 text-[var(--muted)]">Cargando empresa...</div>;
+    return <div className="ify-page text-[var(--muted)]">Cargando empresa...</div>;
   }
 
   return (
-    <div className="p-4 md:p-5 max-w-4xl">
+    <div className="ify-page max-w-4xl">
       <PageHeader
         title="Empresa"
         subtitle="Datos comerciales, SOAP SUNAT y credenciales SIRE"

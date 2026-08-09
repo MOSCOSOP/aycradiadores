@@ -73,7 +73,7 @@ export function ItemsList() {
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title="Productos"
         subtitle={`Catálogo — ${total} registros`}

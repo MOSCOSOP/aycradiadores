@@ -69,7 +69,7 @@ export function UniversalListPage({ pathname }: UniversalListPageProps) {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title={title}
         subtitle={parent ? `${parent} · Módulo local` : "Módulo local — sin 404"}

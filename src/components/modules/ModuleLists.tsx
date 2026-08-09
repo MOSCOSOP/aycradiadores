@@ -38,7 +38,7 @@ export function SaleNotesList() {
   }, []);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title="Notas de Venta"
         actions={
@@ -119,7 +119,7 @@ export function QuotationsList() {
   }, []);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Cotizaciones" actions={
         <Link href="/quotations/create" className="ify-btn-primary"><i className="bi bi-plus-lg" /> Nueva cotización</Link>
       } />
@@ -162,7 +162,7 @@ export function PurchasesList() {
   }, []);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title="Compras"
         actions={
@@ -295,7 +295,7 @@ export function InventoryList() {
   });
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Movimientos de inventario" subtitle="Kardex y stock por almacén" actions={
         <div className="flex flex-wrap gap-2">
           <label className="ify-btn-outline cursor-pointer text-xs">
@@ -356,7 +356,7 @@ export function InventoryValidateList() {
   const totalValue = rows.reduce((s, r) => s + Number(r.value || 0), 0);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Validar inventario" subtitle={`Valor total: S/ ${totalValue.toFixed(2)}`} />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "internal_id", label: "Código" }, { key: "description", label: "Producto" },
@@ -448,7 +448,7 @@ export function CashList() {
   });
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader
         title="CAJAS"
         actions={
@@ -587,7 +587,7 @@ export function CategoriesList() {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Categorías" actions={
         <button type="button" className="ify-btn-primary" onClick={openCreate}><i className="bi bi-plus-lg" /> Nueva</button>
       } />
@@ -636,7 +636,7 @@ export function UsersList() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Usuarios" actions={
         <button type="button" className="ify-btn-primary" onClick={() => { setEditId(null); setInitial(undefined); setModalOpen(true); }}>
           <i className="bi bi-plus-lg" /> Nuevo usuario
@@ -687,7 +687,7 @@ export function EstablishmentsList() {
   }, []);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Locales / Establecimientos" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "code", label: "Código" }, { key: "description", label: "Descripción" },
@@ -718,7 +718,7 @@ export function ExchangeRatesList() {
   };
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Tipo de cambio" />
       <div className="ify-card mb-4 p-4">
         <Field label="Tipo de cambio venta (USD)">
@@ -744,7 +744,7 @@ export function FinancesMovementsList() {
   }, []);
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <PageHeader title="Movimientos financieros" subtitle="Ingresos por comprobantes emitidos" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "date", label: "Fecha" }, { key: "type", label: "Tipo" },

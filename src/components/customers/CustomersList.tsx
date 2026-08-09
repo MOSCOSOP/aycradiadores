@@ -115,7 +115,7 @@ export function CustomersList() {
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="p-4 md:p-5">
+    <div className="ify-page">
       <div className="ify-card mb-3">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
           <div>
