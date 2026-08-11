@@ -803,9 +803,16 @@ export async function handleLocalApi(
     }
 
     const where =
-      value && column === "name" ? { name: { contains: value } }
-      : value && column === "number" ? { number: { contains: value } }
-      : {};
+      value && (column === "search" || column === "name")
+        ? {
+            OR: [
+              { name: { contains: value, mode: "insensitive" as const } },
+              { number: { contains: value } },
+            ],
+          }
+        : value && column === "number"
+          ? { number: { contains: value } }
+          : {};
     const [data, total] = await Promise.all([
       prisma.customer.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { name: "asc" } }),
       prisma.customer.count({ where }),
@@ -915,10 +922,17 @@ export async function handleLocalApi(
     }
 
     const where =
-      value && column === "description" ? { description: { contains: value } }
-      : value && column === "internal_id" ? { internalId: { contains: value } }
-      : value && column === "name" ? { description: { contains: value } }
-      : {};
+      value && (column === "search" || column === "description" || column === "name")
+        ? {
+            OR: [
+              { description: { contains: value, mode: "insensitive" as const } },
+              { internalId: { contains: value, mode: "insensitive" as const } },
+              { barcode: { contains: value, mode: "insensitive" as const } },
+            ],
+          }
+        : value && column === "internal_id"
+          ? { internalId: { contains: value, mode: "insensitive" as const } }
+          : {};
     const total = await prisma.item.count({ where });
     const data = await prisma.item.findMany({
       where,
@@ -1356,8 +1370,31 @@ export async function handleLocalApi(
   if (method === "POST" && path === "inventory/adjust") {
     const p = body as Record<string, unknown>;
     const itemId = Number(p.item_id);
-    const qty = Number(p.quantity || 0);
     const type = String(p.type || "adjust");
+    const modifyKardex = p.modify_kardex !== false;
+
+    if (p.real_stock !== undefined && p.real_stock !== null && p.real_stock !== "") {
+      const current = await prisma.item.findUnique({ where: { id: itemId } });
+      if (!current) throw new Error("Producto no encontrado");
+      const prev = current.stock;
+      const real = Number(p.real_stock);
+      const delta = real - prev;
+      await prisma.item.update({ where: { id: itemId }, data: { stock: real } });
+      if (modifyKardex && delta !== 0) {
+        await prisma.inventoryMovement.create({
+          data: {
+            itemId,
+            type: "adjust",
+            quantity: Math.abs(delta),
+            description: `Ajuste inventario — sistema ${prev} → real ${real}`,
+            reference: String(p.reference || "AJUSTE"),
+          },
+        });
+      }
+      return { success: true };
+    }
+
+    const qty = Number(p.quantity || 0);
     const delta = type === "out" ? -qty : qty;
     await adjustStock(itemId, delta, type, String(p.reference || "AJUSTE"));
     return { success: true };

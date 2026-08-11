@@ -108,6 +108,13 @@ export function filterImportedItems(
   return rows.filter((r) => {
     const mapped = mapImportedItem(r);
     if (column === "internal_id") return String(mapped.internal_id ?? "").toLowerCase().includes(q);
+    if (column === "search") {
+      return (
+        String(mapped.description).toLowerCase().includes(q) ||
+        String(mapped.internal_id ?? "").toLowerCase().includes(q) ||
+        String(mapped.barcode ?? "").toLowerCase().includes(q)
+      );
+    }
     if (column === "name" || column === "description") {
       return String(mapped.description).toLowerCase().includes(q);
     }
@@ -123,6 +130,12 @@ export function filterImportedCustomers(
   if (!value) return rows;
   const q = value.toLowerCase();
   return rows.filter((r) => {
+    if (column === "search") {
+      return (
+        String(r.name ?? "").toLowerCase().includes(q) ||
+        String(r.number ?? "").toLowerCase().includes(q)
+      );
+    }
     if (column === "number") return String(r.number ?? "").toLowerCase().includes(q);
     return String(r.name ?? "").toLowerCase().includes(q);
   });

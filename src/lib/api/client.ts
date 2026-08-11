@@ -87,7 +87,7 @@ export const api = {
       ),
     search: (value: string, limit = 10) =>
       apiFetch<{ data: Record<string, unknown>[]; meta?: Record<string, unknown> }>(
-        local(API.customers.records, { page: 1, limit, column: "name", value })
+        local(API.customers.records, { page: 1, limit, column: "search", value })
       ),
     create: (payload: Record<string, unknown>) =>
       apiFetch(local("/persons/customers"), {
@@ -133,7 +133,7 @@ export const api = {
     columns: () => apiFetch<Record<string, string>>(local(API.items.columns)),
     search: (value: string, limit = 10) =>
       apiFetch<{ data: Record<string, unknown>[]; meta?: Record<string, unknown> }>(
-        local(API.items.records, { page: 1, limit, column: "description", value })
+        local(API.items.records, { page: 1, limit, column: "search", value })
       ),
     create: (payload: Record<string, unknown>) =>
       apiFetch(local("/items"), {

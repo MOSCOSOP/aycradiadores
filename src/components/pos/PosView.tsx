@@ -93,7 +93,7 @@ export function PosView() {
       defaultCustomerRow,
       ...customers.filter((c) => String(c.number) !== DEFAULT_CUSTOMER_NUMBER),
     ];
-    const source = customerRemote.length && q.length >= 2 ? customerRemote : pool;
+    const source = customerRemote.length && q.length >= 1 ? customerRemote : pool;
     if (!q) return source.slice(0, 10);
     return source
       .filter(
@@ -106,7 +106,7 @@ export function PosView() {
 
   useEffect(() => {
     const q = customerQuery.trim();
-    if (q.length < 2) {
+    if (q.length < 1) {
       setCustomerRemote([]);
       return;
     }
@@ -337,7 +337,7 @@ export function PosView() {
                   onFocus={() => setCustomerSearchOpen(true)}
                   onBlur={() => window.setTimeout(() => setCustomerSearchOpen(false), 180)}
                 />
-                {customerSearchOpen && (customerQuery || customerSuggestions.length > 0) && (
+                {customerSearchOpen && customerSuggestions.length > 0 && (
                   <ul className="ify-autocomplete-list absolute z-30 mt-1 max-h-52 w-full overflow-auto rounded-md shadow-lg">
                     {customerSuggestions.length === 0 ? (
                       <li className="px-3 py-2 text-xs text-[var(--muted)]">Sin coincidencias</li>

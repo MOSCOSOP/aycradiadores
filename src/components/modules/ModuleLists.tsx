@@ -8,6 +8,42 @@ import { UserModal } from "@/components/users/UserModal";
 import { parseInventoryExcel } from "@/lib/inventory-import";
 import { downloadCsv } from "@/lib/download-csv";
 import { api } from "@/lib/api/client";
+import { StockAdjustModal } from "@/components/inventory/StockAdjustModal";
+
+function StockTableActions({
+  row,
+  onAdjust,
+}: {
+  row: Record<string, unknown>;
+  onAdjust: (row: Record<string, unknown>, presetReal?: number) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      <button
+        type="button"
+        className="ify-btn-outline px-2 py-1 text-[10px]"
+        title="Próximamente"
+        onClick={() => alert("Traslados entre almacenes — próximamente")}
+      >
+        Trasladar
+      </button>
+      <button
+        type="button"
+        className="ify-btn-outline px-2 py-1 text-[10px] opacity-60"
+        onClick={() => onAdjust(row, 0)}
+      >
+        Remover
+      </button>
+      <button
+        type="button"
+        className="ify-btn-outline px-2 py-1 text-[10px]"
+        onClick={() => onAdjust(row)}
+      >
+        <i className="bi bi-info-circle text-warning" /> Ajuste
+      </button>
+    </div>
+  );
+}
 
 export function SaleNotesList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
@@ -348,10 +384,28 @@ export function InventoryList() {
 export function InventoryValidateList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustItem, setAdjustItem] = useState<{ id: number; description: string; stock: number } | null>(null);
+  const [initialReal, setInitialReal] = useState<number | undefined>();
+
+  const load = () => {
+    setLoading(true);
+    api.inventory.stock().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    api.inventory.stock().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
+    load();
   }, []);
+
+  const openAdjust = (row: Record<string, unknown>, presetReal?: number) => {
+    setAdjustItem({
+      id: Number(row.id),
+      description: String(row.description),
+      stock: Number(row.stock ?? 0),
+    });
+    setInitialReal(presetReal);
+    setAdjustOpen(true);
+  };
 
   const totalValue = rows.reduce((s, r) => s + Number(r.value || 0), 0);
 
@@ -359,11 +413,26 @@ export function InventoryValidateList() {
     <div className="ify-page">
       <PageHeader title="Validar inventario" subtitle={`Valor total: S/ ${totalValue.toFixed(2)}`} />
       <DataTable loading={loading} rows={rows} columns={[
-        { key: "internal_id", label: "Código" }, { key: "description", label: "Producto" },
-        { key: "category", label: "Categoría" }, { key: "stock", label: "Stock" },
+        { key: "internal_id", label: "Código" },
+        { key: "description", label: "Producto" },
+        { key: "category", label: "Categoría" },
+        { key: "establishment", label: "Establecimiento", render: () => "Oficina Principal" },
+        { key: "stock", label: "Stock" },
         { key: "sale_unit_price", label: "Precio", render: (r) => `S/ ${Number(r.sale_unit_price).toFixed(2)}` },
         { key: "value", label: "Valor", render: (r) => `S/ ${Number(r.value).toFixed(2)}` },
+        {
+          key: "actions",
+          label: "Acciones",
+          render: (r) => <StockTableActions row={r} onAdjust={openAdjust} />,
+        },
       ]} />
+      <StockAdjustModal
+        open={adjustOpen}
+        item={adjustItem}
+        initialRealStock={initialReal}
+        onClose={() => { setAdjustOpen(false); setInitialReal(undefined); }}
+        onSaved={load}
+      />
     </div>
   );
 }

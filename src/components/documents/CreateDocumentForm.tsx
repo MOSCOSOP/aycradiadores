@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import { COMPANY } from "@/lib/constants";
 import { api } from "@/lib/api/client";
 import { CustomerModal } from "@/components/customers/CustomerModal";
+import { ItemEditModal } from "@/components/items/ItemEditModal";
+import { CustomerSearchField } from "@/components/ui/CustomerSearchField";
+import { ProductSuggestItem } from "@/components/ui/ProductSuggestItem";
 import { Modal } from "@/components/ui/Modal";
 import { downloadCsv } from "@/lib/download-csv";
 
@@ -44,10 +46,9 @@ export function CreateDocumentForm() {
   const today = new Date().toISOString().split("T")[0];
   const [showAdditional, setShowAdditional] = useState(false);
   const [items, setItems] = useState<LineItem[]>([]);
-  const [clientSearch, setClientSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
+  const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [tables, setTables] = useState<Record<string, unknown> | null>(null);
-  const [customerResults, setCustomerResults] = useState<Record<string, unknown>[]>([]);
   const [productResults, setProductResults] = useState<Record<string, unknown>[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Record<string, unknown> | null>(null);
   const [exchangeRate, setExchangeRate] = useState("3.396");
@@ -63,6 +64,7 @@ export function CreateDocumentForm() {
   const [dateDue, setDateDue] = useState(today);
   const [plate, setPlate] = useState("");
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [productModalOpen, setProductModalOpen] = useState(false);
   const [multiModal, setMultiModal] = useState(false);
   const [multiSearch, setMultiSearch] = useState("");
   const [multiResults, setMultiResults] = useState<Record<string, unknown>[]>([]);
@@ -93,24 +95,13 @@ export function CreateDocumentForm() {
   }, []);
 
   useEffect(() => {
-    if (clientSearch.length < 2) {
-      setCustomerResults([]);
-      return;
-    }
-    const t = setTimeout(() => {
-      api.customers.search(clientSearch, 8).then((r) => setCustomerResults(r.data ?? []));
-    }, 350);
-    return () => clearTimeout(t);
-  }, [clientSearch]);
-
-  useEffect(() => {
-    if (productSearch.length < 2) {
+    if (productSearch.length < 1) {
       setProductResults([]);
       return;
     }
     const t = setTimeout(() => {
-      api.items.search(productSearch, 8).then((r) => setProductResults(r.data ?? []));
-    }, 350);
+      api.items.search(productSearch, 12).then((r) => setProductResults(r.data ?? []));
+    }, 250);
     return () => clearTimeout(t);
   }, [productSearch]);
 
@@ -204,11 +195,12 @@ export function CreateDocumentForm() {
   );
 
   const addProductFromApi = (product: Record<string, unknown>) => {
+    const itemId = product.local_id ? Number(product.local_id) : product.id ? Number(product.id) : undefined;
     setItems((prev) => [
       ...prev,
       {
         id: Date.now(),
-        itemId: product.id ? Number(product.id) : undefined,
+        itemId,
         product: String(product.description ?? product.full_description ?? ""),
         unit: String(product.unit_type_id ?? "NIU"),
         quantity: 1,
@@ -218,6 +210,7 @@ export function CreateDocumentForm() {
     ]);
     setProductSearch("");
     setProductResults([]);
+    setProductSearchOpen(false);
   };
 
   const handleSave = async () => {
@@ -389,46 +382,11 @@ export function CreateDocumentForm() {
       {/* Cliente + productos */}
       <div className="ify-card mb-3 p-4">
         <Field label="Cliente">
-          <div className="relative">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                className="ify-input flex-1"
-                placeholder={
-                  selectedCustomer
-                    ? `${selectedCustomer.name} (${selectedCustomer.number})`
-                    : "Buscar cliente por nombre o documento..."
-                }
-                value={clientSearch}
-                onChange={(e) => {
-                  setClientSearch(e.target.value);
-                  setSelectedCustomer(null);
-                }}
-              />
-              <button type="button" className="ify-link whitespace-nowrap" onClick={() => setCustomerModalOpen(true)}>
-                [+ Nuevo]
-              </button>
-            </div>
-            {customerResults.length > 0 && (
-              <ul className="ify-autocomplete-list absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md shadow-lg">
-                {customerResults.map((c) => (
-                  <li key={String(c.id)}>
-                    <button
-                      type="button"
-                      className="ify-autocomplete-item"
-                      onClick={() => {
-                        setSelectedCustomer(c);
-                        setClientSearch("");
-                        setCustomerResults([]);
-                      }}
-                    >
-                      {String(c.name)} — {String(c.number)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <CustomerSearchField
+            selected={selectedCustomer}
+            onSelect={setSelectedCustomer}
+            onNew={() => setCustomerModalOpen(true)}
+          />
         </Field>
         <div className="mt-3">
           <Field label="Buscar productos o servicios">
@@ -436,20 +394,26 @@ export function CreateDocumentForm() {
               <input
                 type="text"
                 className="ify-input"
-                placeholder="Escriba el nombre, código o código de barras..."
+                placeholder="Nombre, código o código de barras (mayúsculas o minúsculas)..."
                 value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
+                onChange={(e) => {
+                  setProductSearch(e.target.value);
+                  setProductSearchOpen(true);
+                }}
+                onFocus={() => setProductSearchOpen(true)}
+                onBlur={() => window.setTimeout(() => setProductSearchOpen(false), 180)}
               />
-              {productResults.length > 0 && (
-                <ul className="ify-autocomplete-list absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md shadow-lg">
+              {productSearchOpen && productResults.length > 0 && (
+                <ul className="ify-autocomplete-list absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md shadow-lg">
                   {productResults.map((p) => (
                     <li key={String(p.id)}>
                       <button
                         type="button"
-                        className="ify-autocomplete-item"
+                        className="ify-autocomplete-item w-full p-0"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => addProductFromApi(p)}
                       >
-                        {String(p.description)} — S/ {Number(p.sale_unit_price ?? 0).toFixed(2)}
+                        <ProductSuggestItem product={p} />
                       </button>
                     </li>
                   ))}
@@ -469,9 +433,9 @@ export function CreateDocumentForm() {
           <button type="button" className="ify-btn-outline" onClick={() => { setMultiModal(true); setMultiPick([]); }}>
             <i className="bi bi-files" /> Agregar productos
           </button>
-          <Link href="/items" className="ify-btn-outline">
-            <i className="bi bi-file-earmark-plus" /> Crear productos
-          </Link>
+          <button type="button" className="ify-btn-outline" onClick={() => setProductModalOpen(true)}>
+            <i className="bi bi-file-earmark-plus" /> Crear producto
+          </button>
           <button type="button" className="ify-btn-outline" onClick={showHistory}>
             <i className="bi bi-clock-history" /> Historial de cliente
           </button>
@@ -629,8 +593,15 @@ export function CreateDocumentForm() {
         onClose={() => setCustomerModalOpen(false)}
         onSaved={(c) => {
           setSelectedCustomer(c);
-          setClientSearch("");
-          setCustomerResults([]);
+        }}
+      />
+
+      <ItemEditModal
+        open={productModalOpen}
+        editId={null}
+        onClose={() => setProductModalOpen(false)}
+        onSaved={(created) => {
+          if (created) addProductFromApi(created);
         }}
       />
 
@@ -643,7 +614,7 @@ export function CreateDocumentForm() {
         <input className="ify-input mb-3" placeholder="Buscar productos..." value={multiSearch} onChange={(e) => setMultiSearch(e.target.value)} />
         <div className="max-h-64 overflow-auto">
           {multiResults.map((p) => (
-            <label key={String(p.id)} className="flex items-center gap-2 border-b px-2 py-2 text-sm">
+            <label key={String(p.id)} className="flex cursor-pointer items-center gap-2 border-b px-2 py-2 text-sm">
               <input
                 type="checkbox"
                 checked={multiPick.includes(Number(p.id))}
@@ -652,7 +623,7 @@ export function CreateDocumentForm() {
                   setMultiPick((prev) => e.target.checked ? [...prev, id] : prev.filter((x) => x !== id));
                 }}
               />
-              <span>{String(p.description)} — S/ {Number(p.sale_unit_price ?? 0).toFixed(2)}</span>
+              <ProductSuggestItem product={p} />
             </label>
           ))}
         </div>

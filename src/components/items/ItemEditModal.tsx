@@ -18,7 +18,7 @@ type ItemEditModalProps = {
   editId: number | null;
   initial?: Partial<ItemFormData>;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (item?: Record<string, unknown>) => void;
 };
 
 export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemEditModalProps) {
@@ -62,9 +62,21 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
         stock_min: Number(form.stock_min || 0),
         category_id: form.category_id ? Number(form.category_id) : null,
       };
-      if (editId) await api.items.update(editId, payload);
-      else await api.items.create(payload);
-      onSaved();
+      if (editId) {
+        await api.items.update(editId, payload);
+        onSaved();
+      } else {
+        const res = (await api.items.create(payload)) as { data?: Record<string, unknown> };
+        const raw = res.data ?? {};
+        onSaved({
+          id: raw.id,
+          local_id: raw.id,
+          description: raw.description ?? form.description,
+          unit_type_id: raw.unitTypeId ?? form.unit_type_id,
+          sale_unit_price: raw.saleUnitPrice ?? Number(form.sale_unit_price),
+          stock: raw.stock ?? Number(form.stock),
+        });
+      }
       onClose();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Error al guardar");

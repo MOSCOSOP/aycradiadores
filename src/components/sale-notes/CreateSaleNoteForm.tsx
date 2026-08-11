@@ -6,6 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { COMPANY } from "@/lib/constants";
 import { Field } from "@/components/ui/Modal";
+import { CustomerSearchField } from "@/components/ui/CustomerSearchField";
+import { ProductSuggestItem } from "@/components/ui/ProductSuggestItem";
 import { api } from "@/lib/api/client";
 
 type LineItem = {
@@ -33,10 +35,9 @@ export function CreateSaleNoteForm() {
   const today = new Date().toISOString().split("T")[0];
   const [items, setItems] = useState<LineItem[]>([]);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
-  const [clientSearch, setClientSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
+  const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [tables, setTables] = useState<Record<string, unknown> | null>(null);
-  const [customerResults, setCustomerResults] = useState<Record<string, unknown>[]>([]);
   const [productResults, setProductResults] = useState<Record<string, unknown>[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Record<string, unknown> | null>(null);
   const [cashBoxes, setCashBoxes] = useState<Record<string, unknown>[]>([]);
@@ -85,20 +86,11 @@ export function CreateSaleNoteForm() {
   }, []);
 
   useEffect(() => {
-    if (clientSearch.length < 2) {
-      setCustomerResults([]);
-      return;
-    }
-    const t = setTimeout(() => api.customers.search(clientSearch, 8).then((r) => setCustomerResults(r.data ?? [])), 350);
-    return () => clearTimeout(t);
-  }, [clientSearch]);
-
-  useEffect(() => {
-    if (productSearch.length < 2) {
+    if (productSearch.length < 1) {
       setProductResults([]);
       return;
     }
-    const t = setTimeout(() => api.items.search(productSearch, 8).then((r) => setProductResults(r.data ?? [])), 350);
+    const t = setTimeout(() => api.items.search(productSearch, 12).then((r) => setProductResults(r.data ?? [])), 250);
     return () => clearTimeout(t);
   }, [productSearch]);
 
@@ -227,47 +219,14 @@ export function CreateSaleNoteForm() {
       <div className="ify-card mb-3 p-4">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
           <Field label="Cliente" className="lg:col-span-3">
-            <div className="relative">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  className="ify-input flex-1"
-                  placeholder={
-                    selectedCustomer
-                      ? `${selectedCustomer.number} - ${selectedCustomer.name}`
-                      : "Buscar cliente..."
-                  }
-                  value={clientSearch}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value);
-                    setSelectedCustomer(null);
-                  }}
-                />
-                <Link href="/persons/customers" className="ify-link whitespace-nowrap text-xs">
-                  [+ Nuevo]
-                </Link>
-              </div>
-              {customerResults.length > 0 && (
-                <ul className="ify-autocomplete-list absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md shadow-lg">
-                  {customerResults.map((c) => (
-                    <li key={String(c.id)}>
-                      <button
-                        type="button"
-                        className="ify-autocomplete-item"
-                        onClick={() => {
-                          setSelectedCustomer(c);
-                          setCustomerAddress(String(c.address || ""));
-                          setClientSearch("");
-                          setCustomerResults([]);
-                        }}
-                      >
-                        {String(c.number)} - {String(c.name)}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <CustomerSearchField
+              selected={selectedCustomer}
+              onSelect={(c) => {
+                setSelectedCustomer(c);
+                setCustomerAddress(String(c.address || ""));
+              }}
+              onNew={() => window.open("/persons/customers", "_blank")}
+            />
           </Field>
           <Field label="Dirección">
             <select className="ify-select" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)}>
@@ -376,16 +335,26 @@ export function CreateSaleNoteForm() {
             <input
               type="text"
               className="ify-input"
-              placeholder="Buscar productos o servicios"
+              placeholder="Nombre, código o código de barras..."
               value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
+              onChange={(e) => {
+                setProductSearch(e.target.value);
+                setProductSearchOpen(true);
+              }}
+              onFocus={() => setProductSearchOpen(true)}
+              onBlur={() => window.setTimeout(() => setProductSearchOpen(false), 180)}
             />
-            {productResults.length > 0 && (
-              <ul className="ify-autocomplete-list absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md shadow-lg">
+            {productSearchOpen && productResults.length > 0 && (
+              <ul className="ify-autocomplete-list absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md shadow-lg">
                 {productResults.map((p) => (
                   <li key={String(p.id)}>
-                    <button type="button" className="ify-autocomplete-item" onClick={() => addProduct(p)}>
-                      {String(p.description)} — S/ {Number(p.sale_unit_price ?? 0).toFixed(2)}
+                    <button
+                      type="button"
+                      className="ify-autocomplete-item w-full p-0"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => addProduct(p)}
+                    >
+                      <ProductSuggestItem product={p} />
                     </button>
                   </li>
                 ))}

@@ -6,6 +6,7 @@ import { DataTable } from "@/components/ui/DataTable";
 import { PageHeader } from "@/components/ui/Modal";
 import { RowActions } from "@/components/ui/RowActions";
 import { ItemEditModal } from "@/components/items/ItemEditModal";
+import { StockAdjustModal } from "@/components/inventory/StockAdjustModal";
 import { rowToItemForm } from "@/components/items/item-form-types";
 import { api } from "@/lib/api/client";
 
@@ -21,6 +22,8 @@ export function ItemsList() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [editInitial, setEditInitial] = useState<ReturnType<typeof rowToItemForm>>();
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustItem, setAdjustItem] = useState<{ id: number; description: string; stock: number } | null>(null);
 
   const load = useCallback(async (value = "", p = 1) => {
     setLoading(true);
@@ -131,8 +134,26 @@ export function ItemsList() {
           { key: "has_igv_description", label: "Tiene Igv (Venta)" },
           {
             key: "actions",
-            label: "",
-            render: (r) => <RowActions onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)} />,
+            label: "Acciones",
+            render: (r) => (
+              <div className="flex flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  className="ify-btn-outline px-2 py-1 text-[10px]"
+                  onClick={() => {
+                    setAdjustItem({
+                      id: Number(r.local_id ?? r.id),
+                      description: String(r.description ?? r.name),
+                      stock: Number(r.stock ?? 0),
+                    });
+                    setAdjustOpen(true);
+                  }}
+                >
+                  Ajuste
+                </button>
+                <RowActions onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)} />
+              </div>
+            ),
           },
         ]}
       />
@@ -157,6 +178,13 @@ export function ItemsList() {
         editId={editId}
         initial={editInitial}
         onClose={() => setModalOpen(false)}
+        onSaved={() => load(search, page)}
+      />
+
+      <StockAdjustModal
+        open={adjustOpen}
+        item={adjustItem}
+        onClose={() => setAdjustOpen(false)}
         onSaved={() => load(search, page)}
       />
     </div>
