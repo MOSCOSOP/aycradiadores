@@ -753,6 +753,52 @@ html.ify-dark .ify-totals-row {
   background: var(--primary-darker);
 }
 
+.doc-duplicate-alert {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 193, 7, 0.45);
+  background: rgba(255, 193, 7, 0.12);
+  padding: 1rem 1.125rem;
+}
+
+.doc-duplicate-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.doc-duplicate-text {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+}
+
+.doc-duplicate-name {
+  margin: 0.25rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.doc-duplicate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+html.ify-dark .doc-duplicate-alert {
+  background: rgba(255, 193, 7, 0.1);
+  border-color: rgba(255, 193, 7, 0.35);
+}
+
+html.ify-dark .doc-duplicate-title {
+  color: #ffc107;
+}
+
 html.ify-dark .doc-form-table td {
   background: var(--card);
   border-color: var(--border);

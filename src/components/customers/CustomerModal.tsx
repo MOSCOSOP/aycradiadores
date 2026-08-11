@@ -16,6 +16,7 @@ import {
   type CustomerExtraData,
   type CustomerVehicle,
 } from "@/lib/customer-fields";
+import { findDuplicateInList, type CustomerRecord } from "@/lib/customer-duplicate";
 
 type CustomerModalProps = {
   open: boolean;
@@ -41,10 +42,12 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
   const [extra, setExtra] = useState<CustomerExtraData>(emptyCustomerExtra);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<CustomerRecord | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setTab(0);
+    setDuplicateWarning(null);
     if (editId) {
       setLoading(true);
       api.customers
@@ -61,14 +64,35 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
     }
   }, [open, editId, initial]);
 
-  const handleSave = async () => {
+  useEffect(() => {
+    setDuplicateWarning(null);
+  }, [form.number]);
+
+  const saveCustomer = async (forceDuplicate = false) => {
     if (!form.name.trim() || !form.number.trim()) {
       alert("Nombre y número son obligatorios");
       return;
     }
+
+    if (!forceDuplicate) {
+      try {
+        const searchRes = await api.customers.search(form.number.trim(), 40);
+        const dup = findDuplicateInList(form.number, searchRes.data ?? [], editId ?? undefined);
+        if (dup) {
+          setDuplicateWarning(dup);
+          return;
+        }
+      } catch {
+        /* continuar — el servidor validará */
+      }
+    }
+
     setSaving(true);
     try {
-      const payload = buildCustomerPayload(form, extra);
+      const payload = {
+        ...buildCustomerPayload(form, extra),
+        ...(forceDuplicate ? { force_duplicate: true } : {}),
+      };
       const res = editId
         ? await api.customers.update(editId, payload)
         : await api.customers.create(payload);
@@ -79,8 +103,23 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
       alert(e instanceof Error ? e.message : "Error al guardar cliente");
     } finally {
       setSaving(false);
+      setDuplicateWarning(null);
     }
   };
+
+  const useExistingCustomer = async () => {
+    if (!duplicateWarning) return;
+    try {
+      const full = await api.customers.get(duplicateWarning.id);
+      onSaved(full.data ?? duplicateWarning);
+      onClose();
+    } catch {
+      onSaved(duplicateWarning);
+      onClose();
+    }
+  };
+
+  const handleSave = () => saveCustomer(false);
 
   return (
     <Modal
@@ -114,6 +153,29 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
         <p className="py-8 text-center text-sm text-[var(--muted)]">Cargando cliente...</p>
       ) : (
         <>
+          {duplicateWarning ? (
+            <div className="doc-duplicate-alert mb-4">
+              <p className="doc-duplicate-title">
+                <i className="bi bi-exclamation-triangle-fill" /> Cliente ya en la lista
+              </p>
+              <p className="doc-duplicate-text">
+                Ya existe un cliente con el documento <strong>{duplicateWarning.number}</strong>:
+              </p>
+              <p className="doc-duplicate-name">{duplicateWarning.name}</p>
+              <div className="doc-duplicate-actions">
+                <button type="button" className="ify-btn-primary text-xs" onClick={useExistingCustomer}>
+                  Usar cliente existente
+                </button>
+                <button type="button" className="ify-btn-outline text-xs" onClick={() => saveCustomer(true)}>
+                  Crear de todas formas
+                </button>
+                <button type="button" className="ify-btn-ghost text-xs" onClick={() => setDuplicateWarning(null)}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {tab === 0 && <CustomerFormFields form={form} setForm={setForm} />}
 
           {tab === 1 && (
