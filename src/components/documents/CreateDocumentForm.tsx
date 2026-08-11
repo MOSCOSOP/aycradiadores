@@ -10,9 +10,22 @@ import { ItemEditModal } from "@/components/items/ItemEditModal";
 import { CustomerSearchField } from "@/components/ui/CustomerSearchField";
 import { ProductSuggestItem } from "@/components/ui/ProductSuggestItem";
 import { Modal } from "@/components/ui/Modal";
+import { DocumentPrintTemplate, type ReceiptData } from "@/components/documents/DocumentPrintTemplate";
 import { downloadCsv } from "@/lib/download-csv";
 
 const PARK_KEY = "ify_parked_docs";
+
+type PaymentLine = {
+  id: number;
+  destination: string;
+  reference: string;
+  gloss: string;
+  amount: number;
+};
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
 
 type LineItem = {
   id: number;
@@ -73,6 +86,14 @@ export function CreateDocumentForm() {
   const [historyModal, setHistoryModal] = useState(false);
   const [historyDocs, setHistoryDocs] = useState<Record<string, unknown>[]>([]);
   const [parkedDocs, setParkedDocs] = useState<Record<string, unknown>[]>([]);
+  const [discount, setDiscount] = useState(0);
+  const [otherCharges, setOtherCharges] = useState(0);
+  const [useOtherCharges, setUseOtherCharges] = useState(false);
+  const [paymentCondition, setPaymentCondition] = useState("Contado");
+  const [payments, setPayments] = useState<PaymentLine[]>([]);
+  const [cashBoxes, setCashBoxes] = useState<Record<string, unknown>[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<LineItem | null>(null);
 
   useEffect(() => {
     api.documents
@@ -92,6 +113,7 @@ export function CreateDocumentForm() {
         });
       })
       .catch((e) => setApiError(e instanceof Error ? e.message : "Error API"));
+    api.cash.records().then((r) => setCashBoxes(r.data ?? [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -194,6 +216,27 @@ export function CreateDocumentForm() {
     { value: 0, price: 0 }
   );
 
+  const igv = round2(totals.price - totals.value);
+  const grandTotal = round2(totals.price - discount + (useOtherCharges ? otherCharges : 0));
+  const defaultDestination =
+    String(cashBoxes[0]?.description ?? "CAJA GENERAL - ADMINISTRADOR");
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setPayments([]);
+      return;
+    }
+    setPayments((prev) => {
+      if (prev.length === 0) {
+        return [{ id: Date.now(), destination: defaultDestination, reference: "", gloss: "", amount: grandTotal }];
+      }
+      if (prev.length === 1) {
+        return [{ ...prev[0], amount: grandTotal }];
+      }
+      return prev;
+    });
+  }, [grandTotal, items.length, defaultDestination]);
+
   const addProductFromApi = (product: Record<string, unknown>) => {
     const itemId = product.local_id ? Number(product.local_id) : product.id ? Number(product.id) : undefined;
     setItems((prev) => [
@@ -204,8 +247,8 @@ export function CreateDocumentForm() {
         product: String(product.description ?? product.full_description ?? ""),
         unit: String(product.unit_type_id ?? "NIU"),
         quantity: 1,
-        unitValue: Number(product.sale_unit_price ?? 0) / 1.18,
-        unitPrice: Number(product.sale_unit_price ?? 0),
+        unitValue: round2(Number(product.sale_unit_price ?? 0) / 1.18),
+        unitPrice: round2(Number(product.sale_unit_price ?? 0)),
       },
     ]);
     setProductSearch("");
@@ -254,7 +297,56 @@ export function CreateDocumentForm() {
   };
 
   const updateItem = (id: number, patch: Partial<LineItem>) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const next = { ...i, ...patch };
+        if ("unitPrice" in patch && patch.unitPrice !== undefined) {
+          next.unitValue = round2(patch.unitPrice / 1.18);
+        } else if ("unitValue" in patch && patch.unitValue !== undefined) {
+          next.unitPrice = round2(patch.unitValue * 1.18);
+        }
+        return next;
+      })
+    );
+  };
+
+  const removeItem = (id: number) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const buildPreviewReceipt = (): ReceiptData => ({
+    kind: "document",
+    number: "PREVIEW",
+    document_type_label: documentTypes.find((t) => t.id === docTypeId)?.description ?? "Comprobante",
+    customer_name: String(selectedCustomer?.name ?? ""),
+    customer_number: String(selectedCustomer?.number ?? ""),
+    customer_address: String(selectedCustomer?.address ?? ""),
+    items: items.map((i) => ({
+      description: i.product,
+      quantity: i.quantity,
+      unit_price: i.unitPrice,
+      total: round2(i.quantity * i.unitPrice),
+    })),
+    total: grandTotal,
+    total_taxed: round2(totals.value),
+    total_igv: igv,
+    payment_method: "Efectivo",
+    payment_condition: paymentCondition,
+    date_of_issue: dateIssue,
+    plate: plate || undefined,
+  });
+
+  const openPreview = () => {
+    if (!selectedCustomer) {
+      alert("Selecciona un cliente");
+      return;
+    }
+    if (items.length === 0) {
+      alert("Agrega al menos un producto");
+      return;
+    }
+    setPreviewOpen(true);
   };
 
   return (
@@ -478,113 +570,271 @@ export function CreateDocumentForm() {
         )}
       </div>
 
-      {/* Tabla de ítems */}
-      <div className="ify-card mb-3 overflow-x-auto">
-        <table className="ify-table">
-          <thead>
-            <tr>
-              <th className="w-10">#</th>
-              <th style={{ minWidth: 220 }}>Productos o Servicios</th>
-              <th className="w-20">Unidad</th>
-              <th className="w-20">Cantidad</th>
-              <th className="w-24">Valor U.</th>
-              <th className="w-24">Precio U.</th>
-              <th className="w-24">Valor Total</th>
-              <th className="w-24">Precio Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
+      {/* Tabla de ítems + resumen y pagos */}
+      <div className="doc-form-section">
+        <div className="doc-form-table-wrap">
+          <table className="doc-form-table">
+            <thead>
               <tr>
-                <td colSpan={8} className="py-10 text-center text-[var(--muted-light)]">
-                  No hay productos agregados
-                </td>
+                <th className="col-num">#</th>
+                <th style={{ minWidth: 260 }}>Productos o Servicios</th>
+                <th>Unidad</th>
+                <th>Cantidad</th>
+                <th>Valor U.</th>
+                <th>Precio U.</th>
+                <th>Valor Total</th>
+                <th>Precio Total</th>
               </tr>
-            ) : (
-              items.map((item, idx) => (
-                <tr key={item.id}>
-                  <td>{idx + 1}</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="ify-input"
-                      placeholder="Producto o servicio"
-                      value={item.product}
-                      onChange={(e) => updateItem(item.id, { product: e.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="ify-input"
-                      value={item.unit}
-                      onChange={(e) => updateItem(item.id, { unit: e.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="ify-input"
-                      min={1}
-                      value={item.quantity}
-                      onChange={(e) => updateItem(item.id, { quantity: Number(e.target.value) })}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="ify-input"
-                      step="0.01"
-                      value={item.unitValue}
-                      onChange={(e) => updateItem(item.id, { unitValue: Number(e.target.value) })}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="ify-input"
-                      step="0.01"
-                      value={item.unitPrice}
-                      onChange={(e) => updateItem(item.id, { unitPrice: Number(e.target.value) })}
-                    />
-                  </td>
-                  <td className="text-end font-semibold">
-                    {(item.quantity * item.unitValue).toFixed(2)}
-                  </td>
-                  <td className="text-end font-semibold">
-                    {(item.quantity * item.unitPrice).toFixed(2)}
+            </thead>
+            <tbody>
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan={8}>
+                    <div className="doc-form-empty">No hay productos agregados — busca o crea un producto arriba</div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                items.map((item, idx) => (
+                  <tr key={item.id}>
+                    <td className="col-num">{idx + 1}</td>
+                    <td>
+                      <input
+                        type="text"
+                        className="ify-input"
+                        placeholder="Producto o servicio"
+                        value={item.product}
+                        onChange={(e) => updateItem(item.id, { product: e.target.value })}
+                      />
+                      <div className="doc-form-item-actions mt-1">
+                        <button type="button" onClick={() => setDetailItem(item)}>
+                          Ver detalle
+                        </button>
+                        <button type="button" className="danger" onClick={() => removeItem(item.id)}>
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="ify-input input-sm"
+                        value={item.unit}
+                        onChange={(e) => updateItem(item.id, { unit: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="ify-input input-sm"
+                        min={1}
+                        value={item.quantity}
+                        onChange={(e) => updateItem(item.id, { quantity: Number(e.target.value) || 1 })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="ify-input input-sm"
+                        step="0.01"
+                        value={round2(item.unitValue)}
+                        onChange={(e) => updateItem(item.id, { unitValue: Number(e.target.value) })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="ify-input input-sm"
+                        step="0.01"
+                        value={round2(item.unitPrice)}
+                        onChange={(e) => updateItem(item.id, { unitPrice: Number(e.target.value) })}
+                      />
+                    </td>
+                    <td className="col-total">{round2(item.quantity * item.unitValue).toFixed(2)}</td>
+                    <td className="col-total">{round2(item.quantity * item.unitPrice).toFixed(2)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {items.length > 0 && (
-          <div className="ify-totals-row">
-            <div className="ify-total-item">
-              <span>Total Valor</span>
-              <strong>S/ {totals.value.toFixed(2)}</strong>
+          <div className="doc-form-bottom">
+            <div>
+              <table className="doc-form-payments-table">
+                <thead>
+                  <tr>
+                    <th>Destino</th>
+                    <th>Referencia</th>
+                    <th>Glosa</th>
+                    <th style={{ width: 120 }}>Monto</th>
+                    <th style={{ width: 36 }} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <select
+                          className="ify-select"
+                          value={p.destination}
+                          onChange={(e) =>
+                            setPayments((prev) =>
+                              prev.map((x) => (x.id === p.id ? { ...x, destination: e.target.value } : x))
+                            )
+                          }
+                        >
+                          {cashBoxes.map((c) => (
+                            <option key={String(c.id)} value={String(c.description)}>
+                              {String(c.description)}
+                            </option>
+                          ))}
+                          {!cashBoxes.length && (
+                            <option value={defaultDestination}>{defaultDestination}</option>
+                          )}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          className="ify-input"
+                          value={p.reference}
+                          onChange={(e) =>
+                            setPayments((prev) =>
+                              prev.map((x) => (x.id === p.id ? { ...x, reference: e.target.value } : x))
+                            )
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          className="ify-input"
+                          value={p.gloss}
+                          onChange={(e) =>
+                            setPayments((prev) =>
+                              prev.map((x) => (x.id === p.id ? { ...x, gloss: e.target.value } : x))
+                            )
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="ify-input"
+                          step="0.01"
+                          value={p.amount}
+                          onChange={(e) =>
+                            setPayments((prev) =>
+                              prev.map((x) => (x.id === p.id ? { ...x, amount: Number(e.target.value) } : x))
+                            )
+                          }
+                        />
+                      </td>
+                      <td>
+                        {payments.length > 1 ? (
+                          <button
+                            type="button"
+                            className="ify-btn-ghost px-2 py-1 text-danger"
+                            onClick={() => setPayments((prev) => prev.filter((x) => x.id !== p.id))}
+                          >
+                            <i className="bi bi-trash" />
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button
+                type="button"
+                className="ify-link mt-2 text-xs"
+                onClick={() =>
+                  setPayments((prev) => [
+                    ...prev,
+                    { id: Date.now(), destination: defaultDestination, reference: "", gloss: "", amount: 0 },
+                  ])
+                }
+              >
+                + Agregar pago
+              </button>
             </div>
-            <div className="ify-total-item">
-              <span>IGV (18%)</span>
-              <strong>S/ {(totals.price - totals.value).toFixed(2)}</strong>
-            </div>
-            <div className="ify-total-item grand">
-              <span>Total Precio</span>
-              <strong>S/ {totals.price.toFixed(2)}</strong>
+
+            <div className="doc-form-summary">
+              <div className="doc-form-summary-row">
+                <label>
+                  Descuento monto
+                  <i className="bi bi-question-circle text-[var(--muted-light)]" title="Descuento global" />
+                </label>
+                <input
+                  type="number"
+                  className="ify-input"
+                  step="0.01"
+                  min={0}
+                  value={discount}
+                  onChange={(e) => setDiscount(Number(e.target.value) || 0)}
+                />
+              </div>
+              <div className="doc-form-summary-row">
+                <span>Op. Gravadas</span>
+                <strong>S/ {round2(totals.value).toFixed(2)}</strong>
+              </div>
+              <div className="doc-form-summary-row">
+                <span>IGV (18%)</span>
+                <strong>S/ {igv.toFixed(2)}</strong>
+              </div>
+              <div className="doc-form-summary-row">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={useOtherCharges}
+                    onChange={(e) => setUseOtherCharges(e.target.checked)}
+                  />
+                  Otros cargos
+                </label>
+                <input
+                  type="number"
+                  className="ify-input"
+                  step="0.01"
+                  min={0}
+                  disabled={!useOtherCharges}
+                  value={otherCharges}
+                  onChange={(e) => setOtherCharges(Number(e.target.value) || 0)}
+                />
+              </div>
+              <div className="doc-form-summary-row grand">
+                <span>Total a pagar</span>
+                <strong>S/ {grandTotal.toFixed(2)}</strong>
+              </div>
+              <div className="doc-form-summary-row">
+                <span>Condición de pago</span>
+                <select
+                  className="ify-select"
+                  style={{ width: "auto", minWidth: 120 }}
+                  value={paymentCondition}
+                  onChange={(e) => setPaymentCondition(e.target.value)}
+                >
+                  <option value="Contado">Contado</option>
+                  <option value="Crédito">Crédito</option>
+                </select>
+              </div>
+              <div className="doc-form-summary-row">
+                <span>Pagado</span>
+                <strong>S/ {payments.reduce((s, p) => s + p.amount, 0).toFixed(2)}</strong>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex justify-end gap-3 pb-6">
-        <button type="button" className="ify-btn-ghost" onClick={() => router.push("/documents")}>
+      {/* Acciones finales */}
+      <div className="doc-form-actions">
+        <button type="button" className="ify-btn-preview" onClick={openPreview}>
+          <i className="bi bi-eye" /> Vista Previa
+        </button>
+        <button type="button" className="ify-btn-ghost px-5" onClick={() => router.push("/documents")}>
           Cancelar
         </button>
-        <button type="button" className="ify-btn-primary" onClick={handleSave} disabled={saving}>
-          <i className="bi bi-check2-circle" /> {saving ? "Guardando..." : "Guardar y emitir"}
+        <button type="button" className="ify-btn-primary px-6" onClick={handleSave} disabled={saving}>
+          {saving ? "Generando..." : "Generar"}
         </button>
       </div>
 
@@ -662,6 +912,25 @@ export function CreateDocumentForm() {
             </tbody>
           </table>
         )}
+      </Modal>
+
+      <Modal open={previewOpen} title="Vista previa del comprobante" size="xl" onClose={() => setPreviewOpen(false)}>
+        <div className="max-h-[70vh] overflow-auto rounded border border-[var(--border-light)] bg-white p-2">
+          <DocumentPrintTemplate receipt={buildPreviewReceipt()} />
+        </div>
+      </Modal>
+
+      <Modal open={!!detailItem} title="Detalle del ítem" onClose={() => setDetailItem(null)}>
+        {detailItem ? (
+          <div className="space-y-2 text-sm">
+            <p><strong>Producto:</strong> {detailItem.product}</p>
+            <p><strong>Unidad:</strong> {detailItem.unit}</p>
+            <p><strong>Cantidad:</strong> {detailItem.quantity}</p>
+            <p><strong>Valor unitario:</strong> S/ {round2(detailItem.unitValue).toFixed(2)}</p>
+            <p><strong>Precio unitario:</strong> S/ {round2(detailItem.unitPrice).toFixed(2)}</p>
+            <p><strong>Total:</strong> S/ {round2(detailItem.quantity * detailItem.unitPrice).toFixed(2)}</p>
+          </div>
+        ) : null}
       </Modal>
     </div>
   );

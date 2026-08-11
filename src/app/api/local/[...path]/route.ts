@@ -18,6 +18,16 @@ async function handler(req: NextRequest, context: RouteContext) {
     return NextResponse.json(data);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Error API local";
+    if (message === "DUPLICATE_CUSTOMER" && e instanceof Error && "duplicate" in e) {
+      return NextResponse.json(
+        {
+          error: "Ya existe un cliente con este documento en la lista.",
+          code: "DUPLICATE_CUSTOMER",
+          duplicate: (e as Error & { duplicate?: unknown }).duplicate,
+        },
+        { status: 409 }
+      );
+    }
     const status = message.includes("no implementada") ? 404 : 400;
     return NextResponse.json({ error: message }, { status });
   }

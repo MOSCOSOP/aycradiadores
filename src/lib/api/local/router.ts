@@ -11,6 +11,7 @@ import {
 import { handleReportRequest } from "@/lib/api/local/reports-handler";
 import { localLogin } from "@/lib/auth/admin-user";
 import { ALL_PERMISSION_KEYS } from "@/lib/permissions";
+import { documentsMatch, normalizeDocumentNumber } from "@/lib/customer-duplicate";
 
 function parseJsonSetting(value: string) {
   try {
@@ -187,6 +188,24 @@ function customerPayload(p: Record<string, unknown>) {
       ? JSON.stringify(Array.isArray(p.vehicles) ? p.vehicles : [])
       : null,
   };
+}
+
+async function findDuplicateCustomer(number: string, excludeId?: number) {
+  const trimmed = String(number || "").trim();
+  const norm = normalizeDocumentNumber(trimmed);
+  if (!norm) return null;
+
+  const candidates = await prisma.customer.findMany({
+    where: {
+      OR: [{ number: trimmed }, { number: { contains: norm } }],
+    },
+    take: 30,
+  });
+
+  const dup = candidates.find(
+    (c) => c.id !== excludeId && documentsMatch(c.number, trimmed)
+  );
+  return dup ? customerToRecord(dup) : null;
 }
 
 function customerToRecord(c: {
@@ -832,6 +851,13 @@ export async function handleLocalApi(
 
   if (method === "POST" && path === "persons/customers") {
     const p = body as Record<string, unknown>;
+    const force = Boolean(p.force_duplicate);
+    const duplicate = await findDuplicateCustomer(String(p.number || ""));
+    if (duplicate && !force) {
+      const err = new Error("DUPLICATE_CUSTOMER") as Error & { duplicate?: unknown };
+      err.duplicate = duplicate;
+      throw err;
+    }
     const customer = await prisma.customer.create({ data: customerPayload(p) });
     return { success: true, data: customerToRecord(customer) };
   }
@@ -839,6 +865,13 @@ export async function handleLocalApi(
   if (method === "PUT" && path.match(/^persons\/customers\/\d+$/)) {
     const id = Number(path.split("/")[2]);
     const p = body as Record<string, unknown>;
+    const force = Boolean(p.force_duplicate);
+    const duplicate = await findDuplicateCustomer(String(p.number || ""), id);
+    if (duplicate && !force) {
+      const err = new Error("DUPLICATE_CUSTOMER") as Error & { duplicate?: unknown };
+      err.duplicate = duplicate;
+      throw err;
+    }
     const customer = await prisma.customer.update({
       where: { id },
       data: customerPayload(p),

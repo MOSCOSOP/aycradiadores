@@ -512,6 +512,266 @@ html.ify-dark .auth-bg::after {
   color: var(--primary);
 }
 
+html.ify-dark .ify-totals-row {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+/* ── Formulario comprobante ── */
+.doc-form-section {
+  background: var(--card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+.doc-form-table-wrap {
+  overflow-x: auto;
+}
+
+.doc-form-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.doc-form-table th {
+  padding: 0.625rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #fff;
+  text-align: left;
+  background: var(--primary);
+  border: none;
+  white-space: nowrap;
+}
+
+.doc-form-table td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: top;
+  color: var(--foreground);
+  background: var(--card);
+}
+
+.doc-form-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.doc-form-table tbody tr:hover td {
+  background: var(--nav-active-bg);
+}
+
+.doc-form-table .col-num {
+  width: 2.5rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.doc-form-table .col-total {
+  text-align: right;
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.doc-form-table .ify-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.doc-form-table .ify-input.input-sm {
+  max-width: 5rem;
+}
+
+.doc-form-item-name {
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 0.25rem;
+}
+
+.doc-form-item-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.doc-form-item-actions button {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.doc-form-item-actions button:hover {
+  text-decoration: underline;
+}
+
+.doc-form-item-actions button.danger {
+  color: #dc3545;
+}
+
+.doc-form-empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.doc-form-bottom {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--background);
+  border-top: 1px solid var(--border-light);
+}
+
+@media (min-width: 992px) {
+  .doc-form-bottom {
+    grid-template-columns: 1fr 340px;
+    align-items: start;
+  }
+}
+
+.doc-form-payments-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.doc-form-payments-table th {
+  padding: 0.5rem 0.625rem;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  background: transparent;
+}
+
+.doc-form-payments-table td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+.doc-form-payments-table .ify-input {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.doc-form-summary {
+  background: var(--card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 0.875rem 1rem;
+}
+
+.doc-form-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4375rem 0;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--foreground);
+}
+
+.doc-form-summary-row:last-child {
+  border-bottom: none;
+}
+
+.doc-form-summary-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.doc-form-summary-row strong {
+  font-weight: 700;
+  color: var(--foreground);
+  white-space: nowrap;
+}
+
+.doc-form-summary-row.grand {
+  margin-top: 0.25rem;
+  padding-top: 0.625rem;
+  border-top: 2px solid var(--primary);
+  border-bottom: none;
+}
+
+.doc-form-summary-row.grand strong {
+  font-size: 1.125rem;
+  color: var(--primary);
+}
+
+.doc-form-summary-row input[type="number"] {
+  width: 5rem;
+  text-align: right;
+}
+
+.doc-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0 2rem;
+}
+
+.doc-form-actions .ify-btn-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--input-radius);
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.doc-form-actions .ify-btn-preview:hover {
+  background: var(--primary-darker);
+}
+
+html.ify-dark .doc-form-table td {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+html.ify-dark .doc-form-bottom {
+  background: var(--background);
+  border-color: var(--border);
+}
+
+html.ify-dark .doc-form-summary {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+html.ify-dark .doc-form-summary-row strong {
+  color: var(--foreground);
+}
+
 /* ── Menú usuario (dropdown debajo del perfil) ── */
 .ify-nav-icon-btn.active {
   background: var(--nav-active-bg);
