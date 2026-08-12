@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { findNavParent } from "@/lib/page-registry";
+import {
+  emptyCatalogForm,
+  getCatalogDisplayColumns,
+  getCatalogFields,
+  rowToCatalogForm,
+  type CatalogField,
+} from "@/lib/catalog-form-config";
 import { DataTable } from "@/components/ui/DataTable";
 import { ListToolbar } from "@/components/ui/ListToolbar";
 import { RowActions } from "@/components/ui/RowActions";
@@ -21,9 +28,50 @@ function normalizeRow(row: Record<string, unknown>) {
     ...row,
     name: row.name ?? row.description ?? "",
     description: row.description ?? row.name ?? "",
-    state: row.state ?? "Activo",
-    date: row.date ?? row.created_at ?? "",
+    state: row.state ?? row.state_type_description ?? "Activo",
+    date: row.date ?? row.created_at ?? row.date_of_issue ?? "",
   };
+}
+
+function CatalogFieldInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: CatalogField;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  if (field.type === "select" && field.options?.length) {
+    return (
+      <select className="ify-select" value={value} onChange={(e) => onChange(e.target.value)}>
+        {field.options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  if (field.type === "textarea") {
+    return (
+      <textarea
+        className="ify-input min-h-[72px]"
+        value={value}
+        placeholder={field.placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    );
+  }
+  return (
+    <input
+      className="ify-input"
+      type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+      value={value}
+      placeholder={field.placeholder}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
 }
 
 export function CatalogListPage({
@@ -34,13 +82,13 @@ export function CatalogListPage({
 }: CatalogListPageProps) {
   const parent = findNavParent(pathname);
   const modulePath = apiPath.replace(/\/records$/, "");
+  const formFields = useMemo(() => getCatalogFields(pathname), [pathname]);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [formName, setFormName] = useState("");
-  const [formDesc, setFormDesc] = useState("");
+  const [form, setForm] = useState<Record<string, string>>(() => emptyCatalogForm(formFields));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,56 +112,64 @@ export function CatalogListPage({
     );
   }, [rows, search]);
 
-  const columns = useMemo(
-    () => [
-      { key: "name", label: "Nombre" },
-      { key: "description", label: "Descripción" },
-      { key: "state", label: "Estado" },
-      { key: "date", label: "Fecha", render: (r: Record<string, unknown>) => String(r.date || r.created_at || "—") },
+  const displayColumns = useMemo(() => {
+    const cols = getCatalogDisplayColumns(pathname, rows[0]);
+    return [
+      ...cols.map((c) => ({
+        key: c.key,
+        label: c.label,
+        render: (r: Record<string, unknown>) => {
+          const val = r[c.key];
+          if (val == null || val === "") return "—";
+          return String(val);
+        },
+      })),
       {
         key: "actions",
         label: "Acciones",
         render: (r: Record<string, unknown>) => (
           <RowActions
-            onEdit={() => {
-              setEditId(Number(r.id));
-              setFormName(String(r.name ?? r.description ?? ""));
-              setFormDesc(String(r.description ?? r.name ?? ""));
-              setModalOpen(true);
-            }}
+            onEdit={() => openEdit(r)}
             onDelete={() => remove(Number(r.id))}
           />
         ),
       },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows]
+    ];
+  }, [pathname, rows]);
+
+  const exportColumns = useMemo(
+    () => getCatalogDisplayColumns(pathname, rows[0]).map((c) => ({ key: c.key, label: c.label })),
+    [pathname, rows]
   );
 
-  const exportColumns = [
-    { key: "name", label: "Nombre" },
-    { key: "description", label: "Descripción" },
-    { key: "state", label: "Estado" },
-    { key: "date", label: "Fecha" },
-  ];
+  const setField = (key: string, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   const openCreate = () => {
     setEditId(null);
-    setFormName("");
-    setFormDesc("");
+    setForm(emptyCatalogForm(formFields));
+  };
+
+  const openEdit = (row: Record<string, unknown>) => {
+    setEditId(Number(row.id));
+    setForm(rowToCatalogForm(row, formFields));
     setModalOpen(true);
   };
 
   const save = async () => {
-    const val = formName.trim() || formDesc.trim();
-    if (!val) {
-      alert("El nombre es obligatorio");
+    const primaryKey = labelField === "description" ? "description" : "name";
+    const primary = form[primaryKey]?.trim() || form.name?.trim() || form.description?.trim();
+    if (!primary) {
+      alert("El nombre o descripción es obligatorio");
       return;
     }
-    const payload =
-      labelField === "description"
-        ? { description: val, name: val }
-        : { name: val, description: formDesc.trim() || val };
+    const payload: Record<string, unknown> = { ...form };
+    if (!payload.name) payload.name = primary;
+    if (!payload.description) payload.description = form.description?.trim() || primary;
+    if (!payload.state) payload.state = "Activo";
+    if (payload.date && !payload.created_at) payload.date = payload.date;
+
     if (editId) await api.generic.update(modulePath, editId, payload);
     else await api.generic.create(modulePath, payload);
     setModalOpen(false);
@@ -132,7 +188,14 @@ export function CatalogListPage({
         title={title}
         subtitle={parent ? `${parent} · Módulo local` : "Módulo local"}
         actions={
-          <button type="button" className="ify-btn-primary" onClick={openCreate}>
+          <button
+            type="button"
+            className="ify-btn-primary"
+            onClick={() => {
+              openCreate();
+              setModalOpen(true);
+            }}
+          >
             <i className="bi bi-plus-lg" /> Nuevo
           </button>
         }
@@ -141,7 +204,7 @@ export function CatalogListPage({
       <ListToolbar
         search={search}
         onSearchChange={setSearch}
-        placeholder="Buscar por nombre, descripción..."
+        placeholder="Buscar por nombre, código, referencia..."
         exportFilename={`${pathname.replace(/\//g, "_")}.csv`}
         exportTitle={title}
         exportRows={filtered}
@@ -151,7 +214,7 @@ export function CatalogListPage({
       <DataTable
         loading={loading}
         rows={filtered}
-        columns={columns}
+        columns={displayColumns}
         emptyMessage={`Sin registros en ${title}. Usa «Nuevo» para agregar.`}
       />
 
@@ -170,18 +233,21 @@ export function CatalogListPage({
           </>
         }
       >
-        <Field label={labelField === "description" ? "Descripción *" : "Nombre *"}>
-          <input
-            className="ify-input"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-          />
-        </Field>
-        {labelField === "name" ? (
-          <Field label="Descripción" className="mt-3">
-            <input className="ify-input" value={formDesc} onChange={(e) => setFormDesc(e.target.value)} />
-          </Field>
-        ) : null}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {formFields.map((field) => (
+            <Field
+              key={field.key}
+              label={`${field.label}${field.required ? " *" : ""}`}
+              className={field.type === "textarea" ? "sm:col-span-2" : undefined}
+            >
+              <CatalogFieldInput
+                field={field}
+                value={form[field.key] ?? ""}
+                onChange={(v) => setField(field.key, v)}
+              />
+            </Field>
+          ))}
+        </div>
       </Modal>
     </div>
   );

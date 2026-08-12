@@ -108,12 +108,57 @@ async function deleteGenericRecord(apiPath: string, id: number) {
 
 function importedModuleKeyFromApiPath(apiPath: string): string | null {
   const base = apiPath.replace(/\/records$/, "").replace(/-/g, "_");
-  const map: Record<string, string> = {
-    item_sets: "item_sets",
-    person_types: "person_types",
-    zones: "zones",
-  };
-  return map[base] ?? null;
+  return base || null;
+}
+
+/** Módulos con handlers dedicados — no usar CRUD genérico por id */
+const RESERVED_GENERIC_MODULES = new Set([
+  "documents",
+  "persons",
+  "items",
+  "services",
+  "purchases",
+  "categories",
+  "users",
+  "establishments",
+  "dispatches",
+  "inventory",
+  "cash",
+  "settings",
+  "pos",
+  "accounting",
+  "sire",
+  "finances",
+  "reports",
+  "sale-notes",
+  "quotations",
+  "order-notes",
+  "auth",
+  "customers",
+  "suppliers",
+  "backup",
+]);
+
+function parseGenericIdPath(path: string): { modulePath: string; id: number } | null {
+  const match = path.match(/^([a-z0-9-]+(?:\/[a-z0-9-]+)*)\/(\d+)$/);
+  if (!match) return null;
+  const modulePath = match[1];
+  const top = modulePath.split("/")[0];
+  if (RESERVED_GENERIC_MODULES.has(top)) return null;
+  return { modulePath, id: Number(match[2]) };
+}
+
+async function removeImportedRow(moduleKey: string, id: number) {
+  const imported = await readImportedModule(moduleKey);
+  if (!imported?.length) return false;
+  const filtered = imported.filter((r) => Number(r.id) !== id);
+  if (filtered.length === imported.length) return false;
+  await prisma.appSetting.upsert({
+    where: { key: `imported_${moduleKey}` },
+    create: { key: `imported_${moduleKey}`, value: JSON.stringify(filtered) },
+    update: { value: JSON.stringify(filtered) },
+  });
+  return true;
 }
 
 function formatDate(d: Date) {
@@ -761,6 +806,27 @@ export async function handleLocalApi(
     return { success: true, data: docToRecord(doc), sunat };
   }
 
+  if (method === "DELETE" && path.match(/^documents\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const doc = await prisma.document.findUnique({ where: { id }, include: { items: true } });
+    if (doc) {
+      await prisma.$transaction(async (tx) => {
+        for (const li of doc.items) {
+          if (li.itemId) {
+            await tx.item.update({
+              where: { id: li.itemId },
+              data: { stock: { increment: li.quantity } },
+            });
+          }
+        }
+        await tx.document.delete({ where: { id } });
+      });
+      return { success: true };
+    }
+    if (await removeImportedRow("documents", id)) return { success: true };
+    throw new Error("Comprobante no encontrado");
+  }
+
   if (method === "POST" && path === "documents/massive") {
     const p = body as Record<string, unknown>;
     const batchRows = (p.rows as Record<string, unknown>[]) || [];
@@ -1346,10 +1412,18 @@ export async function handleLocalApi(
         id: n.id,
         number: n.number,
         customer_name: n.customer.name,
+        customer_number: n.customer.number,
         customer_id: n.customerId,
         date: formatDate(n.date),
+        date_of_issue: formatDate(n.date),
         total: n.total,
         state: n.state,
+        state_type_description: n.state,
+        currency_type_id: n.currencyTypeId,
+        modified_price: n.modifiedPrice,
+        payment_status: n.paymentStatus ?? "Pagado",
+        purchase_order: n.purchaseOrder ?? "",
+        plate: n.plate ?? "",
         items: n.items.map((i) => ({
           description: i.description,
           quantity: i.quantity,
@@ -1358,6 +1432,56 @@ export async function handleLocalApi(
         })),
       },
     };
+  }
+
+  if (method === "PUT" && path.match(/^sale-notes\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const note = await prisma.saleNote.findUnique({ where: { id } });
+    if (!note) throw new Error("Nota no encontrada");
+    await prisma.saleNote.update({
+      where: { id },
+      data: {
+        plate: p.plate != null ? String(p.plate) : note.plate,
+        currencyTypeId: p.currency_type_id ? String(p.currency_type_id) : note.currencyTypeId,
+        paymentStatus: p.payment_status ? String(p.payment_status) : note.paymentStatus,
+        purchaseOrder: p.purchase_order != null ? String(p.purchase_order) : note.purchaseOrder,
+        modifiedPrice: p.modified_price ? String(p.modified_price) : note.modifiedPrice,
+        state: p.state ? String(p.state) : note.state,
+        customerId: p.customer_id ? Number(p.customer_id) : note.customerId,
+      },
+    });
+    if (Array.isArray(p.items)) {
+      await prisma.saleNoteItem.deleteMany({ where: { saleNoteId: id } });
+      let total = 0;
+      const lineItems = (p.items as Record<string, unknown>[]).map((it) => {
+        const qty = Number(it.quantity || 1);
+        const price = Number(it.unit_price || 0);
+        const t = qty * price;
+        total += t;
+        return {
+          saleNoteId: id,
+          description: String(it.description || ""),
+          quantity: qty,
+          unitPrice: price,
+          total: t,
+        };
+      });
+      if (lineItems.length) await prisma.saleNoteItem.createMany({ data: lineItems });
+      await prisma.saleNote.update({ where: { id }, data: { total } });
+    }
+    return { success: true };
+  }
+
+  if (method === "DELETE" && path.match(/^sale-notes\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    try {
+      await prisma.saleNote.delete({ where: { id } });
+      return { success: true };
+    } catch {
+      if (await removeImportedRow("sale_notes", id)) return { success: true };
+      throw new Error("Nota no encontrada");
+    }
   }
 
   // ── Cotizaciones ──
@@ -1456,6 +1580,62 @@ export async function handleLocalApi(
         date: formatDate(m.createdAt),
       })),
     };
+  }
+
+  if (method === "PUT" && path.match(/^inventory\/movements\/\d+$/)) {
+    const id = Number(path.split("/")[2]);
+    const p = body as Record<string, unknown>;
+    const mov = await prisma.inventoryMovement.findUnique({ where: { id }, include: { item: true } });
+    if (!mov) throw new Error("Movimiento no encontrado");
+    const oldQty = mov.quantity;
+    const oldType = mov.type;
+    const newQty = p.quantity != null ? Number(p.quantity) : oldQty;
+    const newType = p.type ? String(p.type) : oldType;
+    await prisma.inventoryMovement.update({
+      where: { id },
+      data: {
+        type: newType,
+        quantity: newQty,
+        description: p.description != null ? String(p.description) : mov.description,
+        reference: p.reference != null ? String(p.reference) : mov.reference,
+      },
+    });
+    const reverseDelta = (type: string, qty: number) => {
+      if (type === "in") return -qty;
+      if (type === "out") return qty;
+      return 0;
+    };
+    const applyDelta = (type: string, qty: number) => {
+      if (type === "in") return qty;
+      if (type === "out") return -qty;
+      return 0;
+    };
+    const stockDelta = reverseDelta(oldType, oldQty) + applyDelta(newType, newQty);
+    if (stockDelta !== 0) {
+      await prisma.item.update({
+        where: { id: mov.itemId },
+        data: { stock: mov.item.stock + stockDelta },
+      });
+    }
+    return { success: true };
+  }
+
+  if (method === "DELETE" && path.match(/^inventory\/movements\/\d+$/)) {
+    const id = Number(path.split("/")[2]);
+    const mov = await prisma.inventoryMovement.findUnique({ where: { id }, include: { item: true } });
+    if (!mov) {
+      if (await removeImportedRow("inventory", id)) return { success: true };
+      throw new Error("Movimiento no encontrado");
+    }
+    const stockDelta = mov.type === "in" ? -mov.quantity : mov.type === "out" ? mov.quantity : 0;
+    await prisma.inventoryMovement.delete({ where: { id } });
+    if (stockDelta !== 0) {
+      await prisma.item.update({
+        where: { id: mov.itemId },
+        data: { stock: mov.item.stock + stockDelta },
+      });
+    }
+    return { success: true };
   }
 
   if (method === "POST" && path === "inventory/import") {
@@ -2304,17 +2484,15 @@ export async function handleLocalApi(
     return { success: true, data: record };
   }
 
-  const GENERIC_CATALOG = ["item-sets", "person-types", "zones"];
-  const catalogMatch = path.match(/^([\w-]+)\/(\d+)$/);
-  if (catalogMatch && GENERIC_CATALOG.includes(catalogMatch[1])) {
-    const module = catalogMatch[1];
-    const id = Number(catalogMatch[2]);
+  const genericId = parseGenericIdPath(path);
+  if (genericId) {
+    const recordsPath = `${genericId.modulePath}/records`;
     if (method === "PUT") {
-      const record = await updateGenericRecord(`${module}/records`, id, (body || {}) as Record<string, unknown>);
+      const record = await updateGenericRecord(recordsPath, genericId.id, (body || {}) as Record<string, unknown>);
       return { success: true, data: record };
     }
     if (method === "DELETE") {
-      return deleteGenericRecord(`${module}/records`, id);
+      return deleteGenericRecord(recordsPath, genericId.id);
     }
   }
 

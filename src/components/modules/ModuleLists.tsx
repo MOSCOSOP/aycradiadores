@@ -43,6 +43,19 @@ export function SaleNotesList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    plate: "",
+    purchase_order: "",
+    payment_status: "Pagado",
+    state: "Registrado",
+    currency_type_id: "PEN",
+    modified_price: "NO",
+    customer_name: "",
+  });
+  const [editItems, setEditItems] = useState<{ description: string; quantity: string; unit_price: string }[]>([]);
+  const [saving, setSaving] = useState(false);
 
   const load = (value = "") => {
     setLoading(true);
@@ -66,6 +79,68 @@ export function SaleNotesList() {
   useEffect(() => {
     load();
   }, []);
+
+  const openEdit = async (id: number) => {
+    setEditId(id);
+    setEditOpen(true);
+    try {
+      const res = await api.saleNotes.get(id);
+      const d = res.data ?? {};
+      setEditForm({
+        plate: String(d.plate ?? ""),
+        purchase_order: String(d.purchase_order ?? ""),
+        payment_status: String(d.payment_status ?? "Pagado"),
+        state: String(d.state ?? "Registrado"),
+        currency_type_id: String(d.currency_type_id ?? "PEN"),
+        modified_price: String(d.modified_price ?? "NO"),
+        customer_name: String(d.customer_name ?? ""),
+      });
+      const items = (d.items as Record<string, unknown>[]) ?? [];
+      setEditItems(
+        items.length
+          ? items.map((it) => ({
+              description: String(it.description ?? ""),
+              quantity: String(it.quantity ?? 1),
+              unit_price: String(it.unit_price ?? 0),
+            }))
+          : [{ description: "", quantity: "1", unit_price: "0" }]
+      );
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo cargar la nota");
+      setEditOpen(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editId) return;
+    setSaving(true);
+    try {
+      await api.saleNotes.update(editId, {
+        ...editForm,
+        items: editItems.map((it) => ({
+          description: it.description,
+          quantity: Number(it.quantity || 1),
+          unit_price: Number(it.unit_price || 0),
+        })),
+      });
+      setEditOpen(false);
+      load(search);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (id: number, number: string) => {
+    if (!confirm(`¿Eliminar la nota de venta ${number}?`)) return;
+    try {
+      await api.saleNotes.delete(id);
+      load(search);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo eliminar");
+    }
+  };
 
   return (
     <div className="ify-page">
@@ -133,9 +208,127 @@ export function SaleNotesList() {
           { key: "payment_status", label: "Estado pago", render: (r) => String(r.payment_status || "—") },
           { key: "purchase_order", label: "Orden de compra", render: (r) => String(r.purchase_order || "—") },
           { key: "plate", label: "Placa", render: (r) => String(r.plate || "—") },
+          {
+            key: "actions",
+            label: "Acciones",
+            render: (r) => (
+              <RowActions
+                onEdit={() => openEdit(Number(r.id))}
+                onDelete={() => remove(Number(r.id), String(r.number ?? ""))}
+              />
+            ),
+          },
         ]}
         emptyMessage="Sin notas de venta"
       />
+
+      <Modal
+        open={editOpen}
+        title={`Editar nota de venta${editForm.customer_name ? ` — ${editForm.customer_name}` : ""}`}
+        onClose={() => setEditOpen(false)}
+        footer={
+          <>
+            <button type="button" className="ify-btn-ghost" onClick={() => setEditOpen(false)}>
+              Cancelar
+            </button>
+            <button type="button" className="ify-btn-primary" onClick={saveEdit} disabled={saving}>
+              {saving ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Placa">
+            <input className="ify-input" value={editForm.plate} onChange={(e) => setEditForm({ ...editForm, plate: e.target.value })} />
+          </Field>
+          <Field label="Orden de compra">
+            <input className="ify-input" value={editForm.purchase_order} onChange={(e) => setEditForm({ ...editForm, purchase_order: e.target.value })} />
+          </Field>
+          <Field label="Estado pago">
+            <select className="ify-select" value={editForm.payment_status} onChange={(e) => setEditForm({ ...editForm, payment_status: e.target.value })}>
+              <option value="Pagado">Pagado</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Parcial">Parcial</option>
+            </select>
+          </Field>
+          <Field label="Estado">
+            <select className="ify-select" value={editForm.state} onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}>
+              <option value="Registrado">Registrado</option>
+              <option value="Anulado">Anulado</option>
+              <option value="Enviado">Enviado</option>
+            </select>
+          </Field>
+          <Field label="Moneda">
+            <select className="ify-select" value={editForm.currency_type_id} onChange={(e) => setEditForm({ ...editForm, currency_type_id: e.target.value })}>
+              <option value="PEN">PEN — Soles</option>
+              <option value="USD">USD — Dólares</option>
+            </select>
+          </Field>
+          <Field label="Precio modificado">
+            <select className="ify-select" value={editForm.modified_price} onChange={(e) => setEditForm({ ...editForm, modified_price: e.target.value })}>
+              <option value="NO">NO</option>
+              <option value="SI">SI</option>
+            </select>
+          </Field>
+        </div>
+
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-semibold text-[var(--muted)]">Ítems</p>
+          <div className="space-y-2">
+            {editItems.map((it, idx) => (
+              <div key={idx} className="grid gap-2 rounded border border-[var(--border)] p-2 sm:grid-cols-[1fr_80px_100px_32px]">
+                <input
+                  className="ify-input text-xs"
+                  placeholder="Descripción"
+                  value={it.description}
+                  onChange={(e) => {
+                    const next = [...editItems];
+                    next[idx] = { ...next[idx], description: e.target.value };
+                    setEditItems(next);
+                  }}
+                />
+                <input
+                  className="ify-input text-xs"
+                  type="number"
+                  placeholder="Cant."
+                  value={it.quantity}
+                  onChange={(e) => {
+                    const next = [...editItems];
+                    next[idx] = { ...next[idx], quantity: e.target.value };
+                    setEditItems(next);
+                  }}
+                />
+                <input
+                  className="ify-input text-xs"
+                  type="number"
+                  placeholder="P. unit."
+                  value={it.unit_price}
+                  onChange={(e) => {
+                    const next = [...editItems];
+                    next[idx] = { ...next[idx], unit_price: e.target.value };
+                    setEditItems(next);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="ify-btn-ghost text-red-600"
+                  onClick={() => setEditItems(editItems.filter((_, i) => i !== idx))}
+                  title="Quitar línea"
+                >
+                  <i className="bi bi-x-lg" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="ify-btn-outline mt-2 text-xs"
+            onClick={() => setEditItems([...editItems, { description: "", quantity: "1", unit_price: "0" }])}
+          >
+            <i className="bi bi-plus" /> Agregar ítem
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -285,6 +478,9 @@ export function InventoryList() {
   const [items, setItems] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ type: "in", quantity: "", reference: "", description: "" });
   const [importMsg, setImportMsg] = useState("");
   const [importing, setImporting] = useState(false);
   const [adjustMsg, setAdjustMsg] = useState("");
@@ -342,6 +538,43 @@ export function InventoryList() {
     }
   };
 
+  const openEdit = (row: Record<string, unknown>) => {
+    setEditId(Number(row.id));
+    setEditForm({
+      type: String(row.type ?? "in"),
+      quantity: String(row.quantity ?? row.stock ?? ""),
+      reference: String(row.reference ?? ""),
+      description: String(row.description ?? ""),
+    });
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!editId) return;
+    try {
+      await api.inventory.updateMovement(editId, {
+        type: editForm.type,
+        quantity: Number(editForm.quantity),
+        reference: editForm.reference,
+        description: editForm.description,
+      });
+      setEditOpen(false);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al editar movimiento");
+    }
+  };
+
+  const removeMovement = async (id: number, label: string) => {
+    if (!confirm(`¿Eliminar el registro «${label}»?`)) return;
+    try {
+      await api.inventory.deleteMovement(id);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al eliminar");
+    }
+  };
+
   const filtered = rows.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -388,7 +621,44 @@ export function InventoryList() {
         { key: "type", label: "Tipo" },
         { key: "quantity", label: "Cantidad" },
         { key: "reference", label: "Referencia" },
+        {
+          key: "actions",
+          label: "Acciones",
+          render: (r) => (
+            <RowActions
+              onEdit={() => openEdit(r)}
+              onDelete={() => removeMovement(Number(r.id), String(r.item ?? r.reference ?? r.id))}
+            />
+          ),
+        },
       ]} />
+      <Modal open={editOpen} title="Editar movimiento" onClose={() => setEditOpen(false)}
+        footer={
+          <>
+            <button type="button" className="ify-btn-ghost" onClick={() => setEditOpen(false)}>Cancelar</button>
+            <button type="button" className="ify-btn-primary" onClick={saveEdit}>Guardar</button>
+          </>
+        }>
+        <div className="grid gap-3">
+          <Field label="Tipo">
+            <select className="ify-select" value={editForm.type} onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}>
+              <option value="in">Entrada</option>
+              <option value="out">Salida</option>
+              <option value="adjust">Ajuste</option>
+              <option value="Stock">Stock</option>
+            </select>
+          </Field>
+          <Field label="Cantidad">
+            <input type="number" className="ify-input" value={editForm.quantity} onChange={(e) => setEditForm({ ...editForm, quantity: e.target.value })} />
+          </Field>
+          <Field label="Referencia">
+            <input className="ify-input" value={editForm.reference} onChange={(e) => setEditForm({ ...editForm, reference: e.target.value })} />
+          </Field>
+          <Field label="Descripción">
+            <input className="ify-input" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+          </Field>
+        </div>
+      </Modal>
       <Modal open={modalOpen} title="Ajuste de inventario" onClose={() => setModalOpen(false)}
         footer={<button type="button" className="ify-btn-primary" onClick={adjust} disabled={adjusting}>{adjusting ? "Aplicando..." : "Aplicar"}</button>}>
         <div className="grid gap-3">

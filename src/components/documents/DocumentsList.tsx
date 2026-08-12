@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DataTable } from "@/components/ui/DataTable";
+import { RowActions } from "@/components/ui/RowActions";
 import { api } from "@/lib/api/client";
 
 type DocRow = Record<string, unknown>;
@@ -39,6 +40,16 @@ export function DocumentsList() {
   useEffect(() => {
     load();
   }, []);
+
+  const remove = async (id: number, number: string) => {
+    if (!confirm(`¿Eliminar el comprobante ${number}? Esta acción no se puede deshacer.`)) return;
+    try {
+      await api.documents.delete(id);
+      load(search, page);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo eliminar");
+    }
+  };
 
   return (
     <div className="ify-page">
@@ -137,11 +148,14 @@ export function DocumentsList() {
           { key: "balance", label: "Saldo", render: (r) => Number(r.balance ?? 0).toFixed(2) },
           {
             key: "actions",
-            label: "",
+            label: "Acciones",
             render: (r) => (
-              <Link href={`/documents/${r.id}`} className="ify-btn-ghost px-2" title="Imprimir / ver">
-                <i className="bi bi-printer" />
-              </Link>
+              <div className="flex items-center gap-1">
+                <Link href={`/documents/${r.id}`} className="ify-btn-ghost px-2" title="Ver / imprimir">
+                  <i className="bi bi-printer" />
+                </Link>
+                <RowActions onDelete={() => remove(Number(r.id), String(r.number ?? ""))} />
+              </div>
             ),
           },
         ]}

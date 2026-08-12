@@ -78,6 +78,7 @@ export const api = {
       apiFetch<{ success: boolean; message: string }>(local(`/documents/${id}/resend`), {
         method: "POST",
       }),
+    delete: (id: number) => apiFetch(local(`/documents/${id}`), { method: "DELETE" }),
   },
 
   customers: {
@@ -190,6 +191,13 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/sale-notes/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: number) => apiFetch(local(`/sale-notes/${id}`), { method: "DELETE" }),
   },
 
   quotations: {
@@ -212,6 +220,13 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    updateMovement: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/inventory/movements/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    deleteMovement: (id: number) => apiFetch(local(`/inventory/movements/${id}`), { method: "DELETE" }),
     import: (rows: { product: string; establishment: string; stock: number }[]) =>
       apiFetch<{ updated: number; total: number }>(local("/inventory/import"), {
         method: "POST",
