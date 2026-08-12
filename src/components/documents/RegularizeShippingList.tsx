@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DataTable } from "@/components/ui/DataTable";
+import { RowActions } from "@/components/ui/RowActions";
 import { PageHeader } from "@/components/ui/Modal";
 import { api } from "@/lib/api/client";
 
@@ -84,11 +85,22 @@ export function RegularizeShippingList() {
           { key: "total", label: "Total", render: (r) => `S/ ${Number(r.total ?? 0).toFixed(2)}` },
           {
             key: "id",
-            label: "Acción",
+            label: "Acciones",
             render: (r) => (
-              <button type="button" className="ify-btn-outline text-xs" onClick={() => regularize(Number(r.id))}>
-                Regularizar
-              </button>
+              <div className="flex gap-1">
+                <button type="button" className="ify-btn-outline text-xs" onClick={() => regularize(Number(r.id))}>
+                  Regularizar
+                </button>
+                <RowActions onDelete={async () => {
+                  if (!confirm(`¿Eliminar comprobante ${r.number}?`)) return;
+                  try {
+                    await api.documents.delete(Number(r.id));
+                    load();
+                  } catch (e) {
+                    alert(e instanceof Error ? e.message : "Error al eliminar");
+                  }
+                }} />
+              </div>
             ),
           },
         ]}

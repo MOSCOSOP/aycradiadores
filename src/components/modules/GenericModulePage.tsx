@@ -52,6 +52,10 @@ const ZonesList = () => (
   <CatalogListPage pathname="/zones" apiPath="zones/records" title="Lista de zonas" />
 );
 
+const catalog = (pathname: string, title: string, labelField?: "name" | "description") => () => (
+  <CatalogListPage pathname={pathname} apiPath={`${pathname.replace(/^\//, "")}/records`} title={title} labelField={labelField} />
+);
+
 const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/documents/massive": MassDocumentEmission,
   "/documents/regularize-shipping": RegularizeShippingList,
@@ -88,6 +92,39 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/accounting/entries": AccountingEntriesList,
   "/accounting/books": AccountingDailyList,
   "/accounting/books-excel": AccountingDailyList,
+  "/inventory-references": catalog("/inventory-references", "Referencias de inventario"),
+  "/transfers": catalog("/transfers", "Traslados"),
+  "/devolutions": catalog("/devolutions", "Devoluciones"),
+  "/brands": catalog("/brands", "Marcas"),
+  "/cupones": catalog("/cupones", "Cupones"),
+  "/ingredients": catalog("/ingredients", "Ingredientes"),
+  "/lines": catalog("/lines", "Líneas"),
+  "/series": catalog("/series", "Series"),
+  "/item-lots": catalog("/item-lots", "Lotes"),
+  "/price-adjustments": catalog("/price-adjustments", "Ajustes de precio"),
+  "/discount-types": catalog("/discount-types", "Tipos de descuentos"),
+  "/transports": catalog("/transports", "Transportistas"),
+  "/drivers": catalog("/drivers", "Conductores"),
+  "/vehicles": catalog("/vehicles", "Vehículos"),
+  "/origin-addresses": catalog("/origin-addresses", "Direcciones de partida"),
+  "/dispatches-carrier": catalog("/dispatches-carrier", "G.R. Transportista"),
+  "/voided": catalog("/voided", "Anulaciones"),
+  "/summaries": catalog("/summaries", "Resúmenes"),
+  "/contingencies": catalog("/contingencies", "Comprobantes contingencia"),
+  "/technical-services": catalog("/technical-services", "Servicio soporte técnico"),
+  "/documents-recurrence": catalog("/documents-recurrence", "Comprobantes recurrentes"),
+  "/expenses": catalog("/expenses", "Gastos diversos"),
+  "/purchase-orders": catalog("/purchase-orders", "Órdenes de compra"),
+  "/purchase-quotations": catalog("/purchase-quotations", "Cotizaciones de compra"),
+  "/purchase-settlements": catalog("/purchase-settlements", "Liquidación de compra"),
+  "/payroll": catalog("/payroll", "Planilla"),
+  "/retentions": catalog("/retentions", "Retenciones"),
+  "/perceptions": catalog("/perceptions", "Percepciones"),
+  "/order-forms": catalog("/order-forms", "Órdenes de pedido"),
+  "/delivery-orders": catalog("/delivery-orders", "Órdenes de entrega"),
+  "/complaints-book": catalog("/complaints-book", "Libro de reclamaciones"),
+  "/fixed-asset/items": catalog("/fixed-asset/items", "Activos fijos — ítems"),
+  "/fixed-asset/purchases": catalog("/fixed-asset/purchases", "Activos fijos — compras"),
 };
 
 const DEFAULT_REPORT_COLUMNS = [

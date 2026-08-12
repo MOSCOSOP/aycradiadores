@@ -180,6 +180,12 @@ export const api = {
         body: JSON.stringify(payload),
       }),
     delete: (id: number) => apiFetch(local(`/purchases/${id}`), { method: "DELETE" }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/purchases/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
   },
 
   saleNotes: {
@@ -209,6 +215,13 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/quotations/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: number) => apiFetch(local(`/quotations/${id}`), { method: "DELETE" }),
   },
 
   inventory: {
@@ -255,6 +268,7 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    delete: (id: number) => apiFetch(local(`/cash/${id}`), { method: "DELETE" }),
     report: (id: number, type: string) =>
       apiFetch<{ data: Record<string, unknown>[] }>(local(`/cash/${id}/report?type=${type}`)),
   },
@@ -262,6 +276,19 @@ export const api = {
   establishments: {
     records: () =>
       apiFetch<{ data: Record<string, unknown>[] }>(local(API.establishments.records, { page: 1, limit: 50 })),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch(local("/establishments"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/establishments/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: number) => apiFetch(local(`/establishments/${id}`), { method: "DELETE" }),
   },
 
   users: {
@@ -325,16 +352,31 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/dispatches/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: number) => apiFetch(local(`/dispatches/${id}`), { method: "DELETE" }),
   },
 
   orderNotes: {
     records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/order-notes/records")),
+    get: (id: number | string) => apiFetch<{ data: Record<string, unknown> }>(local(`/order-notes/${id}`)),
     create: (payload: Record<string, unknown>) =>
       apiFetch(local("/order-notes"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/order-notes/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: number) => apiFetch(local(`/order-notes/${id}`), { method: "DELETE" }),
   },
 
   sire: {
@@ -371,6 +413,14 @@ export const api = {
     chart: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/accounting/chart/records")),
     daily: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/accounting/daily/records")),
     entries: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/accounting/entries/records")),
+    updateChart: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/accounting/chart/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    deleteChart: (id: number) => apiFetch(local(`/accounting/chart/${id}`), { method: "DELETE" }),
+    deleteDaily: (id: number) => apiFetch(local(`/accounting/daily/${id}`), { method: "DELETE" }),
   },
 
   reports: {

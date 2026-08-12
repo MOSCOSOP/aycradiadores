@@ -7,6 +7,8 @@ import { ListToolbar } from "@/components/ui/ListToolbar";
 import { RowActions } from "@/components/ui/RowActions";
 import { Modal, PageHeader, Field } from "@/components/ui/Modal";
 import { api } from "@/lib/api/client";
+import { LineItemsEditor, mapApiItems, serializeLineItems } from "@/components/ui/LineItemsEditor";
+import { RecordsCrudList } from "@/components/modules/RecordsCrudList";
 import { REPORT_SECTIONS } from "@/lib/reports-catalog";
 
 function useRecords(fetcher: () => Promise<{ data: Record<string, unknown>[] }>) {
@@ -104,9 +106,20 @@ export function DocumentsNotSentList() {
           key: "id",
           label: "Acciones",
           render: (r) => (
-            <button type="button" className="ify-btn-outline text-xs" onClick={() => resend(Number(r.id))}>
-              Reenviar SUNAT
-            </button>
+            <div className="flex gap-1">
+              <button type="button" className="ify-btn-outline text-xs" onClick={() => resend(Number(r.id))}>
+                Reenviar SUNAT
+              </button>
+              <RowActions onDelete={async () => {
+                if (!confirm(`¿Eliminar comprobante ${r.number}?`)) return;
+                try {
+                  await api.documents.delete(Number(r.id));
+                  load();
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : "Error al eliminar");
+                }
+              }} />
+            </div>
           ),
         },
       ]} emptyMessage="Todos los comprobantes están enviados o no hay registros" />
@@ -224,19 +237,72 @@ export function DispatchesList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    transfer_reason: "Venta",
+    origin_address: "",
+    dest_address: "",
+    vehicle_plate: "",
+    driver_name: "",
+    driver_document: "",
+    state: "Registrado",
+  });
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
     api.dispatches.records().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const filtered = rows.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return (
-      String(r.number ?? "").toLowerCase().includes(q) ||
-      String(r.customer_name ?? "").toLowerCase().includes(q)
-    );
+    return String(r.number ?? "").toLowerCase().includes(q) || String(r.customer_name ?? "").toLowerCase().includes(q);
   });
+
+  const openEdit = async (id: number) => {
+    setEditId(id);
+    setEditOpen(true);
+    try {
+      const res = await api.dispatches.get(id);
+      const d = res.data ?? {};
+      setEditForm({
+        transfer_reason: String(d.transfer_reason ?? "Venta"),
+        origin_address: String(d.origin_address ?? ""),
+        dest_address: String(d.dest_address ?? ""),
+        vehicle_plate: String(d.vehicle_plate ?? ""),
+        driver_name: String(d.driver_name ?? ""),
+        driver_document: String(d.driver_document ?? ""),
+        state: String(d.state ?? "Registrado"),
+      });
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al cargar guía");
+      setEditOpen(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editId) return;
+    try {
+      await api.dispatches.update(editId, editForm);
+      setEditOpen(false);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al guardar");
+    }
+  };
+
+  const remove = async (id: number, number: string) => {
+    if (!confirm(`¿Eliminar guía ${number}?`)) return;
+    try {
+      await api.dispatches.delete(id);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al eliminar");
+    }
+  };
 
   return (
     <div className="ify-page">
@@ -248,24 +314,85 @@ export function DispatchesList() {
       </div>
       <DataTable loading={loading} rows={filtered} columns={[
         { key: "idx", label: "#", render: (_r, i) => i + 1 },
-        {
-          key: "number",
-          label: "Número",
-          render: (r) => <Link href={`/dispatches/${r.id}`} className="ify-link">{String(r.number)}</Link>,
-        },
+        { key: "number", label: "Número", render: (r) => <Link href={`/dispatches/${r.id}`} className="ify-link">{String(r.number)}</Link> },
         { key: "customer_name", label: "Cliente" },
         { key: "date_of_issue", label: "F. Emisión", render: (r) => String(r.date_of_issue || r.date) },
         { key: "transfer_reason", label: "Motivo traslado" },
         { key: "vehicle_plate", label: "Placa", render: (r) => String(r.vehicle_plate || r.plate || "—") },
         { key: "driver_name", label: "Conductor", render: (r) => String(r.driver_name || "—") },
         { key: "state_type_description", label: "Estado", render: (r) => String(r.state_type_description || r.state || "Registrado") },
+        { key: "actions", label: "Acciones", render: (r) => <RowActions onEdit={() => openEdit(Number(r.id))} onDelete={() => remove(Number(r.id), String(r.number ?? ""))} /> },
       ]} emptyMessage="Sin guías — crea la primera" />
+      <Modal open={editOpen} title="Editar guía de remisión" onClose={() => setEditOpen(false)}
+        footer={<><button type="button" className="ify-btn-ghost" onClick={() => setEditOpen(false)}>Cancelar</button><button type="button" className="ify-btn-primary" onClick={saveEdit}>Guardar</button></>}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Motivo traslado"><input className="ify-input" value={editForm.transfer_reason} onChange={(e) => setEditForm({ ...editForm, transfer_reason: e.target.value })} /></Field>
+          <Field label="Estado">
+            <select className="ify-select" value={editForm.state} onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}>
+              <option value="Registrado">Registrado</option><option value="Enviado">Enviado</option><option value="Anulado">Anulado</option>
+            </select>
+          </Field>
+          <Field label="Dirección origen" className="sm:col-span-2"><input className="ify-input" value={editForm.origin_address} onChange={(e) => setEditForm({ ...editForm, origin_address: e.target.value })} /></Field>
+          <Field label="Dirección destino" className="sm:col-span-2"><input className="ify-input" value={editForm.dest_address} onChange={(e) => setEditForm({ ...editForm, dest_address: e.target.value })} /></Field>
+          <Field label="Placa"><input className="ify-input" value={editForm.vehicle_plate} onChange={(e) => setEditForm({ ...editForm, vehicle_plate: e.target.value })} /></Field>
+          <Field label="Conductor"><input className="ify-input" value={editForm.driver_name} onChange={(e) => setEditForm({ ...editForm, driver_name: e.target.value })} /></Field>
+          <Field label="Doc. conductor"><input className="ify-input" value={editForm.driver_document} onChange={(e) => setEditForm({ ...editForm, driver_document: e.target.value })} /></Field>
+        </div>
+      </Modal>
     </div>
   );
 }
 
 export function OrderNotesList() {
-  const { rows, loading } = useRecords(() => api.orderNotes.records());
+  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ state: "Pendiente", customer_name: "" });
+  const [editItems, setEditItems] = useState<{ description: string; quantity: string; unit_price: string }[]>([]);
+
+  const load = () => {
+    setLoading(true);
+    api.orderNotes.records().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openEdit = async (id: number) => {
+    setEditId(id);
+    setEditOpen(true);
+    try {
+      const res = await api.orderNotes.get(id);
+      const d = res.data ?? {};
+      setEditForm({ state: String(d.state ?? "Pendiente"), customer_name: String(d.customer_name ?? "") });
+      setEditItems(mapApiItems(d.items as Record<string, unknown>[] | undefined));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al cargar pedido");
+      setEditOpen(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editId) return;
+    try {
+      await api.orderNotes.update(editId, { state: editForm.state, items: serializeLineItems(editItems) });
+      setEditOpen(false);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al guardar");
+    }
+  };
+
+  const remove = async (id: number, number: string) => {
+    if (!confirm(`¿Eliminar pedido ${number}?`)) return;
+    try {
+      await api.orderNotes.delete(id);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al eliminar");
+    }
+  };
+
   return (
     <div className="ify-page">
       <PageHeader title="Pedidos" actions={
@@ -276,7 +403,17 @@ export function OrderNotesList() {
         { key: "date", label: "Fecha" },
         { key: "total", label: "Total", render: (r) => `S/ ${Number(r.total).toFixed(2)}` },
         { key: "state", label: "Estado" },
+        { key: "actions", label: "Acciones", render: (r) => <RowActions onEdit={() => openEdit(Number(r.id))} onDelete={() => remove(Number(r.id), String(r.number ?? ""))} /> },
       ]} />
+      <Modal open={editOpen} title={`Editar pedido${editForm.customer_name ? ` — ${editForm.customer_name}` : ""}`} onClose={() => setEditOpen(false)}
+        footer={<><button type="button" className="ify-btn-ghost" onClick={() => setEditOpen(false)}>Cancelar</button><button type="button" className="ify-btn-primary" onClick={saveEdit}>Guardar</button></>}>
+        <Field label="Estado">
+          <select className="ify-select" value={editForm.state} onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}>
+            <option value="Pendiente">Pendiente</option><option value="Atendido">Atendido</option><option value="Anulado">Anulado</option>
+          </select>
+        </Field>
+        <div className="mt-4"><LineItemsEditor items={editItems} onChange={setEditItems} /></div>
+      </Modal>
     </div>
   );
 }
@@ -324,19 +461,73 @@ export function SireAnnexesList() {
 }
 
 export function AccountingChartList() {
-  const { rows, loading } = useRecords(() => api.accounting.chart());
+  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [form, setForm] = useState({ code: "", name: "", type: "Activo" });
+
+  const load = () => {
+    setLoading(true);
+    api.accounting.chart().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const save = async () => {
+    if (!editId) return;
+    await api.accounting.updateChart(editId, form);
+    setModalOpen(false);
+    load();
+  };
+
   return (
     <div className="ify-page">
       <PageHeader title="Plan de cuentas" subtitle="PCGE simplificado" />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "code", label: "Código" }, { key: "name", label: "Cuenta" }, { key: "type", label: "Tipo" },
+        {
+          key: "actions",
+          label: "Acciones",
+          render: (r) => (
+            <RowActions
+              onEdit={() => {
+                setEditId(Number(r.id));
+                setForm({ code: String(r.code ?? ""), name: String(r.name ?? ""), type: String(r.type ?? "") });
+                setModalOpen(true);
+              }}
+              onDelete={async () => {
+                if (!confirm("¿Eliminar cuenta?")) return;
+                await api.accounting.deleteChart(Number(r.id));
+                load();
+              }}
+            />
+          ),
+        },
       ]} />
+      <Modal open={modalOpen} title="Editar cuenta" onClose={() => setModalOpen(false)}
+        footer={<button type="button" className="ify-btn-primary" onClick={save}>Guardar</button>}>
+        <div className="grid gap-3">
+          <Field label="Código"><input className="ify-input" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></Field>
+          <Field label="Nombre"><input className="ify-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+          <Field label="Tipo"><input className="ify-input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} /></Field>
+        </div>
+      </Modal>
     </div>
   );
 }
 
 export function AccountingDailyList() {
-  const { rows, loading } = useRecords(() => api.accounting.daily());
+  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    api.accounting.daily().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
   return (
     <div className="ify-page">
       <PageHeader title="Libro diario" subtitle="Asientos generados automáticamente por ventas" />
@@ -345,6 +536,17 @@ export function AccountingDailyList() {
         { key: "account_code", label: "Cuenta" }, { key: "account_name", label: "Nombre" },
         { key: "debit", label: "Debe", render: (r) => Number(r.debit) > 0 ? Number(r.debit).toFixed(2) : "" },
         { key: "credit", label: "Haber", render: (r) => Number(r.credit) > 0 ? Number(r.credit).toFixed(2) : "" },
+        {
+          key: "actions",
+          label: "Acciones",
+          render: (r) => (
+            <RowActions onDelete={async () => {
+              if (!confirm("¿Eliminar asiento?")) return;
+              await api.accounting.deleteDaily(Number(r.id));
+              load();
+            }} />
+          ),
+        },
       ]} />
     </div>
   );
@@ -363,44 +565,13 @@ export function AccountingEntriesList() {
 }
 
 export function FinancesToPayList() {
-  const { rows, loading } = useRecords(() => api.finances.toPay());
-  return (
-    <div className="ify-page">
-      <PageHeader title="Letras por pagar" subtitle="Obligaciones con proveedores" />
-      <DataTable loading={loading} rows={rows} columns={[
-        { key: "date", label: "Fecha" }, { key: "supplier", label: "Proveedor" },
-        { key: "document", label: "Documento" },
-        { key: "amount", label: "Monto", render: (r) => `S/ ${Number(r.amount).toFixed(2)}` },
-        { key: "state", label: "Estado" },
-      ]} />
-    </div>
-  );
+  return <RecordsCrudList pathname="/finances/to-pay" apiPath="finances/to-pay/records" title="Letras por pagar" subtitle="Obligaciones con proveedores" />;
 }
 
 export function FinancesToCollectList() {
-  const { rows, loading } = useRecords(() => api.finances.toCollect());
-  return (
-    <div className="ify-page">
-      <PageHeader title="Letras por cobrar" subtitle="Cuentas por cobrar a clientes" />
-      <DataTable loading={loading} rows={rows} columns={[
-        { key: "date", label: "Fecha" }, { key: "customer", label: "Cliente" },
-        { key: "document", label: "Documento" },
-        { key: "amount", label: "Monto", render: (r) => `S/ ${Number(r.amount).toFixed(2)}` },
-        { key: "state", label: "Estado" },
-      ]} />
-    </div>
-  );
+  return <RecordsCrudList pathname="/finances/to-collect" apiPath="finances/to-collect/records" title="Letras por cobrar" subtitle="Cuentas por cobrar a clientes" />;
 }
 
 export function FinancesIncomeList() {
-  const { rows, loading } = useRecords(() => api.finances.income());
-  return (
-    <div className="ify-page">
-      <PageHeader title="Ingresos diversos" />
-      <DataTable loading={loading} rows={rows} columns={[
-        { key: "date", label: "Fecha" }, { key: "description", label: "Descripción" },
-        { key: "amount", label: "Monto", render: (r) => `S/ ${Number(r.amount).toFixed(2)}` },
-      ]} />
-    </div>
-  );
+  return <RecordsCrudList pathname="/finances/income" apiPath="finances/income/records" title="Ingresos diversos" />;
 }

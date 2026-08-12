@@ -118,6 +118,133 @@ const MODULE_EXTRA_FIELDS: Record<string, CatalogField[]> = {
     { key: "code", label: "Código zona" },
     { key: "reference", label: "Referencia" },
   ],
+  "/series": [
+    { key: "number", label: "Serie" },
+    { key: "document_type_id", label: "Tipo documento" },
+    { key: "establishment_id", label: "Local ID", type: "number" },
+  ],
+  "/item-lots": [
+    { key: "code", label: "Código lote" },
+    { key: "item_description", label: "Producto" },
+    { key: "quantity", label: "Cantidad", type: "number" },
+    { key: "date", label: "Fecha", type: "date" },
+  ],
+  "/expenses": [
+    { key: "number", label: "Número" },
+    { key: "supplier_name", label: "Proveedor" },
+    { key: "amount", label: "Monto", type: "number" },
+    { key: "date", label: "Fecha", type: "date" },
+  ],
+  "/payroll": [
+    { key: "employee_name", label: "Empleado" },
+    { key: "document_number", label: "DNI" },
+    { key: "amount", label: "Sueldo", type: "number" },
+    { key: "date", label: "Periodo", type: "date" },
+  ],
+  "/retentions": [
+    { key: "number", label: "Número" },
+    { key: "customer_name", label: "Cliente" },
+    { key: "percentage", label: "Porcentaje", type: "number" },
+    { key: "total", label: "Total", type: "number" },
+  ],
+  "/perceptions": [
+    { key: "number", label: "Número" },
+    { key: "supplier_name", label: "Proveedor" },
+    { key: "percentage", label: "Porcentaje", type: "number" },
+    { key: "total", label: "Total", type: "number" },
+  ],
+  "/contingencies": [
+    { key: "number", label: "Número" },
+    { key: "date", label: "Fecha", type: "date" },
+    { key: "observation", label: "Motivo", type: "textarea" },
+  ],
+  "/technical-services": [
+    { key: "number", label: "N° servicio" },
+    { key: "customer_name", label: "Cliente" },
+    { key: "plate", label: "Placa" },
+    { key: "date", label: "Fecha", type: "date" },
+  ],
+  "/purchase-orders": [
+    { key: "number", label: "N° orden" },
+    { key: "supplier_name", label: "Proveedor" },
+    { key: "total", label: "Total", type: "number" },
+    { key: "date", label: "Fecha", type: "date" },
+  ],
+  "/purchase-quotations": [
+    { key: "number", label: "N° cotización" },
+    { key: "supplier_name", label: "Proveedor" },
+    { key: "total", label: "Total", type: "number" },
+  ],
+  "/purchase-settlements": [
+    { key: "number", label: "Número" },
+    { key: "supplier_name", label: "Proveedor" },
+    { key: "total", label: "Total", type: "number" },
+  ],
+  "/order-forms": [
+    { key: "number", label: "Número" },
+    { key: "customer_name", label: "Cliente" },
+    { key: "date", label: "Fecha", type: "date" },
+  ],
+  "/delivery-orders": [
+    { key: "number", label: "Número" },
+    { key: "customer_name", label: "Cliente" },
+    { key: "date", label: "Fecha entrega", type: "date" },
+  ],
+  "/origin-addresses": [
+    { key: "address", label: "Dirección", type: "textarea" },
+    { key: "ubigeo", label: "Ubigeo" },
+    { key: "reference", label: "Referencia" },
+  ],
+  "/documents-recurrence": [
+    { key: "customer_name", label: "Cliente" },
+    { key: "document_type", label: "Tipo comprobante" },
+    { key: "frequency", label: "Frecuencia" },
+    { key: "date", label: "Próxima emisión", type: "date" },
+  ],
+  "/complaints-book": [
+    { key: "number", label: "N° reclamo" },
+    { key: "customer_name", label: "Cliente" },
+    { key: "date", label: "Fecha", type: "date" },
+    { key: "observation", label: "Detalle", type: "textarea" },
+  ],
+  "/finances/movements": [
+    { key: "date", label: "Fecha", type: "date" },
+    { key: "type", label: "Tipo" },
+    { key: "description", label: "Descripción" },
+    { key: "customer", label: "Cliente / tercero" },
+    { key: "amount", label: "Monto", type: "number" },
+    { key: "currency", label: "Moneda" },
+  ],
+  "/finances/income": [
+    { key: "date", label: "Fecha", type: "date" },
+    { key: "description", label: "Descripción" },
+    { key: "amount", label: "Monto", type: "number" },
+  ],
+  "/finances/to-pay": [
+    { key: "date", label: "Fecha", type: "date" },
+    { key: "supplier", label: "Proveedor" },
+    { key: "document", label: "Documento" },
+    { key: "amount", label: "Monto", type: "number" },
+    { key: "due_date", label: "Vencimiento", type: "date" },
+  ],
+  "/finances/to-collect": [
+    { key: "date", label: "Fecha", type: "date" },
+    { key: "customer", label: "Cliente" },
+    { key: "document", label: "Documento" },
+    { key: "amount", label: "Monto", type: "number" },
+    { key: "due_date", label: "Vencimiento", type: "date" },
+  ],
+  "/fixed-asset/items": [
+    { key: "code", label: "Código" },
+    { key: "description", label: "Descripción" },
+    { key: "amount", label: "Valor", type: "number" },
+    { key: "date", label: "Fecha adquisición", type: "date" },
+  ],
+  "/fixed-asset/purchases": [
+    { key: "number", label: "Número" },
+    { key: "supplier_name", label: "Proveedor" },
+    { key: "total", label: "Total", type: "number" },
+  ],
 };
 
 const DEFAULT_EXTRA: CatalogField[] = [

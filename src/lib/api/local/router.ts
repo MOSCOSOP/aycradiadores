@@ -111,8 +111,8 @@ function importedModuleKeyFromApiPath(apiPath: string): string | null {
   return base || null;
 }
 
-/** Módulos con handlers dedicados — no usar CRUD genérico por id */
-const RESERVED_GENERIC_MODULES = new Set([
+/** Rutas de un solo segmento con handler Prisma dedicado — no CRUD genérico */
+const RESERVED_SINGLE_SEGMENT = new Set([
   "documents",
   "persons",
   "items",
@@ -126,26 +126,90 @@ const RESERVED_GENERIC_MODULES = new Set([
   "cash",
   "settings",
   "pos",
-  "accounting",
-  "sire",
-  "finances",
   "reports",
   "sale-notes",
   "quotations",
   "order-notes",
   "auth",
-  "customers",
-  "suppliers",
   "backup",
 ]);
 
+const BLOCKED_GENERIC_PATHS = new Set([
+  "persons/customers",
+  "persons/suppliers",
+  "inventory/movements",
+  "documents/not-sent",
+  "documents/massive",
+  "documents/regularize-shipping",
+]);
+
 function parseGenericIdPath(path: string): { modulePath: string; id: number } | null {
-  const match = path.match(/^([a-z0-9-]+(?:\/[a-z0-9-]+)*)\/(\d+)$/);
+  const match = path.match(/^(.+)\/(\d+)$/);
   if (!match) return null;
   const modulePath = match[1];
-  const top = modulePath.split("/")[0];
-  if (RESERVED_GENERIC_MODULES.has(top)) return null;
+  if (BLOCKED_GENERIC_PATHS.has(modulePath)) return null;
+  const segments = modulePath.split("/");
+  if (segments.length === 1 && RESERVED_SINGLE_SEGMENT.has(modulePath)) return null;
   return { modulePath, id: Number(match[2]) };
+}
+
+async function getOrSeedGenericRecords(
+  recordsPath: string,
+  seed: () => Promise<Record<string, unknown>[]>
+): Promise<Record<string, unknown>[]> {
+  let data = await readGenericRecords(recordsPath);
+  if (!data.length) {
+    data = await seed();
+    if (data.length) await saveGenericRecords(recordsPath, data);
+  }
+  return data;
+}
+
+async function syncLineItems(
+  entity: "quotation" | "orderNote" | "saleNote",
+  parentId: number,
+  items: Record<string, unknown>[]
+) {
+  const mapItem = (it: Record<string, unknown>) => {
+    const qty = Number(it.quantity || 1);
+    const price = Number(it.unit_price || 0);
+    const total = qty * price;
+    return { description: String(it.description || ""), quantity: qty, unitPrice: price, total };
+  };
+  if (entity === "quotation") {
+    await prisma.quotationItem.deleteMany({ where: { quotationId: parentId } });
+    let total = 0;
+    const rows = items.map((it) => {
+      const row = mapItem(it);
+      total += row.total;
+      return { quotationId: parentId, ...row };
+    });
+    if (rows.length) await prisma.quotationItem.createMany({ data: rows });
+    await prisma.quotation.update({ where: { id: parentId }, data: { total } });
+    return total;
+  }
+  if (entity === "orderNote") {
+    await prisma.orderNoteItem.deleteMany({ where: { orderNoteId: parentId } });
+    let total = 0;
+    const rows = items.map((it) => {
+      const row = mapItem(it);
+      total += row.total;
+      return { orderNoteId: parentId, ...row };
+    });
+    if (rows.length) await prisma.orderNoteItem.createMany({ data: rows });
+    await prisma.orderNote.update({ where: { id: parentId }, data: { total } });
+    return total;
+  }
+  await prisma.saleNoteItem.deleteMany({ where: { saleNoteId: parentId } });
+  let total = 0;
+  const rows = items.map((it) => {
+    const row = mapItem(it);
+    total += row.total;
+    return { saleNoteId: parentId, ...row };
+  });
+  if (rows.length) await prisma.saleNoteItem.createMany({ data: rows });
+  await prisma.saleNote.update({ where: { id: parentId }, data: { total } });
+  return total;
 }
 
 async function removeImportedRow(moduleKey: string, id: number) {
@@ -1342,6 +1406,34 @@ export async function handleLocalApi(
     };
   }
 
+  if (method === "PUT" && path.match(/^purchases\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const purchase = await prisma.purchase.findUnique({ where: { id } });
+    if (!purchase) throw new Error("Compra no encontrada");
+    await prisma.purchase.update({
+      where: { id },
+      data: {
+        state: p.state ? String(p.state) : purchase.state,
+        supplierId: p.supplier_id ? Number(p.supplier_id) : purchase.supplierId,
+      },
+    });
+    if (Array.isArray(p.items)) {
+      await prisma.purchaseItem.deleteMany({ where: { purchaseId: id } });
+      let total = 0;
+      const rows = (p.items as Record<string, unknown>[]).map((it) => {
+        const qty = Number(it.quantity || 1);
+        const price = Number(it.unit_price || 0);
+        const t = qty * price;
+        total += t;
+        return { purchaseId: id, description: String(it.description || ""), quantity: qty, unitPrice: price, total: t };
+      });
+      if (rows.length) await prisma.purchaseItem.createMany({ data: rows });
+      await prisma.purchase.update({ where: { id }, data: { total } });
+    }
+    return { success: true };
+  }
+
   // ── Notas de venta ──
   if (method === "GET" && path === "sale-notes/records") {
     const imported = await readImportedModule("sale_notes");
@@ -1542,6 +1634,33 @@ export async function handleLocalApi(
         })),
       },
     };
+  }
+
+  if (method === "PUT" && path.match(/^quotations\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const q = await prisma.quotation.findUnique({ where: { id } });
+    if (!q) throw new Error("Cotización no encontrada");
+    await prisma.quotation.update({
+      where: { id },
+      data: {
+        state: p.state ? String(p.state) : q.state,
+        customerId: p.customer_id ? Number(p.customer_id) : q.customerId,
+      },
+    });
+    if (Array.isArray(p.items)) await syncLineItems("quotation", id, p.items as Record<string, unknown>[]);
+    return { success: true };
+  }
+
+  if (method === "DELETE" && path.match(/^quotations\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    try {
+      await prisma.quotation.delete({ where: { id } });
+      return { success: true };
+    } catch {
+      if (await removeImportedRow("quotations", id)) return { success: true };
+      throw new Error("Cotización no encontrada");
+    }
   }
 
   // ── Inventario ──
@@ -1828,6 +1947,22 @@ export async function handleLocalApi(
     return { success: true, data: { id: updated.id } };
   }
 
+  if (method === "DELETE" && path.match(/^cash\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    try {
+      await prisma.cashRegister.delete({ where: { id } });
+      return { success: true };
+    } catch {
+      const rows = await readGenericRecords("cash/records");
+      const filtered = rows.filter((r) => Number(r.id) !== id);
+      if (filtered.length < rows.length) {
+        await saveGenericRecords("cash/records", filtered);
+        return { success: true };
+      }
+      throw new Error("Caja no encontrada");
+    }
+  }
+
   if (method === "GET" && path.match(/^cash\/\d+\/report$/)) {
     const id = Number(path.split("/")[1]);
     const type = searchParams.get("type") || "general";
@@ -1890,7 +2025,47 @@ export async function handleLocalApi(
   // ── Establecimientos / Usuarios ──
   if (method === "GET" && path === "establishments/records") {
     const data = await prisma.establishment.findMany({ where: { active: true } });
-    return { data: data.map((e) => ({ id: e.id, code: e.code, description: e.description, active: e.active })) };
+    return { data: data.map((e) => ({ id: e.id, code: e.code, description: e.description, address: e.address, email: e.email, telephone: e.telephone, active: e.active })) };
+  }
+
+  if (method === "POST" && path === "establishments") {
+    const p = body as Record<string, unknown>;
+    const company = await prisma.company.findFirst();
+    if (!company) throw new Error("Empresa no configurada");
+    const est = await prisma.establishment.create({
+      data: {
+        code: String(p.code || "0000"),
+        description: String(p.description || p.name || "Local"),
+        address: p.address ? String(p.address) : null,
+        email: p.email ? String(p.email) : null,
+        telephone: p.telephone ? String(p.telephone) : null,
+        active: p.active !== false,
+        companyId: company.id,
+      },
+    });
+    return { success: true, data: est };
+  }
+
+  if (method === "PUT" && path.match(/^establishments\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const est = await prisma.establishment.update({
+      where: { id },
+      data: {
+        code: p.code ? String(p.code) : undefined,
+        description: p.description ? String(p.description) : p.name ? String(p.name) : undefined,
+        address: p.address != null ? String(p.address) : undefined,
+        email: p.email != null ? String(p.email) : undefined,
+        telephone: p.telephone != null ? String(p.telephone) : undefined,
+        active: p.active != null ? Boolean(p.active) : undefined,
+      },
+    });
+    return { success: true, data: est };
+  }
+
+  if (method === "DELETE" && path.match(/^establishments\/\d+$/)) {
+    await prisma.establishment.update({ where: { id: Number(path.split("/")[1]) }, data: { active: false } });
+    return { success: true };
   }
 
   if (method === "GET" && path === "users/records") {
@@ -1995,13 +2170,13 @@ export async function handleLocalApi(
   }
 
   if (method === "GET" && path === "finances/movements/records") {
-    const docs = await prisma.document.findMany({
-      take: 50,
-      orderBy: { id: "desc" },
-      include: { customer: true },
-    });
-    return {
-      data: docs.map((d) => ({
+    const data = await getOrSeedGenericRecords("finances/movements/records", async () => {
+      const docs = await prisma.document.findMany({
+        take: 50,
+        orderBy: { id: "desc" },
+        include: { customer: true },
+      });
+      return docs.map((d) => ({
         id: d.id,
         date: formatDate(d.dateOfIssue),
         type: "Ingreso",
@@ -2009,8 +2184,10 @@ export async function handleLocalApi(
         customer: d.customer.name,
         amount: d.total,
         currency: d.currencyTypeId,
-      })),
-    };
+        state: "Registrado",
+      }));
+    });
+    return { data };
   }
 
   if (method === "POST" && path.match(/^documents\/\d+\/email$/)) {
@@ -2186,6 +2363,61 @@ export async function handleLocalApi(
     return { success: true, data: dispatch };
   }
 
+  if (method === "PUT" && path.match(/^dispatches\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const row = await prisma.dispatch.findUnique({ where: { id } });
+    if (!row) {
+      const imported = await readImportedModule("dispatches");
+      const idx = imported?.findIndex((d) => Number(d.id) === id) ?? -1;
+      if (idx >= 0 && imported) {
+        imported[idx] = { ...imported[idx], ...p, id };
+        await prisma.appSetting.upsert({
+          where: { key: "imported_dispatches" },
+          create: { key: "imported_dispatches", value: JSON.stringify(imported) },
+          update: { value: JSON.stringify(imported) },
+        });
+        return { success: true };
+      }
+      throw new Error("Guía no encontrada");
+    }
+    await prisma.dispatch.update({
+      where: { id },
+      data: {
+        transferReason: p.transfer_reason ? String(p.transfer_reason) : row.transferReason,
+        originAddress: p.origin_address != null ? String(p.origin_address) : row.originAddress,
+        destAddress: p.dest_address != null ? String(p.dest_address) : row.destAddress,
+        vehiclePlate: p.vehicle_plate != null ? String(p.vehicle_plate) : row.vehiclePlate,
+        driverName: p.driver_name != null ? String(p.driver_name) : row.driverName,
+        driverDocument: p.driver_document != null ? String(p.driver_document) : row.driverDocument,
+        state: p.state ? String(p.state) : row.state,
+        customerId: p.customer_id ? Number(p.customer_id) : row.customerId,
+      },
+    });
+    if (Array.isArray(p.items)) {
+      await prisma.dispatchItem.deleteMany({ where: { dispatchId: id } });
+      const rows = (p.items as Record<string, unknown>[]).map((it) => ({
+        dispatchId: id,
+        description: String(it.description || ""),
+        quantity: Number(it.quantity || 1),
+        unitTypeId: String(it.unit_type_id || "NIU"),
+      }));
+      if (rows.length) await prisma.dispatchItem.createMany({ data: rows });
+    }
+    return { success: true };
+  }
+
+  if (method === "DELETE" && path.match(/^dispatches\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    try {
+      await prisma.dispatch.delete({ where: { id } });
+      return { success: true };
+    } catch {
+      if (await removeImportedRow("dispatches", id)) return { success: true };
+      throw new Error("Guía no encontrada");
+    }
+  }
+
   // ── Pedidos ──
   if (method === "GET" && path === "order-notes/records") {
     const data = await prisma.orderNote.findMany({
@@ -2221,6 +2453,59 @@ export async function handleLocalApi(
       data: { number, customerId: Number(p.customer_id), total, items: { create: lineItems } },
     });
     return { success: true, data: note };
+  }
+
+  if (method === "GET" && path.match(/^order-notes\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const n = await prisma.orderNote.findUnique({
+      where: { id },
+      include: { customer: true, items: true },
+    });
+    if (!n) throw new Error("Pedido no encontrado");
+    return {
+      data: {
+        id: n.id,
+        number: n.number,
+        customer_name: n.customer.name,
+        customer_id: n.customerId,
+        date: formatDate(n.date),
+        total: n.total,
+        state: n.state,
+        items: n.items.map((i) => ({
+          description: i.description,
+          quantity: i.quantity,
+          unit_price: i.unitPrice,
+          total: i.total,
+        })),
+      },
+    };
+  }
+
+  if (method === "PUT" && path.match(/^order-notes\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const note = await prisma.orderNote.findUnique({ where: { id } });
+    if (!note) throw new Error("Pedido no encontrado");
+    await prisma.orderNote.update({
+      where: { id },
+      data: {
+        state: p.state ? String(p.state) : note.state,
+        customerId: p.customer_id ? Number(p.customer_id) : note.customerId,
+      },
+    });
+    if (Array.isArray(p.items)) await syncLineItems("orderNote", id, p.items as Record<string, unknown>[]);
+    return { success: true };
+  }
+
+  if (method === "DELETE" && path.match(/^order-notes\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    try {
+      await prisma.orderNote.delete({ where: { id } });
+      return { success: true };
+    } catch {
+      if (await removeImportedRow("order_notes", id)) return { success: true };
+      throw new Error("Pedido no encontrado");
+    }
   }
 
   // ── SIRE ──
@@ -2285,6 +2570,25 @@ export async function handleLocalApi(
     return { data: data.map((a) => ({ id: a.id, code: a.code, name: a.name, type: a.type })) };
   }
 
+  if (method === "PUT" && path.match(/^accounting\/chart\/\d+$/)) {
+    const id = Number(path.split("/")[2]);
+    const p = body as Record<string, unknown>;
+    const account = await prisma.account.update({
+      where: { id },
+      data: {
+        code: p.code ? String(p.code) : undefined,
+        name: p.name ? String(p.name) : undefined,
+        type: p.type ? String(p.type) : undefined,
+      },
+    });
+    return { success: true, data: account };
+  }
+
+  if (method === "DELETE" && path.match(/^accounting\/chart\/\d+$/)) {
+    await prisma.account.delete({ where: { id: Number(path.split("/")[2]) } });
+    return { success: true };
+  }
+
   if (method === "GET" && path === "accounting/daily/records") {
     const data = await prisma.journalEntry.findMany({ orderBy: { id: "desc" }, take: 200 });
     return {
@@ -2301,6 +2605,11 @@ export async function handleLocalApi(
     };
   }
 
+  if (method === "DELETE" && path.match(/^accounting\/daily\/\d+$/)) {
+    await prisma.journalEntry.delete({ where: { id: Number(path.split("/")[2]) } });
+    return { success: true };
+  }
+
   if (method === "GET" && path === "accounting/entries/records") {
     const refs = await prisma.journalEntry.groupBy({ by: ["reference"], _count: true });
     return {
@@ -2315,9 +2624,9 @@ export async function handleLocalApi(
 
   // ── Finanzas extendidas ──
   if (method === "GET" && path === "finances/to-pay/records") {
-    const data = await prisma.purchase.findMany({ include: { supplier: true }, orderBy: { id: "desc" } });
-    return {
-      data: data.map((p) => ({
+    const data = await getOrSeedGenericRecords("finances/to-pay/records", async () => {
+      const rows = await prisma.purchase.findMany({ include: { supplier: true }, orderBy: { id: "desc" } });
+      return rows.map((p) => ({
         id: p.id,
         date: formatDate(p.date),
         supplier: p.supplier.name,
@@ -2325,14 +2634,15 @@ export async function handleLocalApi(
         amount: p.total,
         due_date: formatDate(p.date),
         state: "Pendiente",
-      })),
-    };
+      }));
+    });
+    return { data };
   }
 
   if (method === "GET" && path === "finances/to-collect/records") {
-    const docs = await fetchDocuments();
-    return {
-      data: docs.map((d) => ({
+    const data = await getOrSeedGenericRecords("finances/to-collect/records", async () => {
+      const docs = await fetchDocuments();
+      return docs.map((d) => ({
         id: d.id,
         date: formatDate(d.dateOfIssue),
         customer: d.customer.name,
@@ -2340,20 +2650,23 @@ export async function handleLocalApi(
         amount: d.total,
         due_date: formatDate(d.dateOfDue),
         state: d.hasCdr ? "Cobrado" : "Pendiente",
-      })),
-    };
+      }));
+    });
+    return { data };
   }
 
   if (method === "GET" && path === "finances/income/records") {
-    const docs = await prisma.document.findMany({ orderBy: { id: "desc" }, take: 50 });
-    return {
-      data: docs.map((d) => ({
+    const data = await getOrSeedGenericRecords("finances/income/records", async () => {
+      const docs = await prisma.document.findMany({ orderBy: { id: "desc" }, take: 50 });
+      return docs.map((d) => ({
         id: d.id,
         date: formatDate(d.dateOfIssue),
         description: `Ingreso ${d.fullNumber}`,
         amount: d.total,
-      })),
-    };
+        state: "Registrado",
+      }));
+    });
+    return { data };
   }
 
   // ── POS ──

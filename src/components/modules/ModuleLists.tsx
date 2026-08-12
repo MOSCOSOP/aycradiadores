@@ -10,6 +10,8 @@ import { downloadCsv } from "@/lib/download-csv";
 import { api } from "@/lib/api/client";
 import { ListToolbar } from "@/components/ui/ListToolbar";
 import { RowActions } from "@/components/ui/RowActions";
+import { LineItemsEditor, mapApiItems, serializeLineItems } from "@/components/ui/LineItemsEditor";
+import { RecordsCrudList } from "@/components/modules/RecordsCrudList";
 import { StockAdjustModal } from "@/components/inventory/StockAdjustModal";
 
 function StockTableActions({
@@ -336,10 +338,56 @@ export function SaleNotesList() {
 export function QuotationsList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ state: "Pendiente", customer_name: "" });
+  const [editItems, setEditItems] = useState<{ description: string; quantity: string; unit_price: string }[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
     api.quotations.records().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openEdit = async (id: number) => {
+    setEditId(id);
+    setEditOpen(true);
+    try {
+      const res = await api.quotations.get(id);
+      const d = res.data ?? {};
+      setEditForm({ state: String(d.state ?? "Pendiente"), customer_name: String(d.customer_name ?? "") });
+      setEditItems(mapApiItems(d.items as Record<string, unknown>[] | undefined));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al cargar");
+      setEditOpen(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editId) return;
+    setSaving(true);
+    try {
+      await api.quotations.update(editId, { state: editForm.state, items: serializeLineItems(editItems) });
+      setEditOpen(false);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (id: number, number: string) => {
+    if (!confirm(`¿Eliminar cotización ${number}?`)) return;
+    try {
+      await api.quotations.delete(id);
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo eliminar");
+    }
+  };
 
   return (
     <div className="ify-page">
@@ -351,7 +399,29 @@ export function QuotationsList() {
         { key: "customer_name", label: "Cliente" }, { key: "date", label: "Fecha" },
         { key: "total", label: "Total", render: (r) => `S/ ${Number(r.total ?? 0).toFixed(2)}` },
         { key: "state", label: "Estado" },
+        {
+          key: "actions",
+          label: "Acciones",
+          render: (r) => (
+            <RowActions
+              onEdit={() => openEdit(Number(r.id))}
+              onDelete={() => remove(Number(r.id), String(r.number ?? ""))}
+            />
+          ),
+        },
       ]} emptyMessage="Sin cotizaciones" />
+      <Modal open={editOpen} title={`Editar cotización${editForm.customer_name ? ` — ${editForm.customer_name}` : ""}`} onClose={() => setEditOpen(false)}
+        footer={<><button type="button" className="ify-btn-ghost" onClick={() => setEditOpen(false)}>Cancelar</button><button type="button" className="ify-btn-primary" onClick={saveEdit} disabled={saving}>{saving ? "Guardando..." : "Guardar"}</button></>}>
+        <Field label="Estado">
+          <select className="ify-select" value={editForm.state} onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Aprobada">Aprobada</option>
+            <option value="Rechazada">Rechazada</option>
+            <option value="Anulada">Anulada</option>
+          </select>
+        </Field>
+        <div className="mt-4"><LineItemsEditor items={editItems} onChange={setEditItems} /></div>
+      </Modal>
     </div>
   );
 }
@@ -926,6 +996,15 @@ export function CashList() {
                   real_balance: String(r.real_balance ?? 0),
                 });
               }}>Editar</button>
+              <button type="button" className="ify-btn-outline px-2 py-0.5 text-[10px] text-red-600" onClick={async () => {
+                if (!confirm("¿Eliminar esta caja?")) return;
+                try {
+                  await api.cash.delete(Number(r.id));
+                  load();
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : "Error al eliminar");
+                }
+              }}>Eliminar</button>
             </div>
           ),
         },
@@ -1078,15 +1157,26 @@ export function UsersList() {
           key: "id",
           label: "Acciones",
           render: (r) => (
-            <button type="button" className="ify-btn-outline text-xs" onClick={() => {
-              setEditId(Number(r.id));
-              setInitial({
-                name: String(r.name), email: String(r.email), type: String(r.type),
-                establishment_id: String(r.establishment_id ?? ""), permissions: (r.permissions as string[]) ?? [],
-                active: r.active !== false, password: "",
-              });
-              setModalOpen(true);
-            }}>Editar</button>
+            <div className="flex gap-1">
+              <button type="button" className="ify-btn-outline text-xs" onClick={() => {
+                setEditId(Number(r.id));
+                setInitial({
+                  name: String(r.name), email: String(r.email), type: String(r.type),
+                  establishment_id: String(r.establishment_id ?? ""), permissions: (r.permissions as string[]) ?? [],
+                  active: r.active !== false, password: "",
+                });
+                setModalOpen(true);
+              }}>Editar</button>
+              <RowActions onDelete={async () => {
+                if (!confirm(`¿Eliminar usuario ${r.name}?`)) return;
+                try {
+                  await api.users.delete(Number(r.id));
+                  load(search);
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : "No se pudo eliminar");
+                }
+              }} />
+            </div>
           ),
         },
       ]} />
@@ -1098,18 +1188,72 @@ export function UsersList() {
 export function EstablishmentsList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [form, setForm] = useState({ code: "0000", description: "", address: "", email: "", telephone: "", active: true });
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
     api.establishments.records().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openCreate = () => {
+    setEditId(null);
+    setForm({ code: "0000", description: "", address: "", email: "", telephone: "", active: true });
+    setModalOpen(true);
+  };
+
+  const openEdit = (r: Record<string, unknown>) => {
+    setEditId(Number(r.id));
+    setForm({
+      code: String(r.code ?? "0000"),
+      description: String(r.description ?? ""),
+      address: String(r.address ?? ""),
+      email: String(r.email ?? ""),
+      telephone: String(r.telephone ?? ""),
+      active: r.active !== false,
+    });
+    setModalOpen(true);
+  };
+
+  const save = async () => {
+    if (!form.description.trim()) { alert("Descripción obligatoria"); return; }
+    if (editId) await api.establishments.update(editId, form);
+    else await api.establishments.create(form);
+    setModalOpen(false);
+    load();
+  };
+
+  const remove = async (id: number) => {
+    if (!confirm("¿Desactivar este local?")) return;
+    await api.establishments.delete(id);
+    load();
+  };
 
   return (
     <div className="ify-page">
-      <PageHeader title="Locales / Establecimientos" />
+      <PageHeader title="Locales / Establecimientos" actions={
+        <button type="button" className="ify-btn-primary" onClick={openCreate}><i className="bi bi-plus-lg" /> Nuevo local</button>
+      } />
       <DataTable loading={loading} rows={rows} columns={[
         { key: "code", label: "Código" }, { key: "description", label: "Descripción" },
+        { key: "address", label: "Dirección", render: (r) => String(r.address || "—") },
+        { key: "telephone", label: "Teléfono", render: (r) => String(r.telephone || "—") },
         { key: "active", label: "Activo", render: (r) => (r.active ? "Sí" : "No") },
+        { key: "actions", label: "Acciones", render: (r) => <RowActions onEdit={() => openEdit(r)} onDelete={() => remove(Number(r.id))} /> },
       ]} />
+      <Modal open={modalOpen} title={editId ? "Editar local" : "Nuevo local"} onClose={() => setModalOpen(false)}
+        footer={<><button type="button" className="ify-btn-ghost" onClick={() => setModalOpen(false)}>Cancelar</button><button type="button" className="ify-btn-primary" onClick={save}>Guardar</button></>}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Código"><input className="ify-input" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></Field>
+          <Field label="Descripción *"><input className="ify-input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+          <Field label="Dirección" className="sm:col-span-2"><input className="ify-input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></Field>
+          <Field label="Email"><input className="ify-input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+          <Field label="Teléfono"><input className="ify-input" value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} /></Field>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -1153,21 +1297,12 @@ export function ExchangeRatesList() {
 }
 
 export function FinancesMovementsList() {
-  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api.finances.movements().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
-  }, []);
-
   return (
-    <div className="ify-page">
-      <PageHeader title="Movimientos financieros" subtitle="Ingresos por comprobantes emitidos" />
-      <DataTable loading={loading} rows={rows} columns={[
-        { key: "date", label: "Fecha" }, { key: "type", label: "Tipo" },
-        { key: "description", label: "Descripción" }, { key: "customer", label: "Cliente" },
-        { key: "amount", label: "Monto", render: (r) => `${r.currency === "USD" ? "$" : "S/"} ${Number(r.amount).toFixed(2)}` },
-      ]} />
-    </div>
+    <RecordsCrudList
+      pathname="/finances/movements"
+      apiPath="finances/movements/records"
+      title="Movimientos financieros"
+      subtitle="Ingresos, egresos y movimientos de caja"
+    />
   );
 }
