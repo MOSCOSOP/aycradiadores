@@ -10,6 +10,11 @@ type Paginated<T> = {
 let cachedItems: Record<string, unknown>[] | null = null;
 let cachedCustomers: Record<string, unknown>[] | null = null;
 
+export function clearImportedCatalogCache() {
+  cachedItems = null;
+  cachedCustomers = null;
+}
+
 export async function shouldUseImportedItems(dbCount: number) {
   return dbCount < IMPORTED_MIN_ITEMS;
 }
@@ -66,6 +71,43 @@ export function mapImportedItem(row: Record<string, unknown>) {
     active: row.active !== false,
     category_id: cat?.id ?? null,
   };
+}
+
+/** Superpone stock/precios vivos de Prisma sobre ítems importados. */
+export async function mergeImportedItemsWithLiveStock(rows: Record<string, unknown>[]) {
+  const { prisma } = await import("@/lib/db/prisma");
+  const live = await prisma.item.findMany({
+    select: {
+      id: true,
+      sourceRemoteId: true,
+      internalId: true,
+      stock: true,
+      stockMin: true,
+      saleUnitPrice: true,
+      purchasePrice: true,
+    },
+  });
+  const byRemote = new Map(live.filter((i) => i.sourceRemoteId).map((i) => [i.sourceRemoteId!, i]));
+  const byInternal = new Map(live.filter((i) => i.internalId).map((i) => [i.internalId!, i]));
+  const byId = new Map(live.map((i) => [i.id, i]));
+
+  return rows.map((row) => {
+    const mapped = mapImportedItem(row);
+    const remoteId = Number(row.id);
+    const match =
+      byRemote.get(remoteId) ??
+      (mapped.internal_id ? byInternal.get(String(mapped.internal_id)) : undefined) ??
+      byId.get(remoteId);
+    if (!match) return mapped;
+    return {
+      ...mapped,
+      stock: match.stock,
+      stock_min: match.stockMin,
+      local_id: match.id,
+      sale_unit_price: match.saleUnitPrice || mapped.sale_unit_price,
+      purchase_price: match.purchasePrice || mapped.purchase_price,
+    };
+  });
 }
 
 export function mapImportedCustomer(row: Record<string, unknown>) {

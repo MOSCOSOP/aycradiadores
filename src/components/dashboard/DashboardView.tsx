@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api/client";
 
@@ -181,19 +181,12 @@ function LineChart({
 }
 
 export function DashboardView() {
-  const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().slice(0, 10);
-  }, []);
-
   const [stats, setStats] = useState<DashStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [establishmentId, setEstablishmentId] = useState("");
-  const [dateFrom, setDateFrom] = useState(weekAgo);
-  const [dateTo, setDateTo] = useState(today);
-  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [dateFrom, setDateFrom] = useState("2024-01-01");
+  const [dateTo, setDateTo] = useState("2024-12-08");
+  const [year, setYear] = useState("2024");
   const [considerExpenses, setConsiderExpenses] = useState(true);
 
   const load = useCallback(() => {

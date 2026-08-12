@@ -16,22 +16,7 @@ export async function handleReportRequest(path: string): Promise<{ data: Record<
   const importedDocs = (await readImportedModule("documents")) ?? [];
   const mappedDocs = importedDocs.map(mapImportedDocument);
 
-  if (path === "reports/kardex" || path === "reports/inventory") {
-    const importedInv = await readImportedModule("inventory");
-    if (importedInv?.length) {
-      return {
-        data: importedInv.map((m) => ({
-          date: String(m.updated_at ?? m.created_at ?? "").slice(0, 10),
-          item: m.item_description,
-          internal_id: m.item_internal_id,
-          warehouse: m.warehouse_description,
-          stock: m.stock,
-          type: "Stock",
-          quantity: m.stock,
-          reference: m.warehouse_description,
-        })),
-      };
-    }
+  if (path === "reports/kardex") {
     const data = await prisma.inventoryMovement.findMany({
       include: { item: true },
       orderBy: { id: "desc" },
@@ -39,6 +24,7 @@ export async function handleReportRequest(path: string): Promise<{ data: Record<
     });
     return {
       data: data.map((m) => ({
+        id: m.id,
         date: formatDate(m.createdAt),
         item: m.item.description,
         internal_id: m.item.internalId,
@@ -51,18 +37,28 @@ export async function handleReportRequest(path: string): Promise<{ data: Record<
     };
   }
 
+  if (path === "reports/inventory") {
+    const { buildInventoryReportRows } = await import("@/lib/inventory-report");
+    const data = await buildInventoryReportRows();
+    return { data: data as unknown as Record<string, unknown>[] };
+  }
+
   if (path === "reports/inventory-margin" || path === "reports/historical-stock" || path === "reports/products-services") {
-    const items = await prisma.item.findMany({ include: { category: true }, orderBy: { description: "asc" } });
+    const { buildInventoryReportRows } = await import("@/lib/inventory-report");
+    const data = await buildInventoryReportRows();
     return {
-      data: items.map((i) => ({
-        description: i.description,
-        internal_id: i.internalId,
-        category: i.category?.name,
+      data: data.map((i) => ({
+        id: i.id,
+        description: i.name,
+        internal_id: i.internal_id,
+        category: i.category,
         stock: i.stock,
-        stock_min: i.stockMin,
-        sale_unit_price: i.saleUnitPrice,
-        purchase_price: i.purchasePrice,
-        margin: Number((i.saleUnitPrice - i.purchasePrice).toFixed(2)),
+        stock_min: i.stock_min,
+        sale_unit_price: i.sale_unit_price,
+        purchase_price: i.purchase_price,
+        margin: i.profit,
+        products_sold: i.products_sold,
+        total_profit: i.total_profit,
       })),
     };
   }

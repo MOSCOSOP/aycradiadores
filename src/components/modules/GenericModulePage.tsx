@@ -5,6 +5,9 @@ import { MassDocumentEmission } from "@/components/documents/MassDocumentEmissio
 import { RegularizeShippingList } from "@/components/documents/RegularizeShippingList";
 import { SuppliersList } from "@/components/suppliers/SuppliersList";
 import { ReportView } from "@/components/reports/ReportView";
+import { InventoryReportPage } from "@/components/reports/InventoryReportPage";
+import { KardexReportPage } from "@/components/reports/KardexReportPage";
+import { InventoryMarginReportPage } from "@/components/reports/InventoryMarginReportPage";
 import { ClonedModulePage } from "@/components/modules/ClonedModulePage";
 import { SettingsHub } from "@/components/settings/SettingsHub";
 import { SettingDetailPage } from "@/components/settings/SettingDetailPage";
@@ -191,6 +194,24 @@ export function GenericModulePage() {
 
   const reportMeta = findReportByHref(pathname);
   if (reportMeta?.reportPath) {
+    if (pathname === "/reports/inventory") {
+      return <InventoryReportPage />;
+    }
+    if (pathname === "/reports/kardex") {
+      return <KardexReportPage />;
+    }
+    if (pathname === "/reports/inventory-margin") {
+      return <InventoryMarginReportPage />;
+    }
+    if (pathname === "/reports/historical-stock") {
+      return (
+        <InventoryMarginReportPage
+          title="Stock histórico"
+          reportPath="reports/historical-stock"
+          showSold={false}
+        />
+      );
+    }
     return (
       <ReportView
         title={reportMeta.label}

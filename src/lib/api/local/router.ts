@@ -519,6 +519,8 @@ async function adjustStock(itemId: number, delta: number, type: string, ref: str
     where: { id: itemId },
     data: { stock: { increment: delta } },
   });
+  const { syncItemStockEverywhere } = await import("@/lib/stock-sync");
+  await syncItemStockEverywhere(itemId, item.stock);
   await prisma.inventoryMovement.create({
     data: {
       itemId,
@@ -1137,7 +1139,8 @@ export async function handleLocalApi(
     if (await shouldUseImportedItems(dbTotal)) {
       const raw = await loadImportedItems();
       const filtered = filterImportedItems(raw, value, column);
-      const mapped = filtered.map(mapImportedItem);
+      const { mergeImportedItemsWithLiveStock } = await import("@/lib/imported-catalog");
+      const mapped = await mergeImportedItemsWithLiveStock(filtered);
       return paginateImported(mapped, page, limit);
     }
 
@@ -1665,40 +1668,56 @@ export async function handleLocalApi(
 
   // ── Inventario ──
   if (method === "GET" && path === "inventory/records") {
+    const movements = await prisma.inventoryMovement.findMany({
+      include: { item: true },
+      orderBy: { id: "desc" },
+      take: 200,
+    });
+    if (movements.length) {
+      return {
+        data: movements.map((m) => ({
+          id: m.id,
+          item: m.item.description,
+          internal_id: m.item.internalId,
+          type: m.type,
+          quantity: m.quantity,
+          description: m.description,
+          reference: m.reference,
+          date: formatDate(m.createdAt),
+          stock: m.item.stock,
+          warehouse: "Oficina Principal",
+        })),
+        meta: { total: movements.length },
+      };
+    }
     const imported = await readImportedModule("inventory");
     if (imported?.length) {
+      const liveItems = await prisma.item.findMany({
+        select: { internalId: true, description: true, stock: true },
+      });
+      const stockByCode = new Map(liveItems.filter((i) => i.internalId).map((i) => [i.internalId!, i.stock]));
       return {
-        data: imported.map((m) => ({
-          id: m.id,
-          item: m.item_description,
-          internal_id: m.item_internal_id,
-          warehouse: m.warehouse_description,
-          stock: m.stock,
-          type: "Stock",
-          quantity: m.stock,
-          reference: m.warehouse_description,
-          description: `Stock en ${m.warehouse_description}`,
-          date: String(m.updated_at ?? m.created_at ?? "").slice(0, 10),
-        })),
+        data: imported.map((m) => {
+          const code = String(m.item_internal_id ?? "");
+          const liveStock = stockByCode.get(code);
+          const stock = liveStock ?? Number(m.stock ?? 0);
+          return {
+            id: m.id,
+            item: m.item_description,
+            internal_id: m.item_internal_id,
+            warehouse: m.warehouse_description,
+            stock,
+            type: "Stock",
+            quantity: stock,
+            reference: m.warehouse_description,
+            description: `Stock en ${m.warehouse_description}`,
+            date: String(m.updated_at ?? m.created_at ?? "").slice(0, 10),
+          };
+        }),
         meta: { total: imported.length },
       };
     }
-    const data = await prisma.inventoryMovement.findMany({
-      include: { item: true },
-      orderBy: { id: "desc" },
-      take: 100,
-    });
-    return {
-      data: data.map((m) => ({
-        id: m.id,
-        item: m.item.description,
-        type: m.type,
-        quantity: m.quantity,
-        description: m.description,
-        reference: m.reference,
-        date: formatDate(m.createdAt),
-      })),
-    };
+    return { data: [], meta: { total: 0 } };
   }
 
   if (method === "PUT" && path.match(/^inventory\/movements\/\d+$/)) {
@@ -1771,6 +1790,8 @@ export async function handleLocalApi(
       if (!item) continue;
       const prev = item.stock;
       await prisma.item.update({ where: { id: item.id }, data: { stock: row.stock } });
+      const { syncItemStockEverywhere } = await import("@/lib/stock-sync");
+      await syncItemStockEverywhere(item.id, row.stock);
       await prisma.inventoryMovement.create({
         data: {
           itemId: item.id,
@@ -1798,6 +1819,8 @@ export async function handleLocalApi(
       const real = Number(p.real_stock);
       const delta = real - prev;
       await prisma.item.update({ where: { id: itemId }, data: { stock: real } });
+      const { syncItemStockEverywhere } = await import("@/lib/stock-sync");
+      await syncItemStockEverywhere(itemId, real);
       if (modifyKardex && delta !== 0) {
         await prisma.inventoryMovement.create({
           data: {
@@ -1819,6 +1842,8 @@ export async function handleLocalApi(
   }
 
   if (method === "GET" && path === "inventory/stock") {
+    const { repairAllImportedStockFromPrisma } = await import("@/lib/stock-sync");
+    await repairAllImportedStockFromPrisma();
     const data = await prisma.item.findMany({
       where: { active: true },
       include: { category: true },
