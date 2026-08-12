@@ -8,6 +8,8 @@ import { UserModal } from "@/components/users/UserModal";
 import { parseInventoryExcel } from "@/lib/inventory-import";
 import { downloadCsv } from "@/lib/download-csv";
 import { api } from "@/lib/api/client";
+import { ListToolbar } from "@/components/ui/ListToolbar";
+import { RowActions } from "@/components/ui/RowActions";
 import { StockAdjustModal } from "@/components/inventory/StockAdjustModal";
 
 function StockTableActions({
@@ -19,14 +21,6 @@ function StockTableActions({
 }) {
   return (
     <div className="flex flex-wrap gap-1">
-      <button
-        type="button"
-        className="ify-btn-outline px-2 py-1 text-[10px]"
-        title="Próximamente"
-        onClick={() => alert("Traslados entre almacenes — próximamente")}
-      >
-        Trasladar
-      </button>
       <button
         type="button"
         className="ify-btn-outline px-2 py-1 text-[10px] opacity-60"
@@ -197,6 +191,24 @@ export function PurchasesList() {
     load();
   }, []);
 
+  const remove = async (id: number) => {
+    if (!confirm("¿Eliminar esta compra?")) return;
+    try {
+      await api.purchases.delete(id);
+      load(search);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se puede eliminar");
+    }
+  };
+
+  const exportColumns = [
+    { key: "number", label: "Número" },
+    { key: "supplier_name", label: "Proveedor" },
+    { key: "date_of_issue", label: "Fecha" },
+    { key: "total", label: "Total" },
+    { key: "state_type_description", label: "Estado" },
+  ];
+
   return (
     <div className="ify-page">
       <PageHeader
@@ -207,20 +219,16 @@ export function PurchasesList() {
           </Link>
         }
       />
-      <div className="ify-card mb-3 p-3">
-        <div className="flex gap-2">
-          <input
-            className="ify-input flex-1"
-            placeholder="Número / proveedor..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && load(search)}
-          />
-          <button type="button" className="ify-btn-primary" onClick={() => load(search)}>
-            Buscar
-          </button>
-        </div>
-      </div>
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        onSearch={() => load(search)}
+        placeholder="Buscar número o proveedor..."
+        exportFilename="compras.csv"
+        exportTitle="Listado de compras"
+        exportRows={rows}
+        exportColumns={exportColumns}
+      />
       <DataTable
         loading={loading}
         rows={rows}
@@ -255,6 +263,16 @@ export function PurchasesList() {
           },
           { key: "currency_type_id", label: "Moneda" },
           { key: "total", label: "Total", render: (r) => `${r.currency_type_id === "USD" ? "$" : "S/"} ${Number(r.total ?? 0).toFixed(2)}` },
+          {
+            key: "actions",
+            label: "Acciones",
+            render: (r) => (
+              <RowActions
+                onEdit={() => window.location.assign(`/purchases/${r.id}`)}
+                onDelete={() => remove(Number(r.id))}
+              />
+            ),
+          },
         ]}
         emptyMessage="Sin compras"
       />
@@ -344,9 +362,23 @@ export function InventoryList() {
       } />
       {importMsg && <div className="mb-3 rounded border border-green-200 bg-green-50 p-3 text-sm text-green-800">{importMsg}</div>}
       {adjustMsg && <div className={`mb-3 rounded border p-3 text-sm ${adjustMsg.includes("Error") || adjustMsg.includes("Selecciona") ? "border-red-200 bg-red-50 text-red-800" : "border-green-200 bg-green-50 text-green-800"}`}>{adjustMsg}</div>}
-      <div className="ify-card mb-3 p-3">
-        <input className="ify-input" placeholder="Buscar producto..." value={search} onChange={(e) => setSearch(e.target.value)} />
-      </div>
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Buscar producto o código..."
+        exportFilename="movimientos_inventario.csv"
+        exportTitle="Movimientos de inventario"
+        exportRows={filtered}
+        exportColumns={[
+          { key: "date", label: "Fecha" },
+          { key: "internal_id", label: "Código" },
+          { key: "item", label: "Producto" },
+          { key: "warehouse", label: "Almacén" },
+          { key: "type", label: "Tipo" },
+          { key: "quantity", label: "Cantidad" },
+          { key: "reference", label: "Referencia" },
+        ]}
+      />
       <DataTable loading={loading} rows={filtered} columns={[
         { key: "date", label: "Fecha" },
         { key: "internal_id", label: "Código" },
@@ -384,6 +416,7 @@ export function InventoryList() {
 export function InventoryValidateList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustItem, setAdjustItem] = useState<{ id: number; description: string; stock: number } | null>(null);
   const [initialReal, setInitialReal] = useState<number | undefined>();
@@ -407,12 +440,40 @@ export function InventoryValidateList() {
     setAdjustOpen(true);
   };
 
-  const totalValue = rows.reduce((s, r) => s + Number(r.value || 0), 0);
+  const filtered = rows.filter((r) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      String(r.description ?? "").toLowerCase().includes(q) ||
+      String(r.internal_id ?? "").toLowerCase().includes(q) ||
+      String(r.category ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const totalValue = filtered.reduce((s, r) => s + Number(r.value || 0), 0);
+
+  const exportColumns = [
+    { key: "internal_id", label: "Código" },
+    { key: "description", label: "Producto" },
+    { key: "category", label: "Categoría" },
+    { key: "stock", label: "Stock" },
+    { key: "sale_unit_price", label: "Precio" },
+    { key: "value", label: "Valor" },
+  ];
 
   return (
     <div className="ify-page">
       <PageHeader title="Validar inventario" subtitle={`Valor total: S/ ${totalValue.toFixed(2)}`} />
-      <DataTable loading={loading} rows={rows} columns={[
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Buscar producto, código o categoría..."
+        exportFilename="validar_inventario.csv"
+        exportTitle="Validar inventario"
+        exportRows={filtered}
+        exportColumns={exportColumns}
+      />
+      <DataTable loading={loading} rows={filtered} columns={[
         { key: "internal_id", label: "Código" },
         { key: "description", label: "Producto" },
         { key: "category", label: "Categoría" },
@@ -624,6 +685,7 @@ export function CashList() {
 export function CategoriesList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", description: "" });
@@ -634,6 +696,12 @@ export function CategoriesList() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const filtered = rows.filter((r) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return String(r.name ?? "").toLowerCase().includes(q) || String(r.description ?? "").toLowerCase().includes(q);
+  });
 
   const openCreate = () => { setEditId(null); setForm({ name: "", description: "" }); setModalOpen(true); };
   const openEdit = (r: Record<string, unknown>) => {
@@ -660,13 +728,23 @@ export function CategoriesList() {
       <PageHeader title="Categorías" actions={
         <button type="button" className="ify-btn-primary" onClick={openCreate}><i className="bi bi-plus-lg" /> Nueva</button>
       } />
-      <DataTable loading={loading} rows={rows} columns={[
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Buscar categoría..."
+        exportFilename="categorias.csv"
+        exportTitle="Categorías"
+        exportRows={filtered}
+        exportColumns={[
+          { key: "name", label: "Nombre" },
+          { key: "items_count", label: "Productos" },
+          { key: "description", label: "Descripción" },
+        ]}
+      />
+      <DataTable loading={loading} rows={filtered} columns={[
         { key: "name", label: "Nombre" }, { key: "items_count", label: "Productos" },
-        { key: "id", label: "Acciones", render: (r) => (
-          <div className="flex gap-1">
-            <button type="button" className="ify-btn-ghost px-2" onClick={() => openEdit(r)}><i className="bi bi-pencil" /></button>
-            <button type="button" className="ify-btn-ghost px-2 text-red-600" onClick={() => remove(Number(r.id))}><i className="bi bi-trash" /></button>
-          </div>
+        { key: "actions", label: "Acciones", render: (r) => (
+          <RowActions onEdit={() => openEdit(r)} onDelete={() => remove(Number(r.id))} />
         )},
       ]} />
       <Modal open={modalOpen} title={editId ? "Editar categoría" : "Nueva categoría"} onClose={() => setModalOpen(false)}

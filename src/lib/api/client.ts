@@ -178,6 +178,7 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    delete: (id: number) => apiFetch(local(`/purchases/${id}`), { method: "DELETE" }),
   },
 
   saleNotes: {
@@ -291,6 +292,13 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/services/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: number) => apiFetch(local(`/services/${id}`), { method: "DELETE" }),
   },
 
   dispatches: {
@@ -366,6 +374,14 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    update: (modulePath: string, id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/${modulePath.replace(/^\/+/, "")}/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    delete: (modulePath: string, id: number) =>
+      apiFetch(local(`/${modulePath.replace(/^\/+/, "")}/${id}`), { method: "DELETE" }),
   },
 
   pos: {

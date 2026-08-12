@@ -35,28 +35,85 @@ function genericModuleKey(apiPath: string): string {
 async function readGenericRecords(apiPath: string): Promise<Record<string, unknown>[]> {
   const key = genericModuleKey(apiPath);
   const row = await prisma.appSetting.findUnique({ where: { key } });
-  return parseJsonSetting(row?.value || "[]") as Record<string, unknown>[];
+  let rows = parseJsonSetting(row?.value || "[]") as Record<string, unknown>[];
+  if (!rows.length) {
+    const modKey = importedModuleKeyFromApiPath(apiPath);
+    if (modKey) {
+      const imported = await readImportedModule(modKey);
+      if (imported?.length) {
+        rows = imported.map((r) => ({
+          id: r.id,
+          name: r.name ?? r.description ?? "",
+          description: r.description ?? r.name ?? "",
+          state: r.state ?? "Activo",
+          date: r.date ?? r.created_at ?? formatDate(new Date()),
+          created_at: r.created_at,
+          ...r,
+        }));
+        await saveGenericRecords(apiPath, rows);
+      }
+    }
+  }
+  return rows;
 }
 
 async function appendGenericRecord(apiPath: string, payload: Record<string, unknown>) {
   const key = genericModuleKey(apiPath);
   const rows = await readGenericRecords(apiPath);
-  const id = rows.length ? Number(rows[rows.length - 1].id || 0) + 1 : 1;
+  const id = rows.length ? Math.max(...rows.map((r) => Number(r.id || 0))) + 1 : 1;
   const record = {
     id,
     name: payload.name || payload.description || `Registro ${id}`,
     description: payload.description || payload.name || "",
-    state: "Activo",
+    state: payload.state || "Activo",
     date: formatDate(new Date()),
+    created_at: new Date().toISOString().replace("T", " ").slice(0, 19),
     ...payload,
   };
   rows.push(record);
+  await saveGenericRecords(apiPath, rows);
+  return record;
+}
+
+async function saveGenericRecords(apiPath: string, rows: Record<string, unknown>[]) {
+  const key = genericModuleKey(apiPath);
   await prisma.appSetting.upsert({
     where: { key },
     create: { key, value: JSON.stringify(rows) },
     update: { value: JSON.stringify(rows) },
   });
-  return record;
+}
+
+async function updateGenericRecord(apiPath: string, id: number, payload: Record<string, unknown>) {
+  const rows = await readGenericRecords(apiPath);
+  const idx = rows.findIndex((r) => Number(r.id) === id);
+  if (idx < 0) throw new Error("Registro no encontrado");
+  rows[idx] = {
+    ...rows[idx],
+    ...payload,
+    id,
+    updated_at: new Date().toISOString().replace("T", " ").slice(0, 19),
+  };
+  await saveGenericRecords(apiPath, rows);
+  return rows[idx];
+}
+
+async function deleteGenericRecord(apiPath: string, id: number) {
+  const rows = await readGenericRecords(apiPath);
+  const filtered = rows.filter((r) => Number(r.id) !== id);
+  if (filtered.length === rows.length) throw new Error("Registro no encontrado");
+  await saveGenericRecords(apiPath, filtered);
+  return { success: true };
+}
+
+function importedModuleKeyFromApiPath(apiPath: string): string | null {
+  const base = apiPath.replace(/\/records$/, "").replace(/-/g, "_");
+  const map: Record<string, string> = {
+    item_sets: "item_sets",
+    person_types: "person_types",
+    zones: "zones",
+  };
+  return map[base] ?? null;
 }
 
 function formatDate(d: Date) {
@@ -981,8 +1038,37 @@ export async function handleLocalApi(
   }
 
   if (method === "GET" && path === "person-types/records") {
-    const imported = await readImportedModule("person_types");
-    return { data: imported ?? [], meta: { total: imported?.length ?? 0 } };
+    const data = await readGenericRecords("person-types/records");
+    return { data, meta: { total: data.length } };
+  }
+
+  if (method === "PUT" && path.match(/^services\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const item = await prisma.item.update({
+      where: { id },
+      data: {
+        description: p.description ? String(p.description) : undefined,
+        internalId: p.internal_id !== undefined ? String(p.internal_id || "") : undefined,
+        saleUnitPrice: p.sale_unit_price !== undefined ? Number(p.sale_unit_price) : undefined,
+      },
+    });
+    return { success: true, data: item };
+  }
+
+  if (method === "DELETE" && path.match(/^services\/\d+$/)) {
+    await prisma.item.update({ where: { id: Number(path.split("/")[1]) }, data: { active: false } });
+    return { success: true };
+  }
+
+  if (method === "DELETE" && path.match(/^purchases\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    try {
+      await prisma.purchase.delete({ where: { id } });
+    } catch {
+      throw new Error("No se puede eliminar esta compra");
+    }
+    return { success: true };
   }
 
   if (method === "GET" && path === "items/columns") {
@@ -2216,6 +2302,20 @@ export async function handleLocalApi(
     const recordsPath = path.endsWith("/records") ? path : `${path}/records`;
     const record = await appendGenericRecord(recordsPath, (body || {}) as Record<string, unknown>);
     return { success: true, data: record };
+  }
+
+  const GENERIC_CATALOG = ["item-sets", "person-types", "zones"];
+  const catalogMatch = path.match(/^([\w-]+)\/(\d+)$/);
+  if (catalogMatch && GENERIC_CATALOG.includes(catalogMatch[1])) {
+    const module = catalogMatch[1];
+    const id = Number(catalogMatch[2]);
+    if (method === "PUT") {
+      const record = await updateGenericRecord(`${module}/records`, id, (body || {}) as Record<string, unknown>);
+      return { success: true, data: record };
+    }
+    if (method === "DELETE") {
+      return deleteGenericRecord(`${module}/records`, id);
+    }
   }
 
   throw new Error(`Ruta local no implementada: ${method} /${path}`);

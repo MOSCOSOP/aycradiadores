@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { DataTable } from "@/components/ui/DataTable";
 import { PageHeader } from "@/components/ui/Modal";
 import { RowActions } from "@/components/ui/RowActions";
+import { ListToolbar } from "@/components/ui/ListToolbar";
 import { ItemEditModal } from "@/components/items/ItemEditModal";
 import { StockAdjustModal } from "@/components/inventory/StockAdjustModal";
 import { rowToItemForm } from "@/components/items/item-form-types";
@@ -86,20 +87,22 @@ export function ItemsList() {
           </button>
         }
       />
-      <div className="ify-card mb-3 p-3">
-        <div className="flex gap-2">
-          <input
-            className="ify-input flex-1"
-            placeholder="Buscar producto..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && load(search, 1)}
-          />
-          <button type="button" className="ify-btn-primary" onClick={() => load(search, 1)}>
-            <i className="bi bi-search" /> Buscar
-          </button>
-        </div>
-      </div>
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        onSearch={() => load(search, 1)}
+        placeholder="Buscar producto..."
+        exportFilename="productos.csv"
+        exportTitle="Productos"
+        exportRows={rows}
+        exportColumns={[
+          { key: "internal_id", label: "Código" },
+          { key: "description", label: "Nombre" },
+          { key: "stock", label: "Stock" },
+          { key: "sale_unit_price", label: "Precio venta" },
+          { key: "purchase_price", label: "Precio compra" },
+        ]}
+      />
       <DataTable
         loading={loading}
         rows={rows}

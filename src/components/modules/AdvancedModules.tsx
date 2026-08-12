@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/ui/DataTable";
+import { ListToolbar } from "@/components/ui/ListToolbar";
+import { RowActions } from "@/components/ui/RowActions";
 import { Modal, PageHeader, Field } from "@/components/ui/Modal";
 import { api } from "@/lib/api/client";
 import { REPORT_SECTIONS } from "@/lib/reports-catalog";
@@ -115,7 +117,9 @@ export function DocumentsNotSentList() {
 export function ServicesList() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ description: "", internal_id: "", sale_unit_price: "" });
 
   const load = () => {
@@ -125,21 +129,87 @@ export function ServicesList() {
 
   useEffect(() => { load(); }, []);
 
+  const filtered = rows.filter((r) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      String(r.description ?? "").toLowerCase().includes(q) ||
+      String(r.internal_id ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const openCreate = () => {
+    setEditId(null);
+    setForm({ description: "", internal_id: "", sale_unit_price: "" });
+    setModalOpen(true);
+  };
+
+  const openEdit = (r: Record<string, unknown>) => {
+    setEditId(Number(r.id));
+    setForm({
+      description: String(r.description ?? ""),
+      internal_id: String(r.internal_id ?? ""),
+      sale_unit_price: String(r.sale_unit_price ?? ""),
+    });
+    setModalOpen(true);
+  };
+
+  const save = async () => {
+    if (!form.description.trim()) {
+      alert("La descripción es obligatoria");
+      return;
+    }
+    const payload = { ...form, sale_unit_price: Number(form.sale_unit_price || 0) };
+    if (editId) await api.services.update(editId, payload);
+    else await api.services.create(payload);
+    setModalOpen(false);
+    load();
+  };
+
+  const remove = async (id: number) => {
+    if (!confirm("¿Eliminar servicio?")) return;
+    await api.services.delete(id);
+    load();
+  };
+
+  const exportColumns = [
+    { key: "internal_id", label: "Código" },
+    { key: "description", label: "Descripción" },
+    { key: "category", label: "Categoría" },
+    { key: "sale_unit_price", label: "Precio" },
+  ];
+
   return (
     <div className="ify-page">
       <PageHeader title="Servicios" actions={
-        <button type="button" className="ify-btn-primary" onClick={() => setModalOpen(true)}><i className="bi bi-plus-lg" /> Nuevo servicio</button>
+        <button type="button" className="ify-btn-primary" onClick={openCreate}><i className="bi bi-plus-lg" /> Nuevo servicio</button>
       } />
-      <DataTable loading={loading} rows={rows} columns={[
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Buscar servicio o código..."
+        exportFilename="servicios.csv"
+        exportTitle="Servicios"
+        exportRows={filtered}
+        exportColumns={exportColumns}
+      />
+      <DataTable loading={loading} rows={filtered} columns={[
         { key: "internal_id", label: "Código" }, { key: "description", label: "Descripción" },
         { key: "category", label: "Categoría" },
         { key: "sale_unit_price", label: "Precio", render: (r) => `S/ ${Number(r.sale_unit_price).toFixed(2)}` },
+        {
+          key: "actions",
+          label: "Acciones",
+          render: (r) => <RowActions onEdit={() => openEdit(r)} onDelete={() => remove(Number(r.id))} />,
+        },
       ]} />
-      <Modal open={modalOpen} title="Nuevo servicio" onClose={() => setModalOpen(false)}
-        footer={<button type="button" className="ify-btn-primary" onClick={async () => {
-          await api.services.create({ ...form, sale_unit_price: Number(form.sale_unit_price) });
-          setModalOpen(false); load();
-        }}>Guardar</button>}>
+      <Modal open={modalOpen} title={editId ? "Editar servicio" : "Nuevo servicio"} onClose={() => setModalOpen(false)}
+        footer={
+          <>
+            <button type="button" className="ify-btn-ghost" onClick={() => setModalOpen(false)}>Cancelar</button>
+            <button type="button" className="ify-btn-primary" onClick={save}>Guardar</button>
+          </>
+        }>
         <div className="grid gap-3">
           <Field label="Descripción"><input className="ify-input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
           <Field label="Código"><input className="ify-input" value={form.internal_id} onChange={(e) => setForm({ ...form, internal_id: e.target.value })} /></Field>

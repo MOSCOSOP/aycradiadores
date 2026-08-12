@@ -39,7 +39,18 @@ import {
   SaleNotesList,
   UsersList,
 } from "@/components/modules/ModuleLists";
+import { CatalogListPage } from "@/components/modules/CatalogListPage";
 import { findReportByHref } from "@/lib/reports-catalog";
+
+const ItemSetsList = () => (
+  <CatalogListPage pathname="/item-sets" apiPath="item-sets/records" title="Packs y promociones" />
+);
+const PersonTypesList = () => (
+  <CatalogListPage pathname="/person-types" apiPath="person-types/records" title="Tipos de clientes" labelField="description" />
+);
+const ZonesList = () => (
+  <CatalogListPage pathname="/zones" apiPath="zones/records" title="Lista de zonas" />
+);
 
 const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/documents/massive": MassDocumentEmission,
@@ -52,6 +63,9 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/sale-notes": SaleNotesList,
   "/quotations": QuotationsList,
   "/categories": CategoriesList,
+  "/item-sets": ItemSetsList,
+  "/person-types": PersonTypesList,
+  "/zones": ZonesList,
   "/inventory": InventoryList,
   "/inventory/validate": InventoryValidateList,
   "/cash": CashList,
