@@ -147,6 +147,8 @@ export function InventoryReportPage() {
       <DataTable
         loading={loading}
         rows={filtered}
+        wide
+        stickyLastColumn
         columns={[
           { key: "idx", label: "#", render: (_r, i) => i + 1 },
           { key: "name", label: "Nombre", render: (r) => <span className="text-xs">{String(r.name ?? "")}</span> },
@@ -173,7 +175,14 @@ export function InventoryReportPage() {
           {
             key: "actions",
             label: "Acciones",
-            render: (r) => <RowActions onEdit={() => openAdjust(r)} onDelete={() => remove(r)} />,
+            className: "ify-table-col-actions",
+            render: (r) => (
+              <RowActions
+                showLabels
+                onEdit={() => openAdjust(r)}
+                onDelete={() => remove(r)}
+              />
+            ),
           },
         ]}
       />

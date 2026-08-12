@@ -13,6 +13,10 @@ type DataTableProps<T extends Record<string, unknown>> = {
   loading?: boolean;
   emptyMessage?: string;
   onRowClick?: (row: T) => void;
+  /** Mantiene la última columna (acciones) visible al hacer scroll horizontal */
+  stickyLastColumn?: boolean;
+  /** Tabla ancha con scroll horizontal explícito */
+  wide?: boolean;
 };
 
 export function DataTable<T extends Record<string, unknown>>({
@@ -21,6 +25,8 @@ export function DataTable<T extends Record<string, unknown>>({
   loading,
   emptyMessage = "Sin registros",
   onRowClick,
+  stickyLastColumn = false,
+  wide = false,
 }: DataTableProps<T>) {
   if (loading) {
     return (
@@ -32,8 +38,16 @@ export function DataTable<T extends Record<string, unknown>>({
   }
 
   return (
-    <div className="ify-card overflow-x-auto">
-      <table className="ify-table">
+    <div
+      className={[
+        "ify-table-wrap ify-card",
+        wide ? "ify-table-wrap-wide" : "",
+        stickyLastColumn ? "ify-table-sticky-actions" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <table className={`ify-table${wide ? " ify-table-wide" : ""}`}>
         <thead>
           <tr>
             {columns.map((col) => (

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { mapImportedDocument, readImportedModule } from "@/lib/imported-data";
+import { buildAiAnalysis } from "@/lib/dashboard-ai-insights";
 
 function parseDate(s: string | null | undefined): Date | null {
   if (!s) return null;
@@ -226,35 +227,26 @@ export async function buildDashboardStats(searchParams: URLSearchParams) {
   const pendingDocs = filteredDocs.filter((d) => Number(d.balance ?? 0) > 0);
   const pendingTotal = pendingDocs.reduce((s, d) => s + Number(d.balance ?? 0), 0);
 
-  const insights: { level: string; text: string }[] = [];
-  if (lowStock.length) {
-    const sample = lowStock[0]?.internalId ?? lowStock[0]?.description?.slice(0, 35);
-    insights.push({
-      level: "danger",
-      text: `Hay ${lowStock.length} producto(s) con stock en o bajo el mínimo${sample ? ` (ej. ${sample})` : ""}.`,
-    });
-  }
-  if (outOfStock.length) {
-    insights.push({
-      level: "warning",
-      text: `${outOfStock.length} producto(s) sin stock disponible.`,
-    });
-  }
-  if (pendingPurchases > 0) {
-    insights.push({
-      level: "info",
-      text: `${pendingPurchases} compra(s) pendientes de pago o proceso.`,
-    });
-  }
-  if (pendingDocs.length) {
-    insights.push({
-      level: "warning",
-      text: `${pendingDocs.length} cliente(s) tienen cobros pendientes por un total de S/ ${fmt(pendingTotal)}.`,
-    });
-  }
-  if (!insights.length) {
-    insights.push({ level: "info", text: "Operación al día — sin alertas críticas." });
-  }
+  const aiAnalysis = await buildAiAnalysis({
+    dateFrom: dateFrom.toISOString().slice(0, 10),
+    dateTo: dateTo.toISOString().slice(0, 10),
+    totalSales,
+    netProfit,
+    expense,
+    docsCount: filteredDocs.length,
+    docsPending,
+    saleNotesPending,
+    saleNotesAmount,
+    purchasesTotal,
+    topCustomers,
+    monthlyHistory,
+    chartTotals: salesTotals,
+    lowStock,
+    outOfStock,
+    pendingPurchases,
+    pendingDocsCount: pendingDocs.length,
+    pendingTotal,
+  });
 
   return {
     kpi: {
@@ -304,7 +296,8 @@ export async function buildDashboardStats(searchParams: URLSearchParams) {
       date_to: dateTo.toISOString().slice(0, 10),
       year,
     },
-    insights,
+    insights: aiAnalysis.legacy_insights,
+    ai_analysis: aiAnalysis,
     alerts: {
       low_stock_count: lowStock.length,
       out_of_stock_count: outOfStock.length,

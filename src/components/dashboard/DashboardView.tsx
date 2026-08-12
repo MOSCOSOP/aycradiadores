@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api/client";
+import { AiInsightsPanel } from "@/components/dashboard/AiInsightsPanel";
+import type { AiAnalysis } from "@/lib/dashboard-ai-insights";
 
 type DashStats = {
   kpi?: {
@@ -22,6 +24,7 @@ type DashStats = {
   monthly_history?: { month: string; sunat_sales: number; internal_sales: number; purchases_expenses: number }[];
   establishments?: { id: number; description: string }[];
   insights?: { level: string; text: string }[];
+  ai_analysis?: AiAnalysis;
 };
 
 function fmtMoney(n: number) {
@@ -264,6 +267,10 @@ export function DashboardView() {
             icon="bi-bar-chart"
           />
         </div>
+      </div>
+
+      <div className="dash-ai-inline lg:hidden">
+        <AiInsightsPanel analysis={stats?.ai_analysis} loading={loading} />
       </div>
 
       {/* Filtros históricos */}
@@ -526,17 +533,9 @@ export function DashboardView() {
       </div>
         </div>
 
-        <aside className="dash-insights-panel ify-card">
-          <h2 className="dash-small-title">Análisis inteligente</h2>
-          <ul className="dash-insights-list">
-            {(stats?.insights ?? []).map((item, i) => (
-              <li key={i} className={`dash-insight dash-insight-${item.level}`}>
-                <span className="dash-insight-dot" aria-hidden />
-                {item.text}
-              </li>
-            ))}
-          </ul>
-        </aside>
+        <div className="hidden lg:block">
+          <AiInsightsPanel analysis={stats?.ai_analysis} loading={loading} />
+        </div>
       </div>
     </div>
   );

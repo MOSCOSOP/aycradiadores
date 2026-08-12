@@ -103,6 +103,8 @@ export function InventoryMarginReportPage({
       <DataTable
         loading={loading}
         rows={filtered}
+        wide
+        stickyLastColumn
         columns={[
           { key: "internal_id", label: "Código" },
           { key: "description", label: "Producto" },
@@ -117,7 +119,8 @@ export function InventoryMarginReportPage({
           {
             key: "actions",
             label: "Acciones",
-            render: (r) => <RowActions onEdit={() => openAdjust(r)} onDelete={() => remove(r)} />,
+            className: "ify-table-col-actions",
+            render: (r) => <RowActions showLabels onEdit={() => openAdjust(r)} onDelete={() => remove(r)} />,
           },
         ]}
       />
