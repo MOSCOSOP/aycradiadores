@@ -1,11 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { sunatQrImageUrl } from "@/lib/comprobante/sunat-qr";
 import { COMPROBANTE_PRINT_CSS, pageRuleForSize } from "@/lib/comprobante/print-styles";
 import { amountWordsEs } from "@/lib/comprobante/amount-words";
 import type { ReceiptData } from "@/lib/comprobante/types";
-import { COMPROBANTE_ASSETS } from "@/lib/company-info";
+import { COMPROBANTE_ASSETS, COMPANY_INFO } from "@/lib/company-info";
 import { formatReceiptNumber } from "@/lib/receipt-format";
 
 export type { ReceiptData } from "@/lib/comprobante/types";
@@ -71,9 +70,9 @@ export function DocumentPrintTemplate({
               Cel: {emisor?.telefono}
               {emisor?.telefono2 ? ` – ${emisor.telefono2}` : ""}
             </p>
-            {emisor?.email ? (
-              <p className="doc-print-meta doc-print-email">{emisor.email}</p>
-            ) : null}
+            <p className="doc-print-meta doc-print-email">
+              Email: {COMPANY_INFO.email}
+            </p>
             <p className="doc-print-meta">{emisor?.direccion}</p>
           </div>
           <div className="doc-print-docbox">

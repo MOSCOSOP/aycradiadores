@@ -8,12 +8,12 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
   .doc-print-logo-wrap { flex-shrink: 0; width: 78px; text-align: center; }
   .doc-print-logo { width: 72px; height: 72px; object-fit: contain; }
-  .doc-print-brand-center { flex: 1; min-width: 0; }
-  .doc-print-titulo { max-width: 100%; height: auto; max-height: 54px; object-fit: contain; margin-bottom: 4px; }
+  .doc-print-brand-center { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  .doc-print-titulo { display: block; width: auto; max-width: 340px; height: auto; max-height: 62px; object-fit: contain; margin: 0 auto 4px; }
   .doc-print-meta { font-size: 9px; margin: 1px 0; line-height: 1.35; color: #222; }
   .doc-print-email { color: #0d6efd; }
   .doc-print-docbox { width: 178px; flex-shrink: 0; border: 1px solid #888; border-radius: 6px; padding: 8px 6px; text-align: center; font-size: 9px; }
-  .doc-print-doc-type { font-weight: 700; font-size: 9.5px; margin: 5px 0; background: #d9d9d9; padding: 4px 2px; }
+  .doc-print-doc-type { font-weight: 700; font-size: 9.5px; margin: 5px 0; background: #c41e3a; color: #fff; padding: 5px 4px; }
   .doc-print-doc-number { font-weight: 700; font-size: 10px; }
   .doc-print-client-box { border: 1px solid #bbb; border-radius: 6px; padding: 8px 10px; display: grid; grid-template-columns: 1fr 160px; gap: 8px; font-size: 9px; margin-bottom: 8px; }
   .doc-print-label { font-weight: 700; }
@@ -42,8 +42,8 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-qr { width: 100px; height: 100px; border: 1px solid #ccc; }
   .doc-print-representation { font-size: 7.5px; color: #555; line-height: 1.35; text-align: center; }
   .doc-print-hash { font-size: 7px; word-break: break-all; margin-top: 4px; }
-  .doc-print-brands { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 10px 0 6px; }
-  .doc-print-brand-logo { height: 42px; width: auto; max-width: 24%; object-fit: contain; }
+  .doc-print-brands { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 12px 0 8px; padding: 0 4px; }
+  .doc-print-brand-logo { height: 72px; width: auto; max-width: 23%; object-fit: contain; }
   .doc-print-service-footer { text-align: center; font-size: 8px; font-weight: 700; text-transform: uppercase; line-height: 1.35; margin: 0; }
 `;
 

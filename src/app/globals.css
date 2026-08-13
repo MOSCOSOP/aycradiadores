@@ -2206,6 +2206,10 @@ html.ify-dark ::-webkit-scrollbar-track {
   flex: 1;
   min-width: 0;
   padding-top: 2px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .doc-print-logo {
@@ -2248,15 +2252,18 @@ html.ify-dark ::-webkit-scrollbar-track {
   margin: 5px 0;
   font-size: 9.5px;
   line-height: 1.25;
-  background: #d9d9d9;
-  padding: 4px 2px;
+  background: #c41e3a;
+  color: #fff;
+  padding: 5px 4px;
 }
 .doc-print-titulo {
-  max-width: 100%;
+  display: block;
+  width: auto;
+  max-width: 340px;
   height: auto;
-  max-height: 54px;
+  max-height: 62px;
   object-fit: contain;
-  margin-bottom: 4px;
+  margin: 0 auto 4px;
 }
 .doc-print-email { color: #0d6efd; }
 .doc-print-inline-sep { margin-left: 12px; font-weight: 700; }
@@ -2348,13 +2355,14 @@ html.ify-dark ::-webkit-scrollbar-track {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin: 10px 0 6px;
+  gap: 12px;
+  margin: 12px 0 8px;
+  padding: 0 4px;
 }
 .doc-print-brand-logo {
-  height: 42px;
+  height: 72px;
   width: auto;
-  max-width: 24%;
+  max-width: 23%;
   object-fit: contain;
 }
 .doc-print-service-footer {
