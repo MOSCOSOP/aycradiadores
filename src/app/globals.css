@@ -2226,8 +2226,8 @@ html.ify-dark ::-webkit-scrollbar-track {
 
 .doc-print-sello {
   position: absolute;
-  left: calc(108px + 22mm);
-  top: 58%;
+  left: calc(108px + 7mm);
+  top: calc(58% + 2mm);
   transform: translateY(-50%);
   height: 52px;
   width: auto;
@@ -2238,7 +2238,8 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-a5 .doc-print-sello {
-  left: calc(78px + 14mm);
+  left: calc(78px + 4mm);
+  top: calc(58% + 2mm);
   height: 38px;
   max-width: 80px;
 }
