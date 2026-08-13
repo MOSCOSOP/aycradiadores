@@ -18,7 +18,7 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-titulo { display: block; width: auto; max-width: 100%; height: auto; max-height: 32px; object-fit: contain; object-position: center center; margin: 0 auto; }
   .doc-print-a5 .doc-print-titulo { max-height: 24px; }
   .doc-print-contact { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; min-width: 0; }
-  .doc-print-contact .doc-print-meta { margin: 0; line-height: 1.3; text-align: center; }
+  .doc-print-contact .doc-print-meta { margin: 0; line-height: 1.35; text-align: center; font-size: 11.5px; font-weight: 700; color: #111; }
   .doc-print-logo { width: 104px; height: 104px; object-fit: contain; display: block; margin: 0 auto; }
   .doc-print-a5 .doc-print-logo { width: 74px; height: 74px; }
   .doc-print-meta { font-size: 10.5px; margin: 1px 0; line-height: 1.35; color: #222; }
