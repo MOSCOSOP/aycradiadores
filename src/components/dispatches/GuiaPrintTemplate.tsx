@@ -1,7 +1,7 @@
 "use client";
 
 import { buildGuiaQrPayload, type GuiaPrintData } from "@/lib/comprobante/guia-print";
-import { sunatQrImageUrl } from "@/lib/comprobante/sunat-qr";
+import { sunatQrImageUrl, buildPrintQrMessage } from "@/lib/comprobante/sunat-qr";
 import { formatReceiptNumber } from "@/lib/receipt-format";
 import { guideTypeLabel } from "@/lib/dispatch-fields";
 import { COMPROBANTE_ASSETS, COMPANY_INFO } from "@/lib/company-info";
@@ -17,13 +17,17 @@ export function GuiaPrintTemplate({ data, pageSize = "A4", printId = "doc-print-
   const typeLabel = guideTypeLabel(data.guide_type);
   const number = formatReceiptNumber(data.number);
   const recipientDoc = extra.recipient_document ?? "";
-  const qrPayload = buildGuiaQrPayload({
+  const sunatPayload = buildGuiaQrPayload({
     guideType: data.guide_type,
     number: data.number,
     dateOfIssue: data.date_of_issue,
     customerNumber: recipientDoc,
   });
-  const qrUrl = sunatQrImageUrl(qrPayload, pageSize === "A5" ? 110 : 140);
+  const qrPayload = buildPrintQrMessage({
+    documentLabel: typeLabel,
+    sunatPayload,
+  });
+  const qrUrl = sunatQrImageUrl(qrPayload, pageSize === "A5" ? 130 : 160);
 
   return (
     <div
