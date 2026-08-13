@@ -18,6 +18,7 @@ export type ComprobanteEmisor = {
   email?: string;
   logo?: string;
   titulo?: string;
+  sello?: string;
   banco?: string;
   moneda?: string;
   cuentaBancaria?: string;

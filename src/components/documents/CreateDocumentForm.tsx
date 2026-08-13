@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { COMPANY } from "@/lib/constants";
@@ -11,8 +11,7 @@ import { CustomerSearchField } from "@/components/ui/CustomerSearchField";
 import { ProductSuggestItem } from "@/components/ui/ProductSuggestItem";
 import { Modal } from "@/components/ui/Modal";
 import { DocumentPrintTemplate } from "@/components/documents/DocumentPrintTemplate";
-import type { ReceiptData } from "@/lib/comprobante/types";
-import { buildReceiptFromPos } from "@/lib/comprobante/build-receipt-data";
+import { buildReceiptFromPos, docTypeLabelFromId } from "@/lib/comprobante/build-receipt-data";
 import { downloadCsv } from "@/lib/download-csv";
 
 const PARK_KEY = "ify_parked_docs";
@@ -339,35 +338,54 @@ export function CreateDocumentForm() {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
-  const buildPreviewReceipt = (): ReceiptData => ({
-    kind: docTypeId === "01" ? "factura" : "boleta",
-    number: "PREVIEW-00000001",
-    document_type_id: docTypeId,
-    document_type_label:
-      docTypeId === "01" ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA",
-    customer_name: String(selectedCustomer?.name ?? ""),
-    customer_number: String(selectedCustomer?.number ?? ""),
-    customer_address: String(selectedCustomer?.address ?? ""),
-    customer_province: "Huánuco",
-    customer_district: "Pillco Marca",
-    seller_name: "ADMINISTRADOR",
-    items: items.map((i) => ({
-      code: i.itemId ? String(i.itemId) : undefined,
-      description: i.product,
-      quantity: i.quantity,
-      unit: i.unit || "NIU",
-      unit_price: i.unitPrice,
-      total: round2(i.quantity * i.unitPrice),
-    })),
-    total: grandTotal,
-    total_taxed: round2(totals.value),
-    total_igv: igv,
-    payment_method: "Efectivo",
-    payment_condition: paymentCondition,
-    date_of_issue: dateIssue,
-    date_of_due: dateIssue,
-    plate: plate || undefined,
-  });
+  const previewSeries = series.find((s) => String(s.document_type_id) === String(docTypeId));
+  const previewNumber = previewSeries
+    ? `${String(previewSeries.number)}-00000001`
+    : "PREVIEW-00000001";
+
+  const previewReceipt = useMemo(
+    () =>
+      buildReceiptFromPos({
+        kind: docTypeId === "01" ? "factura" : docTypeId === "03" ? "boleta" : "document",
+        number: previewNumber,
+        document_type_id: docTypeId,
+        document_type_label: docTypeLabelFromId(docTypeId),
+        customer_name: String(selectedCustomer?.name ?? ""),
+        customer_number: String(selectedCustomer?.number ?? ""),
+        customer_address: String(selectedCustomer?.address ?? ""),
+        customer_province: "Huánuco",
+        customer_district: "Pillco Marca",
+        seller_name: "ADMINISTRADOR",
+        items: items.map((i) => ({
+          code: i.itemId ? String(i.itemId) : undefined,
+          description: i.product,
+          quantity: i.quantity,
+          unit: i.unit || "NIU",
+          unit_price: i.unitPrice,
+          total: round2(i.quantity * i.unitPrice),
+        })),
+        total: grandTotal,
+        total_taxed: round2(totals.value),
+        total_igv: igv,
+        payment_method: "Efectivo",
+        payment_condition: paymentCondition,
+        date_of_issue: dateIssue,
+        date_of_due: dateIssue,
+        plate: plate || undefined,
+      }),
+    [
+      docTypeId,
+      previewNumber,
+      selectedCustomer,
+      items,
+      grandTotal,
+      totals.value,
+      igv,
+      paymentCondition,
+      dateIssue,
+      plate,
+    ]
+  );
 
   const openPreview = () => {
     if (!selectedCustomer) {
@@ -946,9 +964,14 @@ export function CreateDocumentForm() {
         )}
       </Modal>
 
-      <Modal open={previewOpen} title="Vista previa del comprobante" size="xl" onClose={() => setPreviewOpen(false)}>
+      <Modal
+        open={previewOpen}
+        title={`Vista previa — ${docTypeLabelFromId(docTypeId)}`}
+        size="xl"
+        onClose={() => setPreviewOpen(false)}
+      >
         <div className="max-h-[70vh] overflow-auto rounded border border-[var(--border-light)] bg-white p-2">
-          <DocumentPrintTemplate receipt={buildReceiptFromPos(buildPreviewReceipt() as Record<string, unknown>)} />
+          <DocumentPrintTemplate key={`${docTypeId}-${previewNumber}`} receipt={previewReceipt} />
         </div>
       </Modal>
 

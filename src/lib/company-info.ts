@@ -20,6 +20,7 @@ export const COMPANY_INFO = {
 export const COMPROBANTE_ASSETS = {
   logo: "/assets/comprobantes/logo.jpg",
   titulo: "/assets/comprobantes/titulo.bmp",
+  sello: "/assets/comprobantes/sello.bmp",
   brands: [
     "/assets/comprobantes/toyota.bmp",
     "/assets/comprobantes/CAT.bmp",

@@ -1,13 +1,13 @@
 "use client";
 
 import { sunatQrImageUrl } from "@/lib/comprobante/sunat-qr";
-import { COMPROBANTE_PRINT_CSS, pageRuleForSize } from "@/lib/comprobante/print-styles";
 import { amountWordsEs } from "@/lib/comprobante/amount-words";
 import type { ReceiptData } from "@/lib/comprobante/types";
 import { COMPROBANTE_ASSETS, COMPANY_INFO } from "@/lib/company-info";
 import { formatReceiptNumber } from "@/lib/receipt-format";
 
 export type { ReceiptData } from "@/lib/comprobante/types";
+export { printDocument } from "@/lib/comprobante/print-document";
 
 function fmtDate(iso: string) {
   try {
@@ -58,6 +58,14 @@ export function DocumentPrintTemplate({
               className="doc-print-logo"
             />
           </div>
+          <div className="doc-print-sello-wrap">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={emisor?.sello ?? COMPROBANTE_ASSETS.sello}
+              alt="Sello A&C"
+              className="doc-print-sello"
+            />
+          </div>
           <div className="doc-print-brand-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -65,15 +73,19 @@ export function DocumentPrintTemplate({
               alt={emisor?.nombreComercial ?? "A&C Radiadores"}
               className="doc-print-titulo"
             />
-            <p className="doc-print-meta">De: {emisor?.razonSocial}</p>
+            <div className="doc-print-contact-box">
+              <p className="doc-print-meta">
+                <span className="doc-print-label">De:</span> {emisor?.razonSocial}
+              </p>
+            </div>
             <p className="doc-print-meta">
               Cel: {emisor?.telefono}
               {emisor?.telefono2 ? ` – ${emisor.telefono2}` : ""}
             </p>
             <p className="doc-print-meta doc-print-email">
-              Email: {COMPANY_INFO.email}
+              Correo elec: {COMPANY_INFO.email}
             </p>
-            <p className="doc-print-meta">{emisor?.direccion}</p>
+            <p className="doc-print-meta">Av.: {emisor?.direccion?.replace(/^Av\.\s*/i, "")}</p>
           </div>
           <div className="doc-print-docbox">
             <p>R.U.C. {emisor?.ruc}</p>
@@ -237,29 +249,4 @@ export function DocumentPrintTemplate({
       </div>
     </div>
   );
-}
-
-export function printDocument(elementId = "doc-print-area", pageSize: "A4" | "A5" = "A4") {
-  const el = document.getElementById(elementId);
-  if (!el) {
-    window.print();
-    return;
-  }
-  const w = window.open("", "_blank", "width=900,height=1100");
-  if (!w) {
-    alert("Permite ventanas emergentes para imprimir el comprobante.");
-    return;
-  }
-  w.document.write(
-    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Comprobante</title><style>${COMPROBANTE_PRINT_CSS}${pageRuleForSize(pageSize)}</style></head><body>${el.outerHTML}</body></html>`
-  );
-  w.document.close();
-  w.onload = () => {
-    w.focus();
-    w.print();
-  };
-  setTimeout(() => {
-    w.focus();
-    w.print();
-  }, 400);
 }

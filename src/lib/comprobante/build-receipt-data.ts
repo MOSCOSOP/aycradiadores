@@ -13,6 +13,7 @@ const DEFAULT_EMISOR: ComprobanteEmisor = {
   email: COMPANY_INFO.email,
   logo: COMPROBANTE_ASSETS.logo,
   titulo: COMPROBANTE_ASSETS.titulo,
+  sello: COMPROBANTE_ASSETS.sello,
   banco: COMPANY_INFO.bank,
   moneda: COMPANY_INFO.bankCurrency,
   cuentaBancaria: COMPANY_INFO.bankAccount,
@@ -36,7 +37,7 @@ function parseLocation(address?: string | null): { province: string; district: s
   return { province: "Huánuco", district: raw || "Pillco Marca" };
 }
 
-function docTypeLabelFromId(id: string, fallback?: string): string {
+export function docTypeLabelFromId(id: string, fallback?: string): string {
   const map: Record<string, string> = {
     "01": "FACTURA ELECTRÓNICA",
     "03": "BOLETA DE VENTA ELECTRÓNICA",
@@ -129,9 +130,9 @@ export function buildReceiptFromPos(receipt: Record<string, unknown>): ReceiptDa
     id: receipt.id != null ? Number(receipt.id) : undefined,
     number,
     document_type_id: docTypeId,
-    document_type_label: String(
-      receipt.document_type_label ?? documentLabel(String(receipt.kind ?? "boleta"))
-    ).toUpperCase(),
+    document_type_label: receipt.document_type_label
+      ? String(receipt.document_type_label).toUpperCase()
+      : docTypeLabelFromId(docTypeId),
     series_label: receipt.series_label ? String(receipt.series_label) : undefined,
     emisor: DEFAULT_EMISOR,
     customer_name: String(receipt.customer_name ?? ""),
