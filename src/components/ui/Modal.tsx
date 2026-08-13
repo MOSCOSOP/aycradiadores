@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 
 type ModalProps = {
   open: boolean;
   title: string;
   onClose: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
   footer?: React.ReactNode;
   size?: "md" | "lg" | "xl";
 };
@@ -63,8 +63,8 @@ export function Field({
   children,
   className = "",
 }: {
-  label: string;
-  children: React.ReactNode;
+  label: ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
   return (

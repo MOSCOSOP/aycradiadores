@@ -42,6 +42,7 @@ import {
   SaleNotesList,
   UsersList,
 } from "@/components/modules/ModuleLists";
+import { DispatchesCarrierList, TransportsList } from "@/components/carriers/TransportsList";
 import { CatalogListPage } from "@/components/modules/CatalogListPage";
 import { findReportByHref } from "@/lib/reports-catalog";
 
@@ -106,11 +107,11 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/item-lots": catalog("/item-lots", "Lotes"),
   "/price-adjustments": catalog("/price-adjustments", "Ajustes de precio"),
   "/discount-types": catalog("/discount-types", "Tipos de descuentos"),
-  "/transports": catalog("/transports", "Transportistas"),
+  "/transports": TransportsList,
   "/drivers": catalog("/drivers", "Conductores"),
   "/vehicles": catalog("/vehicles", "Vehículos"),
   "/origin-addresses": catalog("/origin-addresses", "Direcciones de partida"),
-  "/dispatches-carrier": catalog("/dispatches-carrier", "G.R. Transportista"),
+  "/dispatches-carrier": DispatchesCarrierList,
   "/voided": catalog("/voided", "Anulaciones"),
   "/summaries": catalog("/summaries", "Resúmenes"),
   "/contingencies": catalog("/contingencies", "Comprobantes contingencia"),

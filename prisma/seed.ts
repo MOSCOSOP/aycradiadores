@@ -136,6 +136,7 @@ async function main() {
       { number: "F001", documentTypeId: "01", establishmentId: establishment.id, currentNumber: 0 },
       { number: "B001", documentTypeId: "03", establishmentId: establishment.id, currentNumber: 0 },
       { number: "T001", documentTypeId: "09", establishmentId: establishment.id, currentNumber: 0 },
+      { number: "V001", documentTypeId: "31", establishmentId: establishment.id, currentNumber: 0 },
     ],
   });
 
@@ -207,6 +208,7 @@ async function main() {
       { key: "quotation_counter", value: "0" },
       { key: "purchase_counter", value: "0" },
       { key: "dispatch_counter", value: "0" },
+      { key: "dispatch_carrier_counter", value: "0" },
       { key: "order_note_counter", value: "0" },
     ],
   });

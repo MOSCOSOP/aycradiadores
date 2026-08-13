@@ -339,23 +339,32 @@ model AppSetting {
 }
 
 model Dispatch {
-  id             Int            @id @default(autoincrement())
-  number         String         @unique
-  customerId     Int
-  customer       Customer       @relation(fields: [customerId], references: [id])
-  dateOfIssue    DateTime       @default(now())
-  transferReason String         @default("Venta")
-  modeTransport  String         @default("01")
-  originAddress  String?
-  destAddress    String?
-  plate          String?
-  driverName     String?
-  driverDocument String?
-  vehiclePlate   String?
-  totalWeight    Float          @default(0)
-  state          String         @default("Registrado")
-  items          DispatchItem[]
-  createdAt      DateTime       @default(now())
+  id              Int            @id @default(autoincrement())
+  number          String         @unique
+  guideType       String         @default("09")
+  customerId      Int
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  establishmentId Int?
+  series          String?
+  dateOfIssue     DateTime       @default(now())
+  dateOfTransfer  DateTime?
+  transferReason  String         @default("Venta")
+  modeTransport   String         @default("01")
+  unitMeasure     String         @default("KGM")
+  packageCount    Int            @default(0)
+  purchaseOrder   String?
+  observations    String?
+  originAddress   String?
+  destAddress     String?
+  plate           String?
+  driverName      String?
+  driverDocument  String?
+  vehiclePlate    String?
+  totalWeight     Float          @default(0)
+  state           String         @default("Registrado")
+  extraData       Json?
+  items           DispatchItem[]
+  createdAt       DateTime       @default(now())
 }
 
 model DispatchItem {

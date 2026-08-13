@@ -143,7 +143,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: "bi-truck",
     children: [
       { label: "G.R. Remitente", href: "/dispatches/create" },
-      { label: "G.R. Transportista", href: "/dispatches-carrier" },
+      { label: "G.R. Transportista", href: "/dispatches-carrier/create" },
       { label: "Transportistas", href: "/transports" },
       { label: "Conductores", href: "/drivers" },
       { label: "Vehículos", href: "/vehicles" },

@@ -2426,11 +2426,16 @@ export async function handleLocalApi(
 
   // ── Guías de remisión ──
   if (method === "GET" && path === "dispatches/records") {
+    const guideFilter = searchParams.get("guide_type");
     const imported = await readImportedModule("dispatches");
     if (imported?.length) {
-      return { data: imported.map(mapImportedDispatch), meta: { total: imported.length } };
+      const filtered = guideFilter
+        ? imported.filter((d) => String(d.guide_type ?? d.guideType ?? "09") === guideFilter)
+        : imported;
+      return { data: filtered.map(mapImportedDispatch), meta: { total: filtered.length } };
     }
     const data = await prisma.dispatch.findMany({
+      where: guideFilter ? { guideType: guideFilter } : undefined,
       include: { customer: true },
       orderBy: { id: "desc" },
     });
@@ -2438,12 +2443,15 @@ export async function handleLocalApi(
       data: data.map((d) => ({
         id: d.id,
         number: d.number,
+        guide_type: d.guideType,
         customer_name: d.customer.name,
         date_of_issue: formatDate(d.dateOfIssue),
         date: formatDate(d.dateOfIssue),
+        date_of_transfer: d.dateOfTransfer ? formatDate(d.dateOfTransfer) : undefined,
         transfer_reason: d.transferReason,
-        vehicle_plate: (d as { vehiclePlate?: string }).vehiclePlate ?? d.plate,
-        driver_name: (d as { driverName?: string }).driverName,
+        vehicle_plate: d.vehiclePlate ?? d.plate,
+        driver_name: d.driverName,
+        total_weight: d.totalWeight,
         state: d.state,
         state_type_description: d.state,
       })),
@@ -2469,21 +2477,29 @@ export async function handleLocalApi(
       include: { customer: true, items: true },
     });
     if (!d) throw new Error("Guía no encontrada");
-    const row = d as typeof d & { vehiclePlate?: string; driverName?: string; driverDocument?: string; modeTransport?: string; totalWeight?: number };
     return {
       data: {
         id: d.id,
         number: d.number,
+        guide_type: d.guideType,
         customer_name: d.customer.name,
         date_of_issue: formatDate(d.dateOfIssue),
+        date_of_transfer: d.dateOfTransfer ? formatDate(d.dateOfTransfer) : undefined,
         transfer_reason: d.transferReason,
         origin_address: d.originAddress,
         dest_address: d.destAddress,
-        vehicle_plate: row.vehiclePlate,
-        driver_name: row.driverName,
-        driver_document: row.driverDocument,
-        mode_transport: row.modeTransport,
-        total_weight: row.totalWeight,
+        vehicle_plate: d.vehiclePlate,
+        driver_name: d.driverName,
+        driver_document: d.driverDocument,
+        mode_transport: d.modeTransport,
+        total_weight: d.totalWeight,
+        unit_measure: d.unitMeasure,
+        package_count: d.packageCount,
+        purchase_order: d.purchaseOrder,
+        observations: d.observations,
+        establishment_id: d.establishmentId,
+        series: d.series,
+        extra_data: d.extraData,
         state: d.state,
         items: d.items.map((i) => ({
           description: i.description,
@@ -2497,15 +2513,40 @@ export async function handleLocalApi(
   if (method === "POST" && path === "dispatches") {
     const p = body as Record<string, unknown>;
     const items = (p.items as Record<string, unknown>[]) || [];
-    const num = await nextCounter("dispatch_counter");
-    const number = `T001-${String(num).padStart(4, "0")}`;
+    const guideType = String(p.guide_type || "09");
+    let number = "";
+    let seriesLabel: string | null = null;
+
+    if (p.series_id) {
+      const seriesRow = await prisma.series.findUnique({ where: { id: Number(p.series_id) } });
+      if (!seriesRow) throw new Error("Serie no encontrada");
+      const nextNum = seriesRow.currentNumber + 1;
+      number = `${seriesRow.number}-${String(nextNum).padStart(8, "0")}`;
+      seriesLabel = seriesRow.number;
+      await prisma.series.update({ where: { id: seriesRow.id }, data: { currentNumber: nextNum } });
+    } else {
+      const counterKey = guideType === "31" ? "dispatch_carrier_counter" : "dispatch_counter";
+      const num = await nextCounter(counterKey);
+      const prefix = guideType === "31" ? "V001" : "T001";
+      number = `${prefix}-${String(num).padStart(8, "0")}`;
+      seriesLabel = prefix;
+    }
+
     const dispatch = await prisma.dispatch.create({
       data: {
         number,
+        guideType,
         customerId: Number(p.customer_id),
+        establishmentId: p.establishment_id ? Number(p.establishment_id) : null,
+        series: seriesLabel,
         dateOfIssue: new Date(String(p.date_of_issue || new Date())),
+        dateOfTransfer: p.date_of_transfer ? new Date(String(p.date_of_transfer)) : null,
         transferReason: String(p.transfer_reason || "Venta"),
         modeTransport: String(p.mode_transport || "02"),
+        unitMeasure: String(p.unit_measure || "KGM"),
+        packageCount: Number(p.package_count || 0),
+        purchaseOrder: p.purchase_order ? String(p.purchase_order) : null,
+        observations: p.observations ? String(p.observations) : null,
         originAddress: p.origin_address ? String(p.origin_address) : null,
         destAddress: p.dest_address ? String(p.dest_address) : null,
         plate: p.vehicle_plate ? String(p.vehicle_plate) : null,
@@ -2513,6 +2554,7 @@ export async function handleLocalApi(
         driverName: p.driver_name ? String(p.driver_name) : null,
         driverDocument: p.driver_document ? String(p.driver_document) : null,
         totalWeight: Number(p.total_weight || 0),
+        extraData: p.extra_data ? (p.extra_data as object) : undefined,
         items: {
           create: items.map((it) => ({
             description: String(it.description || ""),
@@ -2520,7 +2562,7 @@ export async function handleLocalApi(
             unitTypeId: String(it.unit_type_id || "NIU"),
           })),
         },
-      } as never,
+      },
     });
     return { success: true, data: dispatch };
   }

@@ -70,6 +70,7 @@ export const DEDICATED_APP_PATHS = new Set([
   "/sale-notes/create",
   "/quotations/create",
   "/dispatches/create",
+  "/dispatches-carrier/create",
   "/order-notes/create",
 ]);
 

@@ -359,7 +359,10 @@ export const api = {
   },
 
   dispatches: {
-    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/dispatches/records")),
+    records: (guideType?: string) =>
+      apiFetch<{ data: Record<string, unknown>[] }>(
+        local(`/dispatches/records${guideType ? `?guide_type=${encodeURIComponent(guideType)}` : ""}`)
+      ),
     get: (id: number | string) => apiFetch<{ data: Record<string, unknown> }>(local(`/dispatches/${id}`)),
     create: (payload: Record<string, unknown>) =>
       apiFetch(local("/dispatches"), {

@@ -55,10 +55,12 @@ const MODULE_EXTRA_FIELDS: Record<string, CatalogField[]> = {
     { key: "date", label: "Vigencia", type: "date" },
   ],
   "/transports": [
-    { key: "document_number", label: "RUC / documento" },
+    { key: "identity_document_type_id", label: "Tipo documento", type: "select", options: ["RUC", "DNI", "C.E.", "Pasaporte"] },
+    { key: "document_number", label: "RUC / documento", required: true },
+    { key: "address", label: "Dirección fiscal", type: "textarea" },
+    { key: "mtc", label: "MTC" },
     { key: "telephone", label: "Teléfono" },
     { key: "email", label: "Correo" },
-    { key: "address", label: "Dirección", type: "textarea" },
   ],
   "/drivers": [
     { key: "document_number", label: "DNI / licencia" },

@@ -233,7 +233,10 @@ export function ServicesList() {
   );
 }
 
-export function DispatchesList() {
+export function DispatchesList({ guideType = "09" }: { guideType?: "09" | "31" }) {
+  const isCarrier = guideType === "31";
+  const listTitle = isCarrier ? "G.R. Transportista" : "Guías de remisión remitente";
+  const createHref = isCarrier ? "/dispatches-carrier/create" : "/dispatches/create";
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -251,10 +254,10 @@ export function DispatchesList() {
 
   const load = () => {
     setLoading(true);
-    api.dispatches.records().then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
+    api.dispatches.records(guideType).then((r) => setRows(r.data ?? [])).finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [guideType]);
 
   const filtered = rows.filter((r) => {
     if (!search) return true;
@@ -306,8 +309,8 @@ export function DispatchesList() {
 
   return (
     <div className="ify-page">
-      <PageHeader title="Guías de remisión" actions={
-        <Link href="/dispatches/create" className="ify-btn-primary"><i className="bi bi-plus-lg" /> Nueva guía</Link>
+      <PageHeader title={listTitle} actions={
+        <Link href={createHref} className="ify-btn-primary"><i className="bi bi-plus-lg" /> Nueva guía</Link>
       } />
       <div className="ify-card mb-3 p-3">
         <input className="ify-input" placeholder="Buscar guía o cliente..." value={search} onChange={(e) => setSearch(e.target.value)} />

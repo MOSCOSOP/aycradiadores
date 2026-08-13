@@ -5,16 +5,19 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-sheet { width: 100%; max-width: 210mm; margin: 0 auto; background: #fff; color: #111; }
   .doc-print-a5 { max-width: 148mm; font-size: 90%; }
   .doc-print-inner { padding: 6mm; }
-  .doc-print-header { display: grid; grid-template-columns: minmax(168px, auto) minmax(0, 1fr) 182px; gap: 8px; align-items: start; margin-bottom: 8px; }
+  .doc-print-header { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .doc-print-header-title { width: 100%; text-align: center; padding: 0 182px 0 0; }
+  .doc-print-a5 .doc-print-header-title { padding-right: 148px; }
+  .doc-print-header-body { display: grid; grid-template-columns: minmax(168px, auto) minmax(0, 1fr) 182px; gap: 8px; align-items: start; }
+  .doc-print-a5 .doc-print-header-body { grid-template-columns: minmax(140px, auto) minmax(0, 1fr) 148px; gap: 5px; }
   .doc-print-header-left { display: flex; align-items: flex-start; gap: 4px; flex-shrink: 0; }
-  .doc-print-a5 .doc-print-header { grid-template-columns: minmax(140px, auto) minmax(0, 1fr) 148px; gap: 5px; }
   .doc-print-logo-wrap { flex-shrink: 0; width: 100px; text-align: center; }
   .doc-print-logo { width: 96px; height: 96px; object-fit: contain; display: block; margin: 0 auto; }
   .doc-print-sello-wrap { flex-shrink: 0; width: 72px; display: flex; align-items: center; justify-content: center; padding-top: 8px; }
   .doc-print-sello { width: 68px; height: auto; max-height: 72px; object-fit: contain; }
   .doc-print-brand-center { min-width: 0; max-width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; overflow: hidden; padding-right: 4px; }
-  .doc-print-titulo { display: block; width: 100%; max-width: 100%; height: auto; max-height: 62px; object-fit: contain; margin: 0 auto 4px; }
-  .doc-print-a5 .doc-print-titulo { max-height: 50px; }
+  .doc-print-titulo { display: block; width: auto; max-width: 100%; height: auto; max-height: 70px; object-fit: contain; margin: 0 auto; }
+  .doc-print-a5 .doc-print-titulo { max-height: 56px; }
   .doc-print-meta { font-size: 9px; margin: 1px 0; line-height: 1.35; color: #222; }
   .doc-print-contact-box { border: 1px solid #ccc; border-radius: 4px; background: #f5f5f5; padding: 4px 8px; margin: 2px 0 4px; font-size: 9px; }
   .doc-print-email { color: #0d6efd; }
