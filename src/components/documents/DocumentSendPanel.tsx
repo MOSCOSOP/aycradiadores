@@ -17,15 +17,6 @@ type Props = {
   onPrintSizeChange?: (size: "A4" | "A5") => void;
 };
 
-function formatPhoneDisplay(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length === 9) return digits.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
-  if (digits.length === 11 && digits.startsWith("51")) {
-    return `+51 ${digits.slice(2).replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3")}`;
-  }
-  return phone;
-}
-
 export function DocumentSendPanel({
   receipt,
   documentId,
@@ -35,8 +26,8 @@ export function DocumentSendPanel({
   printSize: printSizeProp,
   onPrintSizeChange,
 }: Props) {
-  const customerEmail = (defaultEmail || receipt.customer_email || "").trim();
-  const customerPhone = (defaultPhone || receipt.customer_phone || "").trim();
+  const [email, setEmail] = useState(defaultEmail || receipt.customer_email || "");
+  const [phone, setPhone] = useState(defaultPhone || receipt.customer_phone || "");
   const [printSizeLocal, setPrintSizeLocal] = useState<"A4" | "A5">("A4");
   const printSize = printSizeProp ?? printSizeLocal;
   const setPrintSize = onPrintSizeChange ?? setPrintSizeLocal;
@@ -46,10 +37,16 @@ export function DocumentSendPanel({
   const [loadingShare, setLoadingShare] = useState(false);
 
   useEffect(() => {
+    setEmail(defaultEmail || receipt.customer_email || "");
+  }, [defaultEmail, receipt.customer_email]);
+
+  useEffect(() => {
+    setPhone(defaultPhone || receipt.customer_phone || "");
+  }, [defaultPhone, receipt.customer_phone]);
+
+  useEffect(() => {
     setShareToken(receipt.share_token ?? "");
   }, [receipt.share_token]);
-
-  const receiptWithShare: ReceiptData = { ...receipt, share_token: shareToken || receipt.share_token };
 
   async function ensureShareToken(): Promise<string> {
     if (shareToken) return shareToken;
@@ -69,14 +66,15 @@ export function DocumentSendPanel({
   const sendEmailGmail = async () => {
     setErr("");
     setMsg("");
-    if (!customerEmail) {
-      setErr("Este cliente no tiene correo registrado. Agrégalo en la ficha del cliente.");
+    const target = email.trim();
+    if (!target) {
+      setErr("Escribe el correo del destinatario.");
       return;
     }
     try {
       const token = await ensureShareToken();
-      openEmailCompose({ ...receipt, share_token: token }, customerEmail, documentId);
-      setMsg(`Gmail abierto para ${customerEmail}. Revisa el mensaje y pulsa Enviar.`);
+      openEmailCompose({ ...receipt, share_token: token }, target, documentId);
+      setMsg(`Gmail abierto para ${target}. Revisa el mensaje y pulsa Enviar.`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "No se pudo abrir Gmail");
     }
@@ -85,19 +83,20 @@ export function DocumentSendPanel({
   const sendWhatsApp = async () => {
     setErr("");
     setMsg("");
+    const targetPhone = phone.trim();
+    if (!targetPhone) {
+      setErr("Escribe el número de WhatsApp (9 dígitos).");
+      return;
+    }
     try {
       const token = await ensureShareToken();
       const url = buildWhatsAppUrl({
-        phone: customerPhone || undefined,
+        phone: targetPhone,
         receipt: { ...receipt, share_token: token },
         documentId,
       });
       window.open(url, "_blank");
-      setMsg(
-        customerPhone
-          ? `WhatsApp abierto para ${formatPhoneDisplay(customerPhone)}.`
-          : "WhatsApp abierto con el mensaje del comprobante."
-      );
+      setMsg(`WhatsApp abierto para ${targetPhone}.`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "No se pudo abrir WhatsApp");
     }
@@ -125,23 +124,25 @@ export function DocumentSendPanel({
         </button>
       </div>
 
-      <div className="mb-2 flex flex-wrap items-center gap-3">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <button
           type="button"
           className="ify-btn-outline text-xs"
           onClick={sendEmailGmail}
-          disabled={!customerEmail || loadingShare}
+          disabled={loadingShare}
         >
           <i className="bi bi-envelope" /> {loadingShare ? "Preparando..." : "Enviar correo"}
         </button>
-        {customerEmail ? (
-          <span className="text-sm font-medium text-[var(--foreground)]">{customerEmail}</span>
-        ) : (
-          <span className="text-sm text-amber-700">Sin correo del cliente</span>
-        )}
+        <input
+          className="ify-input min-w-[220px] flex-1 text-sm"
+          type="email"
+          placeholder="correo@ejemplo.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
 
-      <div className="mb-2 flex flex-wrap items-center gap-3">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <button
           type="button"
           className="ify-btn-outline text-xs text-green-700"
@@ -150,11 +151,13 @@ export function DocumentSendPanel({
         >
           <i className="bi bi-whatsapp" /> {loadingShare ? "Preparando..." : "Enviar WhatsApp"}
         </button>
-        {customerPhone ? (
-          <span className="text-sm font-medium text-[var(--foreground)]">{formatPhoneDisplay(customerPhone)}</span>
-        ) : (
-          <span className="text-sm text-[var(--muted)]">Se abrirá WhatsApp con el mensaje listo</span>
-        )}
+        <input
+          className="ify-input min-w-[160px] flex-1 text-sm"
+          type="tel"
+          placeholder="999 123 456"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
       </div>
 
       {msg ? <p className="mb-2 text-sm text-green-700">{msg}</p> : null}
