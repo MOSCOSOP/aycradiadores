@@ -4,7 +4,7 @@ export const COMPANY_INFO = {
   tradeName: "A&C RADIADORES",
   ruc: "10447860428",
   address: "Av. Universitaria N° 2760 – Pillco Marca – Huánuco – Huánuco.",
-  email: "aribesalvares@gmail.com",
+  email: "arcibesalvares@gmail.com",
   phone: "998 624 131",
   phone2: "992 812 035",
   bank: "BANCO DE CREDITO DEL PERU",
