@@ -2259,14 +2259,14 @@ html.ify-dark ::-webkit-scrollbar-track {
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 28px;
+  max-height: 32px;
   object-fit: contain;
   object-position: center center;
   margin: 0 auto;
 }
 
 .doc-print-a5 .doc-print-titulo {
-  max-height: 22px;
+  max-height: 24px;
 }
 
 .doc-print-contact {
@@ -2306,7 +2306,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-meta {
-  font-size: 9px;
+  font-size: 10.5px;
   margin: 1px 0;
   line-height: 1.35;
   color: #222;
@@ -2319,7 +2319,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   border-radius: 6px;
   padding: 6px 5px;
   text-align: center;
-  font-size: 9px;
+  font-size: 10.5px;
   flex-shrink: 0;
   justify-self: end;
   align-self: center;
@@ -2327,7 +2327,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 
 .doc-print-a5 .doc-print-docbox {
   max-width: 148px;
-  font-size: 8px;
+  font-size: 9px;
   padding: 6px 4px;
 }
 
@@ -2338,7 +2338,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 .doc-print-doc-type {
   font-weight: 700;
   margin: 5px 0;
-  font-size: 8.5px;
+  font-size: 9.5px;
   line-height: 1.2;
   background: #c41e3a !important;
   color: #fff !important;
@@ -2350,7 +2350,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-a5 .doc-print-doc-type {
-  font-size: 7px;
+  font-size: 8px;
   padding: 4px 2px;
 }
 .doc-print-email { color: #0d6efd; }
@@ -2359,7 +2359,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 8px;
+  font-size: 9.5px;
   margin-bottom: 6px;
   border: 1px solid #bbb;
   border-radius: 10px;
@@ -2394,21 +2394,21 @@ html.ify-dark ::-webkit-scrollbar-track {
 .doc-print-meta-table th {
   background: #efefef;
   font-weight: 700;
-  font-size: 7.5px;
+  font-size: 8.5px;
 }
 .doc-print-summary-row {
   display: grid;
   grid-template-columns: 1fr 250px;
   gap: 10px;
   margin-bottom: 5px;
-  font-size: 9px;
+  font-size: 10.5px;
 }
 .doc-print-obs { min-height: 32px; }
 .doc-print-totals-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 3px;
-  font-size: 9px;
+  font-size: 10.5px;
 }
 .doc-print-totals-table th,
 .doc-print-totals-table td {
@@ -2443,14 +2443,14 @@ html.ify-dark ::-webkit-scrollbar-track {
   border-radius: 10px;
   background: #efefef;
   padding: 5px 10px;
-  font-size: 9px;
+  font-size: 10.5px;
   margin-bottom: 6px;
 }
 .doc-print-bank-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 8px;
+  font-size: 9.5px;
   margin-bottom: 6px;
   border: 1px solid #bbb;
   border-radius: 10px;
@@ -2492,7 +2492,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   gap: 10px;
   align-items: start;
   margin-bottom: 5px;
-  font-size: 8px;
+  font-size: 9px;
 }
 .doc-print-detraction {
   border: 1px solid #bbb;
@@ -2520,7 +2520,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 .doc-print-service-footer {
   text-align: center;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
   line-height: 1.45;
@@ -2528,7 +2528,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   padding: 0 4px;
 }
 .doc-print-a5 .doc-print-service-footer {
-  font-size: 8.5px;
+  font-size: 9.5px;
 }
 
 .doc-print-viewport {
@@ -2559,7 +2559,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   border: 1px solid #bbb;
   border-radius: 10px;
   padding: 8px 10px;
-  font-size: 9px;
+  font-size: 10.5px;
   margin-bottom: 8px;
 }
 
@@ -2569,7 +2569,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 
 .doc-print-doc-number {
   font-weight: 700;
-  font-size: 10px;
+  font-size: 11.5px;
 }
 
 .doc-print-client-box {
@@ -2579,7 +2579,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   display: grid;
   grid-template-columns: 1fr 160px;
   gap: 8px;
-  font-size: 9px;
+  font-size: 10.5px;
   margin-bottom: 6px;
 }
 
@@ -2640,7 +2640,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 9px;
+  font-size: 10.5px;
   margin-bottom: 6px;
   border: 1px solid #888;
   border-radius: 10px;
@@ -2654,7 +2654,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   padding: 6px 4px;
   text-align: center;
   border-right: 1px solid #666;
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .doc-print-table thead th:last-child {
@@ -2766,7 +2766,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-hash {
-  font-size: 7px;
+  font-size: 8px;
   word-break: break-all;
   margin-top: 4px;
   color: #444;
@@ -2774,7 +2774,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-representation {
-  font-size: 7.5px;
+  font-size: 8.5px;
   color: #555;
   line-height: 1.35;
   border-top: 1px solid #ccc;

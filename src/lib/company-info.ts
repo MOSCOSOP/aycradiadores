@@ -1,5 +1,5 @@
 export const COMPANY_INFO = {
-  name: "Aribes Alvares Rosales",
+  name: "Arcibes Alvares Rosales",
   legalName: "ALVARES ROSALES ARCIBES BENITO",
   tradeName: "A&C RADIADORES",
   ruc: "10447860428",
