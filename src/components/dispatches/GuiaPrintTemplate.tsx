@@ -37,24 +37,30 @@ export function GuiaPrintTemplate({ data, pageSize = "A4", printId = "doc-print-
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={COMPROBANTE_ASSETS.logo} alt="Logo A&C" className="doc-print-logo" />
             </div>
-            <div className="doc-print-header-title-wrap">
+            <div className="doc-print-header-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={COMPROBANTE_ASSETS.titulo}
-                alt={COMPANY_INFO.tradeName}
-                className="doc-print-titulo-inline"
+                alt="RADIADORES & AIRE ACONDICIONADO"
+                className="doc-print-titulo"
               />
-            </div>
-            <div className="doc-print-brand-center">
-              <p className="doc-print-meta doc-print-de-line">
-                <span className="doc-print-label">De:</span> {extra.sender_name || COMPANY_INFO.legalName}
+              <div className="doc-print-header-brand-row">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={COMPROBANTE_ASSETS.sello} alt="A&C" className="doc-print-sello" />
+                <div className="doc-print-brand-center">
+                  <p className="doc-print-meta doc-print-de-line">
+                    <span className="doc-print-label">De:</span> {COMPANY_INFO.name}
+                  </p>
+                  <p className="doc-print-meta">
+                    Cel: {COMPANY_INFO.phone}
+                    {COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}
+                  </p>
+                  <p className="doc-print-meta doc-print-email">Correo elec: {COMPANY_INFO.email}</p>
+                </div>
+              </div>
+              <p className="doc-print-meta doc-print-address">
+                Av.: {COMPANY_INFO.address.replace(/^Av\.\s*/i, "")}
               </p>
-              <p className="doc-print-meta">
-                Cel: {COMPANY_INFO.phone}
-                {COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}
-              </p>
-              <p className="doc-print-meta doc-print-email">Correo elec: {COMPANY_INFO.email}</p>
-              <p className="doc-print-meta">Av.: {COMPANY_INFO.address.replace(/^Av\.\s*/i, "")}</p>
             </div>
             <div className="doc-print-docbox">
               <p>R.U.C. {COMPANY_INFO.ruc}</p>
