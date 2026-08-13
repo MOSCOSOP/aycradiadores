@@ -1,25 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { COMPANY_INFO } from "@/lib/company-info";
+import { sunatQrImageUrl } from "@/lib/comprobante/sunat-qr";
+import { COMPROBANTE_PRINT_CSS, pageRuleForSize } from "@/lib/comprobante/print-styles";
+import type { ReceiptData } from "@/lib/comprobante/types";
 import { formatReceiptNumber } from "@/lib/receipt-format";
 
-export type ReceiptData = {
-  kind: string;
-  number: string;
-  document_type_label: string;
-  customer_name: string;
-  customer_number: string;
-  customer_address?: string;
-  items: { description: string; quantity: number; unit_price: number; total: number }[];
-  total: number;
-  total_taxed: number;
-  total_igv: number;
-  payment_method: string;
-  payment_condition: string;
-  date_of_issue: string;
-  plate?: string;
-};
+export type { ReceiptData } from "@/lib/comprobante/types";
 
 function fmtDate(iso: string) {
   try {
@@ -42,8 +29,14 @@ function payMethodLabel(method: string) {
     yape: "Yape",
     transferencia: "Transferencia",
     contado: "Contado",
+    credito: "Crédito",
   };
-  return map[method] ?? method;
+  return map[method.toLowerCase()] ?? method;
+}
+
+function idDocLabel(number: string) {
+  const n = String(number ?? "").replace(/\D/g, "");
+  return n.length === 11 ? "R.U.C." : "D.N.I.";
 }
 
 export function DocumentPrintTemplate({
@@ -55,11 +48,12 @@ export function DocumentPrintTemplate({
   printId?: string;
   scale?: "normal" | "a5";
 }) {
+  const emisor = receipt.emisor;
   const number = formatReceiptNumber(receipt.number);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
-    `${COMPANY_INFO.ruc}|${number}|${receipt.total.toFixed(2)}`
-  )}`;
-  const idDoc = receipt.customer_number.length === 11 ? "RUC" : "DNI";
+  const qrPayload = receipt.qr_payload ?? `${emisor?.ruc ?? ""}|${number}|${receipt.total.toFixed(2)}`;
+  const qrUrl = sunatQrImageUrl(qrPayload, scale === "a5" ? 110 : 140);
+  const paymentLabel =
+    receipt.payment_condition?.toLowerCase() === "credito" ? "Crédito" : "Contado";
 
   return (
     <div
@@ -68,120 +62,168 @@ export function DocumentPrintTemplate({
     >
       <div className="doc-print-inner">
         <header className="doc-print-header">
-          <div className="doc-print-brand">
+          <div className="doc-print-logo-wrap">
             <Image
-              src="/images/logo-client.png"
-              alt={COMPANY_INFO.tradeName}
+              src={emisor?.logo ?? "/assets/comprobantes/logo.jpg"}
+              alt={emisor?.nombreComercial ?? "Logo"}
               width={72}
               height={72}
               className="doc-print-logo"
               unoptimized
             />
-            <div>
-              <h1 className="doc-print-company">{COMPANY_INFO.tradeName}</h1>
-              <p className="doc-print-meta">De: {COMPANY_INFO.name}</p>
-              <p className="doc-print-meta">RUC {COMPANY_INFO.ruc}</p>
-              <p className="doc-print-meta">{COMPANY_INFO.address}</p>
-              <p className="doc-print-meta">{COMPANY_INFO.email}</p>
-            </div>
+          </div>
+          <div className="doc-print-brand-center">
+            <h1 className="doc-print-company">{emisor?.nombreComercial ?? "A&C RADIADORES"}</h1>
+            <p className="doc-print-meta">De: {emisor?.razonSocial}</p>
+            <p className="doc-print-meta">RUC {emisor?.ruc}</p>
+            <p className="doc-print-meta">{emisor?.direccion}</p>
+            {emisor?.telefono ? (
+              <p className="doc-print-meta">Central telefónica: {emisor.telefono}</p>
+            ) : null}
+            {emisor?.email ? <p className="doc-print-meta">Email: {emisor.email}</p> : null}
           </div>
           <div className="doc-print-docbox">
-            <p>R.U.C. {COMPANY_INFO.ruc}</p>
+            <p>R.U.C. {emisor?.ruc}</p>
             <p className="doc-print-doc-type">{receipt.document_type_label}</p>
             <p className="doc-print-doc-number">Nro. {number}</p>
           </div>
         </header>
 
-        <section className="doc-print-customer">
+        <section className="doc-print-client-box">
           <div>
-            <p><span className="doc-print-label">Señor(es):</span> {receipt.customer_name}</p>
-            <p><span className="doc-print-label">{idDoc}:</span> {receipt.customer_number}</p>
-            <p><span className="doc-print-label">Ubicación:</span> {receipt.customer_address || "HUÁNUCO - HUÁNUCO - HUÁNUCO"}</p>
-            {receipt.plate ? <p><span className="doc-print-label">Placa:</span> {receipt.plate}</p> : null}
-          </div>
-          <div>
-            <p><span className="doc-print-label">Fecha Emisión</span> {fmtDate(receipt.date_of_issue)}</p>
             <p>
-              <span className="doc-print-label">Forma de pago:</span>{" "}
-              {receipt.payment_condition === "credito" ? "Crédito" : "Contado"} — {payMethodLabel(receipt.payment_method)}
+              <span className="doc-print-label">Señor(es):</span> {receipt.customer_name}
             </p>
+            <p>
+              <span className="doc-print-label">{idDocLabel(receipt.customer_number)}:</span>{" "}
+              {receipt.customer_number}
+            </p>
+            <p>
+              <span className="doc-print-label">Dirección:</span>{" "}
+              {receipt.customer_address || "—"}
+            </p>
+            <p>
+              <span className="doc-print-label">Provincia:</span> {receipt.customer_province || "—"}
+            </p>
+            <p>
+              <span className="doc-print-label">Distrito:</span> {receipt.customer_district || "—"}
+            </p>
+          </div>
+          <div className="doc-print-client-right">
+            <p>
+              <span className="doc-print-label">Vendedor:</span> {receipt.seller_name || "ADMINISTRADOR"}
+            </p>
+          </div>
+        </section>
+
+        <section className="doc-print-meta-bar">
+          <div className="doc-print-meta-cell">
+            <span className="lbl">Fecha Emisión</span>
+            <span className="val">{fmtDate(receipt.date_of_issue)}</span>
+          </div>
+          <div className="doc-print-meta-cell">
+            <span className="lbl">Forma de pago</span>
+            <span className="val">
+              {paymentLabel} — {payMethodLabel(receipt.payment_method)}
+            </span>
+          </div>
+          <div className="doc-print-meta-cell">
+            <span className="lbl">N° de placa</span>
+            <span className="val">{receipt.plate || "—"}</span>
+          </div>
+          <div className="doc-print-meta-cell">
+            <span className="lbl">Orden de compra</span>
+            <span className="val">{receipt.purchase_order || "—"}</span>
+          </div>
+          <div className="doc-print-meta-cell">
+            <span className="lbl">Vencimiento</span>
+            <span className="val">{fmtDate(receipt.date_of_due ?? receipt.date_of_issue)}</span>
+          </div>
+          <div className="doc-print-meta-cell">
+            <span className="lbl">N° Guía Remisión</span>
+            <span className="val">{receipt.dispatch_number || "—"}</span>
           </div>
         </section>
 
         <table className="doc-print-table">
           <thead>
             <tr>
-              <th>Cant.</th>
-              <th>Descripción</th>
-              <th className="text-right">P.U.</th>
-              <th className="text-right">Total</th>
+              <th className="col-code">CÓDIGO</th>
+              <th className="col-qty">CANT.</th>
+              <th className="col-unit">U.M.</th>
+              <th className="col-desc">DESCRIPCIÓN</th>
+              <th className="col-price">P.Unit</th>
+              <th className="col-total">TOTAL</th>
             </tr>
           </thead>
           <tbody>
             {receipt.items.map((it, i) => (
               <tr key={i}>
-                <td>{it.quantity}</td>
-                <td>{it.description}</td>
-                <td className="text-right">{it.unit_price.toFixed(2)}</td>
-                <td className="text-right">{it.total.toFixed(2)}</td>
+                <td className="col-code">{it.code ?? "—"}</td>
+                <td className="col-qty">{it.quantity}</td>
+                <td className="col-unit">{it.unit}</td>
+                <td className="col-desc">{it.description}</td>
+                <td className="col-price">{it.unit_price.toFixed(2)}</td>
+                <td className="col-total">{it.total.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        <div className="doc-print-totals-wrap">
-          <div className="doc-print-totals">
-            <div className="doc-print-total-row"><span>OP. GRAVADAS:</span><span>S/ {receipt.total_taxed.toFixed(2)}</span></div>
-            <div className="doc-print-total-row"><span>I.G.V. 18%:</span><span>S/ {receipt.total_igv.toFixed(2)}</span></div>
-            <div className="doc-print-total-row doc-print-total-final"><span>TOTAL:</span><span>S/ {receipt.total.toFixed(2)}</span></div>
+        <div className="doc-print-bottom">
+          <div className="doc-print-qr-block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrUrl} alt="QR SUNAT" width={100} height={100} className="doc-print-qr" />
+            {receipt.hash ? <p className="doc-print-hash">{receipt.hash}</p> : null}
+          </div>
+          <div className="doc-print-totals-wrap">
+            <div className="doc-print-totals">
+              {receipt.total_discount != null && receipt.total_discount > 0 ? (
+                <div className="doc-print-total-row">
+                  <span>DESCUENTO:</span>
+                  <span>S/ {receipt.total_discount.toFixed(2)}</span>
+                </div>
+              ) : null}
+              <div className="doc-print-total-row">
+                <span>OP. GRAVADAS:</span>
+                <span>S/ {receipt.total_taxed.toFixed(2)}</span>
+              </div>
+              {receipt.total_exonerated != null && receipt.total_exonerated > 0 ? (
+                <div className="doc-print-total-row">
+                  <span>OP. EXONERADAS:</span>
+                  <span>S/ {receipt.total_exonerated.toFixed(2)}</span>
+                </div>
+              ) : null}
+              <div className="doc-print-total-row">
+                <span>I.G.V. 18%:</span>
+                <span>S/ {receipt.total_igv.toFixed(2)}</span>
+              </div>
+              <div className="doc-print-total-row doc-print-total-final">
+                <span>TOTAL:</span>
+                <span>S/ {receipt.total.toFixed(2)}</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <p className="doc-print-words">Son: {amountWords(receipt.total)}</p>
 
-        <footer className="doc-print-footer">
+        {emisor?.banco ? (
           <div className="doc-print-bank">
-            <p>{COMPANY_INFO.bank}</p>
-            <p>Cta. {COMPANY_INFO.bankAccount}</p>
-            <p>CCI {COMPANY_INFO.bankCci}</p>
+            <p>{emisor.banco}</p>
+            {emisor.cuentaBancaria ? <p>Cta. {emisor.cuentaBancaria}</p> : null}
+            {emisor.cci ? <p>CCI {emisor.cci}</p> : null}
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrUrl} alt="QR SUNAT" width={100} height={100} className="doc-print-qr" />
+        ) : null}
+
+        <footer className="doc-print-representation">
+          Representación impresa del Comprobante de Venta Electrónico. Consulte su validez en{" "}
+          https://e-consulta.sunat.gob.pe/ — Autorizado mediante Resolución de Intendencia N° 034-005-0005315
         </footer>
       </div>
     </div>
   );
 }
-
-const PRINT_CSS = `
-  * { box-sizing: border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 12mm; color: #111; }
-  .doc-print-sheet { width: 100%; max-width: 210mm; margin: 0 auto; }
-  .doc-print-inner { padding: 8mm; border: 1px solid #ddd; }
-  .doc-print-header { display: flex; gap: 12px; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px; }
-  .doc-print-brand { display: flex; gap: 10px; flex: 1; align-items: flex-start; }
-  .doc-print-logo { width: 64px; height: 64px; object-fit: contain; }
-  .doc-print-company { font-size: 15px; font-weight: 700; text-transform: uppercase; margin: 0 0 4px; }
-  .doc-print-meta { font-size: 9px; margin: 1px 0; line-height: 1.3; }
-  .doc-print-docbox { width: 170px; border: 1px solid #666; padding: 8px; text-align: center; font-size: 9px; flex-shrink: 0; }
-  .doc-print-doc-type { font-weight: 700; margin: 6px 0; font-size: 10px; }
-  .doc-print-doc-number { font-weight: 700; font-size: 10px; }
-  .doc-print-customer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 9px; margin-bottom: 10px; }
-  .doc-print-label { font-weight: 700; }
-  .doc-print-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 10px; }
-  .doc-print-table th, .doc-print-table td { border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; padding: 4px 6px; }
-  .doc-print-table th { text-align: left; font-weight: 700; }
-  .text-right { text-align: right; }
-  .doc-print-totals-wrap { display: flex; justify-content: flex-end; }
-  .doc-print-totals { width: 220px; font-size: 9px; }
-  .doc-print-total-row { display: flex; justify-content: space-between; padding: 2px 0; }
-  .doc-print-total-final { font-size: 12px; font-weight: 700; border-top: 1px solid #333; margin-top: 4px; padding-top: 4px; }
-  .doc-print-words { font-size: 9px; margin: 10px 0; }
-  .doc-print-footer { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #ccc; padding-top: 10px; }
-  .doc-print-bank { font-size: 8px; line-height: 1.4; }
-  .doc-print-qr { width: 90px; height: 90px; border: 1px solid #ccc; }
-  @page { size: A4; margin: 10mm; }
-`;
 
 export function printDocument(elementId = "doc-print-area", pageSize: "A4" | "A5" = "A4") {
   const el = document.getElementById(elementId);
@@ -194,9 +236,8 @@ export function printDocument(elementId = "doc-print-area", pageSize: "A4" | "A5
     alert("Permite ventanas emergentes para imprimir el comprobante.");
     return;
   }
-  const pageRule = pageSize === "A5" ? "@page { size: A5; margin: 8mm; }" : "@page { size: A4; margin: 10mm; }";
   w.document.write(
-    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Comprobante</title><style>${PRINT_CSS}${pageRule}</style></head><body>${el.outerHTML}</body></html>`
+    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Comprobante</title><style>${COMPROBANTE_PRINT_CSS}${pageRuleForSize(pageSize)}</style></head><body>${el.outerHTML}</body></html>`
   );
   w.document.close();
   w.onload = () => {

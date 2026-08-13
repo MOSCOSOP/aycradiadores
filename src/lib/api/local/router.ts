@@ -752,13 +752,20 @@ export async function handleLocalApi(
     return {
       data: {
         ...docToRecord(doc),
+        customer_email: doc.customer.email,
+        customer_phone: doc.customer.telephone,
+        customer_address: doc.customer.address,
+        seller_name: doc.seller?.name ?? "ADMINISTRADOR",
         items: doc.items.map((i) => ({
           id: i.id,
           description: i.description,
           quantity: i.quantity,
+          unit_type_id: i.unitTypeId,
           unit_value: i.unitValue,
           unit_price: i.unitPrice,
           total: i.totalPrice,
+          code: i.item?.internalId ?? undefined,
+          internal_id: i.item?.internalId ?? undefined,
         })),
       },
     };
@@ -2259,12 +2266,82 @@ export async function handleLocalApi(
 
   if (method === "POST" && path.match(/^documents\/\d+\/email$/)) {
     const id = Number(path.split("/")[1]);
-    const doc = await prisma.document.findUnique({ where: { id }, include: { customer: true } });
+    const doc = await prisma.document.findUnique({
+      where: { id },
+      include: {
+        customer: true,
+        seller: true,
+        items: { include: { item: true } },
+      },
+    });
     if (!doc) throw new Error("Comprobante no encontrado");
     const p = body as Record<string, unknown>;
-    const email = String(p.email || doc.customer.email || "");
+    const email = String(p.email || doc.customer.email || "").trim();
     if (!email) throw new Error("Email requerido");
-    return { success: true, message: `Comprobante ${doc.fullNumber} enviado a ${email}` };
+
+    const { buildReceiptFromApiDoc } = await import("@/lib/comprobante/build-receipt-data");
+    const { sendDocumentEmail } = await import("@/lib/email/send-document-email");
+    const receipt = buildReceiptFromApiDoc({
+      ...docToRecord(doc),
+      id: doc.id,
+      customer_email: doc.customer.email,
+      customer_phone: doc.customer.telephone,
+      customer_address: doc.customer.address,
+      seller_name: doc.seller?.name ?? "ADMINISTRADOR",
+      items: doc.items.map((i) => ({
+        description: i.description,
+        quantity: i.quantity,
+        unit_type_id: i.unitTypeId,
+        unit_price: i.unitPrice,
+        total: i.totalPrice,
+        internal_id: i.item?.internalId,
+      })),
+    });
+
+    const result = await sendDocumentEmail({ to: email, receipt, documentId: doc.id });
+    if (!result.sent) throw new Error(result.message);
+    return { success: true, message: result.message };
+  }
+
+  if (method === "POST" && path.match(/^documents\/\d+\/whatsapp$/)) {
+    const id = Number(path.split("/")[1]);
+    const doc = await prisma.document.findUnique({
+      where: { id },
+      include: {
+        customer: true,
+        seller: true,
+        items: { include: { item: true } },
+      },
+    });
+    if (!doc) throw new Error("Comprobante no encontrado");
+    const p = body as Record<string, unknown>;
+    const phone = p.phone ? String(p.phone) : doc.customer.telephone;
+
+    const { buildReceiptFromApiDoc } = await import("@/lib/comprobante/build-receipt-data");
+    const { buildWhatsAppUrl } = await import("@/lib/email/send-document-email");
+    const receipt = buildReceiptFromApiDoc({
+      ...docToRecord(doc),
+      id: doc.id,
+      customer_email: doc.customer.email,
+      customer_phone: doc.customer.telephone,
+      customer_address: doc.customer.address,
+      seller_name: doc.seller?.name ?? "ADMINISTRADOR",
+      items: doc.items.map((i) => ({
+        description: i.description,
+        quantity: i.quantity,
+        unit_type_id: i.unitTypeId,
+        unit_price: i.unitPrice,
+        total: i.totalPrice,
+        internal_id: i.item?.internalId,
+      })),
+    });
+
+    const url = buildWhatsAppUrl({ phone, receipt, documentId: doc.id });
+    return {
+      success: true,
+      url,
+      message: `Abriendo WhatsApp para ${receipt.document_type_label} ${doc.fullNumber}`,
+    };
   }
 
   if (method === "POST" && path.match(/^documents\/\d+\/resend$/)) {

@@ -6,7 +6,8 @@ import { CustomerModal } from "@/components/customers/CustomerModal";
 import { Modal } from "@/components/ui/Modal";
 import { PosCheckoutModal } from "@/components/pos/PosCheckoutModal";
 import { PosSuccessModal } from "@/components/pos/PosSuccessModal";
-import type { ReceiptData } from "@/components/documents/DocumentPrintTemplate";
+import type { ReceiptData } from "@/lib/comprobante/types";
+import { buildReceiptFromPos } from "@/lib/comprobante/build-receipt-data";
 import { mergeCategoriesList } from "@/lib/default-categories";
 import { splitIgv } from "@/lib/tax";
 import { api } from "@/lib/api/client";
@@ -224,7 +225,7 @@ export function PosView() {
         ...extra,
       }) as { receipt?: ReceiptData };
       if (res.receipt) {
-        setSuccessReceipt(res.receipt);
+        setSuccessReceipt(buildReceiptFromPos(res.receipt as Record<string, unknown>));
         setCheckoutMode(null);
         setCart([]);
       }

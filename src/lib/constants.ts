@@ -11,7 +11,7 @@ export const COMPANY = {
   establishment: "Oficina Principal",
   address: "AV. UNIVERSITARIA 2760, PILLCO MARCA, HUÁNUCO - HUÁNUCO",
   email: "arcibesalvares@gmail.com",
-  phone: "",
+  phone: "+51 998 624 131",
 };
 
 export type NavChild = {

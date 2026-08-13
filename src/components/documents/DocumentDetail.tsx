@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api/client";
-import { Modal, PageHeader, Field } from "@/components/ui/Modal";
-import { COMPANY } from "@/lib/constants";
+import { Modal, PageHeader } from "@/components/ui/Modal";
+import { DocumentPrintTemplate } from "@/components/documents/DocumentPrintTemplate";
+import { DocumentSendPanel } from "@/components/documents/DocumentSendPanel";
+import { buildReceiptFromApiDoc } from "@/lib/comprobante/build-receipt-data";
 
 export function DocumentDetail() {
   const params = useParams();
   const id = params?.id as string;
-  const printRef = useRef<HTMLDivElement>(null);
   const [doc, setDoc] = useState<Record<string, unknown> | null>(null);
   const [items, setItems] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export function DocumentDetail() {
     api.documents.get(id).then((r) => {
       setDoc(r.data);
       setItems((r.data.items as Record<string, unknown>[]) || []);
+      setEmail(String(r.data.customer_email ?? ""));
     }).finally(() => setLoading(false));
 
     try {
@@ -41,29 +43,13 @@ export function DocumentDetail() {
     }
   }, [id]);
 
-  const printDoc = () => {
-    const external = doc?.format_default_print as string | undefined;
-    if (external?.startsWith("http")) {
-      window.open(external, "_blank");
-      return;
-    }
-    const content = printRef.current?.innerHTML;
-    if (!content) return;
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head><title>${doc?.number}</title>
-      <style>body{font-family:Arial,sans-serif;padding:24px;font-size:12px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ccc;padding:6px;text-align:left}h1{font-size:18px;margin:0}.header{display:flex;justify-content:space-between;margin-bottom:20px}</style>
-      </head><body>${content}</body></html>`);
-    w.document.close();
-    w.focus();
-    w.print();
-  };
+  const receipt = useMemo(() => {
+    if (!doc) return null;
+    return buildReceiptFromApiDoc({ ...doc, items });
+  }, [doc, items]);
 
-  const downloadPdf = () => {
-    printDoc();
-  };
-
-  const sendEmail = async () => {
+  const sendEmailQuick = async () => {
+    if (!email.trim()) return;
     try {
       const res = await api.documents.email(id, email);
       setMsg(res.message);
@@ -82,6 +68,7 @@ export function DocumentDetail() {
       setSunatMsg(res.message || "Enviado a SUNAT");
       const refreshed = await api.documents.get(id);
       setDoc(refreshed.data);
+      setItems((refreshed.data.items as Record<string, unknown>[]) || []);
     } catch (e) {
       setSunatOk(false);
       setSunatMsg(e instanceof Error ? e.message : "Error al enviar a SUNAT");
@@ -91,7 +78,7 @@ export function DocumentDetail() {
   };
 
   if (loading) return <div className="p-5">Cargando...</div>;
-  if (!doc) return <div className="p-5">Comprobante no encontrado</div>;
+  if (!doc || !receipt) return <div className="p-5">Comprobante no encontrado</div>;
 
   return (
     <div className="ify-page">
@@ -127,67 +114,33 @@ export function DocumentDetail() {
           </dl>
         </div>
         <div className="ify-card p-4">
-          <h3 className="mb-3 font-bold">Acciones</h3>
+          <h3 className="mb-3 font-bold">Acciones SUNAT</h3>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="ify-btn-primary text-xs" onClick={sendSunat} disabled={sendingSunat}>
               {sendingSunat ? "Enviando..." : "Enviar a SUNAT"}
             </button>
-            <button type="button" className="ify-btn-outline" onClick={printDoc}><i className="bi bi-printer" /> Imprimir</button>
-            <button type="button" className="ify-btn-outline" onClick={() => setEmailOpen(true)}><i className="bi bi-envelope" /> Enviar email</button>
-            <button type="button" className="ify-btn-outline" onClick={downloadPdf}><i className="bi bi-file-pdf" /> Descargar PDF</button>
+            <button type="button" className="ify-btn-outline" onClick={() => setEmailOpen(true)}>
+              <i className="bi bi-envelope" /> Enviar email rápido
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="ify-card mt-4 overflow-x-auto">
-        <table className="ify-table">
-          <thead><tr><th>Descripción</th><th>Cant.</th><th>P. Unit</th><th>Total</th></tr></thead>
-          <tbody>
-            {items.map((i, idx) => (
-              <tr key={idx}>
-                <td>{String(i.description)}</td>
-                <td>{Number(i.quantity)}</td>
-                <td>S/ {Number(i.unit_price).toFixed(2)}</td>
-                <td>S/ {Number(i.total).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="ify-card mt-4 overflow-x-auto p-4">
+        <DocumentPrintTemplate receipt={receipt} />
       </div>
 
-      <div ref={printRef} className="hidden">
-        <div className="header">
-          <div><h1>{COMPANY.name}</h1><p>RUC: {COMPANY.ruc}</p><p>{COMPANY.address}</p></div>
-          <div style={{ textAlign: "right" }}>
-            <strong>{String(doc.document_type_description)}</strong><br />
-            {String(doc.number)}<br />
-            Fecha: {String(doc.date_of_issue)}
-          </div>
-        </div>
-        <p><strong>Cliente:</strong> {String(doc.customer_name)} ({String(doc.customer_number)})</p>
-        <table>
-          <thead><tr><th>Descripción</th><th>Cant.</th><th>P.Unit</th><th>Total</th></tr></thead>
-          <tbody>
-            {items.map((i, idx) => (
-              <tr key={idx}>
-                <td>{String(i.description)}</td>
-                <td>{Number(i.quantity)}</td>
-                <td>{Number(i.unit_price).toFixed(2)}</td>
-                <td>{Number(i.total).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p style={{ textAlign: "right", marginTop: 16 }}>
-          <strong>Total: S/ {Number(doc.total).toFixed(2)}</strong>
-        </p>
-      </div>
+      <DocumentSendPanel
+        receipt={receipt}
+        documentId={Number(id)}
+        defaultEmail={String(doc.customer_email ?? email)}
+        defaultPhone={String(doc.customer_phone ?? "")}
+        compact
+      />
 
       <Modal open={emailOpen} title="Enviar comprobante por email" onClose={() => setEmailOpen(false)}
-        footer={<button type="button" className="ify-btn-primary" onClick={sendEmail}>Enviar</button>}>
-        <Field label="Email destino">
-          <input className="ify-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@email.com" />
-        </Field>
+        footer={<button type="button" className="ify-btn-primary" onClick={sendEmailQuick}>Enviar</button>}>
+        <input className="ify-input w-full" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@email.com" />
       </Modal>
     </div>
   );

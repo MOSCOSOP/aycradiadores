@@ -10,7 +10,9 @@ import { ItemEditModal } from "@/components/items/ItemEditModal";
 import { CustomerSearchField } from "@/components/ui/CustomerSearchField";
 import { ProductSuggestItem } from "@/components/ui/ProductSuggestItem";
 import { Modal } from "@/components/ui/Modal";
-import { DocumentPrintTemplate, type ReceiptData } from "@/components/documents/DocumentPrintTemplate";
+import { DocumentPrintTemplate } from "@/components/documents/DocumentPrintTemplate";
+import type { ReceiptData } from "@/lib/comprobante/types";
+import { buildReceiptFromPos } from "@/lib/comprobante/build-receipt-data";
 import { downloadCsv } from "@/lib/download-csv";
 
 const PARK_KEY = "ify_parked_docs";
@@ -338,15 +340,22 @@ export function CreateDocumentForm() {
   };
 
   const buildPreviewReceipt = (): ReceiptData => ({
-    kind: "document",
-    number: "PREVIEW",
-    document_type_label: documentTypes.find((t) => t.id === docTypeId)?.description ?? "Comprobante",
+    kind: docTypeId === "01" ? "factura" : "boleta",
+    number: "PREVIEW-00000001",
+    document_type_id: docTypeId,
+    document_type_label:
+      docTypeId === "01" ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA",
     customer_name: String(selectedCustomer?.name ?? ""),
     customer_number: String(selectedCustomer?.number ?? ""),
     customer_address: String(selectedCustomer?.address ?? ""),
+    customer_province: "Huánuco",
+    customer_district: "Pillco Marca",
+    seller_name: "ADMINISTRADOR",
     items: items.map((i) => ({
+      code: i.itemId ? String(i.itemId) : undefined,
       description: i.product,
       quantity: i.quantity,
+      unit: i.unit || "NIU",
       unit_price: i.unitPrice,
       total: round2(i.quantity * i.unitPrice),
     })),
@@ -356,6 +365,7 @@ export function CreateDocumentForm() {
     payment_method: "Efectivo",
     payment_condition: paymentCondition,
     date_of_issue: dateIssue,
+    date_of_due: dateIssue,
     plate: plate || undefined,
   });
 
@@ -938,7 +948,7 @@ export function CreateDocumentForm() {
 
       <Modal open={previewOpen} title="Vista previa del comprobante" size="xl" onClose={() => setPreviewOpen(false)}>
         <div className="max-h-[70vh] overflow-auto rounded border border-[var(--border-light)] bg-white p-2">
-          <DocumentPrintTemplate receipt={buildPreviewReceipt()} />
+          <DocumentPrintTemplate receipt={buildReceiptFromPos(buildPreviewReceipt() as Record<string, unknown>)} />
         </div>
       </Modal>
 

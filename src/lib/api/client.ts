@@ -69,6 +69,12 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       }),
+    whatsapp: (id: number | string, phone?: string, mode: "pdf" | "url" = "url") =>
+      apiFetch<{ success: boolean; url: string; message: string }>(local(`/documents/${id}/whatsapp`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, mode }),
+      }),
     notSent: () =>
       apiFetch<{ data: Record<string, unknown>[] }>(local("/documents/not-sent/records")),
     regularizeShipping: () =>

@@ -24,7 +24,9 @@ export type PosCheckoutResult = {
     customer_name: string;
     customer_number: string;
     customer_address: string;
-    items: { description: string; quantity: number; unit_price: number; total: number }[];
+    items: { code?: string; description: string; quantity: number; unit: string; unit_price: number; total: number }[];
+    customer_email?: string;
+    customer_phone?: string;
     total: number;
     total_taxed: number;
     total_igv: number;
@@ -72,8 +74,14 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
       const unitPrice = Number(it.sale_unit_price || 0);
       const unitValue = valueFromPrice(unitPrice);
       const itemId = await resolvePosItemId(it.id ?? it.item_id);
+      let internalId: string | null = null;
+      if (itemId) {
+        const dbItem = await prisma.item.findUnique({ where: { id: itemId }, select: { internalId: true } });
+        internalId = dbItem?.internalId ?? null;
+      }
       return {
         itemId,
+        internalId,
         description: String(it.description || ""),
         unitTypeId: String(it.unit_type_id || "NIU"),
         quantity: qty,
@@ -221,8 +229,8 @@ function buildResult(
   id: number,
   number: string,
   seriesLabel: string,
-  customer: { name: string; number: string; address: string | null },
-  lines: { description: string; quantity: number; unitPrice: number; totalPrice: number }[],
+  customer: { name: string; number: string; address: string | null; email?: string | null; telephone?: string | null },
+  lines: { itemId: number | null; description: string; quantity: number; unitTypeId: string; unitPrice: number; totalPrice: number; internalId?: string | null }[],
   total: number,
   totalTaxed: number,
   totalIgv: number,
@@ -245,9 +253,13 @@ function buildResult(
       customer_name: customer.name,
       customer_number: customer.number,
       customer_address: customer.address || "HUÁNUCO - HUÁNUCO - HUÁNUCO",
+      customer_email: customer.email ?? undefined,
+      customer_phone: customer.telephone ?? undefined,
       items: lines.map((l) => ({
+        code: l.internalId ?? undefined,
         description: l.description,
         quantity: l.quantity,
+        unit: l.unitTypeId,
         unit_price: l.unitPrice,
         total: l.totalPrice,
       })),
