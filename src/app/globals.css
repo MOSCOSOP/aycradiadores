@@ -2287,6 +2287,18 @@ html.ify-dark ::-webkit-scrollbar-track {
   color: #111;
 }
 
+.doc-print-contact .doc-print-phone {
+  color: #1d4ed8;
+}
+
+.doc-print-contact .doc-print-email {
+  color: #1d4ed8;
+}
+
+.doc-print-contact .doc-print-address {
+  padding-left: 1.4em;
+}
+
 .doc-print-logo {
   width: 104px !important;
   height: 104px !important;

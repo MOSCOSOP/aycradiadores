@@ -53,11 +53,16 @@ export function GuiaPrintTemplate({ data, pageSize = "A4", printId = "doc-print-
                   <span className="doc-print-label">De:</span> {COMPANY_INFO.name}
                 </p>
                 <p className="doc-print-meta">
-                  Cel: {COMPANY_INFO.phone}
-                  {COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}
+                  Cel:{" "}
+                  <span className="doc-print-phone">
+                    {COMPANY_INFO.phone}
+                    {COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}
+                  </span>
                 </p>
-                <p className="doc-print-meta doc-print-email">Correo elec: {COMPANY_INFO.email}</p>
                 <p className="doc-print-meta">
+                  Correo elec: <span className="doc-print-email">{COMPANY_INFO.email}</span>
+                </p>
+                <p className="doc-print-meta doc-print-address">
                   Av.: {COMPANY_INFO.address.replace(/^Av\.\s*/i, "")}
                 </p>
               </div>

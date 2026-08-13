@@ -79,13 +79,17 @@ export function DocumentPrintTemplate({
                   <span className="doc-print-label">De:</span> {emisor?.razonSocial}
                 </p>
                 <p className="doc-print-meta">
-                  Cel: {emisor?.telefono}
-                  {emisor?.telefono2 ? ` – ${emisor.telefono2}` : ""}
-                </p>
-                <p className="doc-print-meta doc-print-email">
-                  Correo elec: {emisor?.email ?? COMPANY_INFO.email}
+                  Cel:{" "}
+                  <span className="doc-print-phone">
+                    {emisor?.telefono}
+                    {emisor?.telefono2 ? ` – ${emisor.telefono2}` : ""}
+                  </span>
                 </p>
                 <p className="doc-print-meta">
+                  Correo elec:{" "}
+                  <span className="doc-print-email">{emisor?.email ?? COMPANY_INFO.email}</span>
+                </p>
+                <p className="doc-print-meta doc-print-address">
                   Av.: {emisor?.direccion?.replace(/^Av\.\s*/i, "")}
                 </p>
               </div>
