@@ -105,27 +105,4 @@ export async function sendDocumentEmail(input: {
   return { sent: true, message: `Comprobante ${number} enviado a ${input.to}` };
 }
 
-export function buildWhatsAppUrl(input: {
-  phone?: string | null;
-  receipt: ReceiptData;
-  documentId?: number;
-}): string {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
-  const viewUrl =
-    input.documentId != null
-      ? `${appUrl}/documents/${input.documentId}`
-      : `${appUrl}/documents`;
-  const number = formatReceiptNumber(input.receipt.number);
-  const text = [
-    `${input.receipt.document_type_label} ${number}`,
-    `Cliente: ${input.receipt.customer_name}`,
-    `Total: S/ ${input.receipt.total.toFixed(2)}`,
-    `Ver comprobante: ${viewUrl}`,
-  ].join("\n");
-
-  let phone = String(input.phone ?? process.env.COMPANY_WHATSAPP ?? "51998624131").replace(/\D/g, "");
-  if (phone.startsWith("0")) phone = phone.slice(1);
-  if (!phone.startsWith("51") && phone.length === 9) phone = `51${phone}`;
-
-  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-}
+import { buildWhatsAppUrl } from "@/lib/email/whatsapp-compose";

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api/client";
-import { Modal, PageHeader } from "@/components/ui/Modal";
+import { PageHeader } from "@/components/ui/Modal";
 import { DocumentPrintTemplate } from "@/components/documents/DocumentPrintTemplate";
 import { DocumentSendPanel } from "@/components/documents/DocumentSendPanel";
 import { buildReceiptFromApiDoc } from "@/lib/comprobante/build-receipt-data";
@@ -15,8 +15,6 @@ export function DocumentDetail() {
   const [doc, setDoc] = useState<Record<string, unknown> | null>(null);
   const [items, setItems] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [email, setEmail] = useState("");
   const [msg, setMsg] = useState("");
   const [sunatMsg, setSunatMsg] = useState("");
   const [sunatOk, setSunatOk] = useState<boolean | null>(null);
@@ -27,7 +25,6 @@ export function DocumentDetail() {
     api.documents.get(id).then((r) => {
       setDoc(r.data);
       setItems((r.data.items as Record<string, unknown>[]) || []);
-      setEmail(String(r.data.customer_email ?? ""));
     }).finally(() => setLoading(false));
 
     try {
@@ -47,17 +44,6 @@ export function DocumentDetail() {
     if (!doc) return null;
     return buildReceiptFromApiDoc({ ...doc, items });
   }, [doc, items]);
-
-  const sendEmailQuick = async () => {
-    if (!email.trim()) return;
-    try {
-      const res = await api.documents.email(id, email);
-      setMsg(res.message);
-      setEmailOpen(false);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Error");
-    }
-  };
 
   const sendSunat = async () => {
     setSendingSunat(true);
@@ -119,9 +105,6 @@ export function DocumentDetail() {
             <button type="button" className="ify-btn-primary text-xs" onClick={sendSunat} disabled={sendingSunat}>
               {sendingSunat ? "Enviando..." : "Enviar a SUNAT"}
             </button>
-            <button type="button" className="ify-btn-outline" onClick={() => setEmailOpen(true)}>
-              <i className="bi bi-envelope" /> Enviar email rápido
-            </button>
           </div>
         </div>
       </div>
@@ -133,15 +116,10 @@ export function DocumentDetail() {
       <DocumentSendPanel
         receipt={receipt}
         documentId={Number(id)}
-        defaultEmail={String(doc.customer_email ?? email)}
+        defaultEmail={String(doc.customer_email ?? "")}
         defaultPhone={String(doc.customer_phone ?? "")}
         compact
       />
-
-      <Modal open={emailOpen} title="Enviar comprobante por email" onClose={() => setEmailOpen(false)}
-        footer={<button type="button" className="ify-btn-primary" onClick={sendEmailQuick}>Enviar</button>}>
-        <input className="ify-input w-full" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@email.com" />
-      </Modal>
     </div>
   );
 }

@@ -2318,7 +2318,7 @@ export async function handleLocalApi(
     const phone = p.phone ? String(p.phone) : doc.customer.telephone;
 
     const { buildReceiptFromApiDoc } = await import("@/lib/comprobante/build-receipt-data");
-    const { buildWhatsAppUrl } = await import("@/lib/email/send-document-email");
+    const { buildWhatsAppUrl } = await import("@/lib/email/whatsapp-compose");
     const receipt = buildReceiptFromApiDoc({
       ...docToRecord(doc),
       id: doc.id,
