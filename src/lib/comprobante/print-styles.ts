@@ -9,11 +9,12 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-header { margin-bottom: 6px; }
   .doc-print-header-main { display: grid; grid-template-columns: auto minmax(0, 1fr) 162px; gap: 0 4px; align-items: center; }
   .doc-print-a5 .doc-print-header-main { grid-template-columns: auto minmax(0, 1fr) 132px; gap: 0 3px; }
-  .doc-print-header-left { display: flex; flex-direction: row; align-items: center; gap: 0; flex-shrink: 0; }
+  .doc-print-header-left { display: flex; flex-direction: row; align-items: center; gap: 22mm; flex-shrink: 0; }
+  .doc-print-a5 .doc-print-header-left { gap: 14mm; }
   .doc-print-logo-wrap { width: 108px; text-align: center; line-height: 0; }
   .doc-print-a5 .doc-print-logo-wrap { width: 78px; }
-  .doc-print-sello { height: 52px; width: auto; max-width: 108px; object-fit: contain; flex-shrink: 0; display: block; margin-left: -4px; }
-  .doc-print-a5 .doc-print-sello { height: 38px; max-width: 80px; margin-left: -2px; }
+  .doc-print-sello { height: 52px; width: auto; max-width: 108px; object-fit: contain; flex-shrink: 0; display: block; margin-left: 0; }
+  .doc-print-a5 .doc-print-sello { height: 38px; max-width: 80px; margin-left: 0; }
   .doc-print-header-center { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; }
   .doc-print-titulo { display: block; width: auto; max-width: 100%; height: auto; max-height: 28px; object-fit: contain; object-position: center center; margin: 0 auto; }
   .doc-print-a5 .doc-print-titulo { max-height: 22px; }
@@ -29,17 +30,29 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-doc-type { font-weight: 700; font-size: 8.5px; margin: 5px 0; line-height: 1.2; background: #c41e3a !important; color: #fff !important; padding: 5px 3px; word-break: break-word; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .doc-print-a5 .doc-print-doc-type { font-size: 7px; padding: 4px 2px; }
   .doc-print-doc-number { font-weight: 700; font-size: 10px; }
-  .doc-print-client-box { border: 1px solid #bbb; border-radius: 6px; padding: 5px 8px; display: grid; grid-template-columns: 1fr 160px; gap: 8px; font-size: 9px; margin-bottom: 5px; }
+  .doc-print-client-box { border: 1px solid #bbb; border-radius: 10px; padding: 6px 10px; display: grid; grid-template-columns: 1fr 160px; gap: 8px; font-size: 9px; margin-bottom: 6px; }
   .doc-print-client-box p { margin: 2px 0; }
   .doc-print-label { font-weight: 700; }
   .doc-print-inline-sep { margin-left: 12px; font-weight: 700; }
   .doc-print-client-right { text-align: right; align-self: start; }
-  .doc-print-meta-table { width: 100%; border-collapse: collapse; font-size: 8px; margin-bottom: 5px; border: 1px solid #bbb; border-radius: 4px; overflow: hidden; }
-  .doc-print-meta-table th, .doc-print-meta-table td { border: 1px solid #bbb; padding: 4px 5px; text-align: center; }
+  .doc-print-meta-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 8px; margin-bottom: 6px; border: 1px solid #bbb; border-radius: 10px; overflow: hidden; }
+  .doc-print-meta-table th, .doc-print-meta-table td { border-right: 1px solid #bbb; border-bottom: 1px solid #bbb; padding: 4px 5px; text-align: center; }
+  .doc-print-meta-table th:last-child, .doc-print-meta-table td:last-child { border-right: none; }
+  .doc-print-meta-table tbody tr:last-child td { border-bottom: none; }
+  .doc-print-meta-table th:first-child { border-top-left-radius: 9px; }
+  .doc-print-meta-table th:last-child { border-top-right-radius: 9px; }
+  .doc-print-meta-table tbody tr:last-child td:first-child { border-bottom-left-radius: 9px; }
+  .doc-print-meta-table tbody tr:last-child td:last-child { border-bottom-right-radius: 9px; }
   .doc-print-meta-table th { background: #efefef !important; font-weight: 700; font-size: 7.5px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .doc-print-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 5px; border: 1px solid #888; border-radius: 4px; overflow: hidden; }
-  .doc-print-table thead th { background: #555 !important; color: #fff !important; font-weight: 700; padding: 5px 4px; text-align: center; border: 1px solid #555; font-size: 8px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .doc-print-table tbody td { border: 1px solid #ccc; padding: 4px 5px; vertical-align: top; }
+  .doc-print-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 9px; margin-bottom: 6px; border: 1px solid #888; border-radius: 10px; overflow: hidden; }
+  .doc-print-table thead th { background: #555 !important; color: #fff !important; font-weight: 700; padding: 6px 4px; text-align: center; border-right: 1px solid #666; font-size: 8px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .doc-print-table thead th:last-child { border-right: none; }
+  .doc-print-table thead th:first-child { border-top-left-radius: 9px; }
+  .doc-print-table thead th:last-child { border-top-right-radius: 9px; }
+  .doc-print-table tbody td { border-right: 1px solid #ccc; border-top: 1px solid #ccc; padding: 5px 5px; vertical-align: top; }
+  .doc-print-table tbody td:last-child { border-right: none; }
+  .doc-print-table tbody tr:last-child td:first-child { border-bottom-left-radius: 9px; }
+  .doc-print-table tbody tr:last-child td:last-child { border-bottom-right-radius: 9px; }
   .doc-print-table .col-code { width: 62px; text-align: center; }
   .doc-print-table .col-qty { width: 38px; text-align: center; }
   .doc-print-table .col-unit { width: 42px; text-align: center; }
@@ -50,17 +63,23 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-obs { min-height: 32px; }
   .doc-print-totals-table { width: 100%; border-collapse: separate; border-spacing: 0 3px; font-size: 9px; }
   .doc-print-totals-table th, .doc-print-totals-table td { border: 1px solid #bbb; padding: 4px 6px; }
-  .doc-print-totals-table th { background: #d9d9d9 !important; text-align: left; font-weight: 700; width: 58%; border-radius: 4px 0 0 4px; border-right: none; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .doc-print-totals-table td { text-align: right; border-radius: 0 4px 4px 0; background: #fff; }
+  .doc-print-totals-table th { background: #d9d9d9 !important; text-align: left; font-weight: 700; width: 58%; border-radius: 8px 0 0 8px; border-right: none; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .doc-print-totals-table td { text-align: right; border-radius: 0 8px 8px 0; background: #fff; }
   .doc-print-total-final-row th, .doc-print-total-final-row td { font-weight: 700; }
   .doc-print-total-final-row th { background: #c8c8c8 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .doc-print-total-final-row td { background: #f3f3f3 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .doc-print-words-box { border: 1px solid #bbb; border-radius: 6px; background: #efefef; padding: 4px 8px; font-size: 9px; margin-bottom: 5px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .doc-print-bank-table { width: 100%; border-collapse: collapse; font-size: 8px; margin-bottom: 5px; border: 1px solid #bbb; border-radius: 4px; overflow: hidden; }
-  .doc-print-bank-table th, .doc-print-bank-table td { border: 1px solid #bbb; padding: 4px 6px; text-align: center; }
+  .doc-print-words-box { border: 1px solid #bbb; border-radius: 10px; background: #efefef; padding: 5px 10px; font-size: 9px; margin-bottom: 6px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .doc-print-bank-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 8px; margin-bottom: 6px; border: 1px solid #bbb; border-radius: 10px; overflow: hidden; }
+  .doc-print-bank-table th, .doc-print-bank-table td { border-right: 1px solid #bbb; border-bottom: 1px solid #bbb; padding: 4px 6px; text-align: center; }
+  .doc-print-bank-table th:last-child, .doc-print-bank-table td:last-child { border-right: none; }
+  .doc-print-bank-table tbody tr:last-child td { border-bottom: none; }
+  .doc-print-bank-table th:first-child { border-top-left-radius: 9px; }
+  .doc-print-bank-table th:last-child { border-top-right-radius: 9px; }
+  .doc-print-bank-table tbody tr:last-child td:first-child { border-bottom-left-radius: 9px; }
+  .doc-print-bank-table tbody tr:last-child td:last-child { border-bottom-right-radius: 9px; }
   .doc-print-bank-table th { background: #efefef !important; font-weight: 700; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .doc-print-legal-row { display: grid; grid-template-columns: 1fr 120px; gap: 10px; align-items: start; margin-bottom: 5px; font-size: 8px; }
-  .doc-print-detraction { border: 1px solid #bbb; padding: 6px 8px; min-height: 70px; border-radius: 4px; }
+  .doc-print-detraction { border: 1px solid #bbb; padding: 6px 8px; min-height: 70px; border-radius: 10px; }
   .doc-print-qr-wrap { text-align: right; }
   .doc-print-qr { width: 100px; height: 100px; border: 1px solid #ccc; display: block; }
   .doc-print-representation { font-size: 7.5px; color: #555; line-height: 1.35; text-align: center; border-top: 1px solid #ccc; padding-top: 6px; margin-top: 6px; }
@@ -70,7 +89,7 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-a5 .doc-print-brand-logo { height: 70px; }
   .doc-print-service-footer { text-align: center; font-size: 10px; font-weight: 700; text-transform: uppercase; line-height: 1.45; margin: 0; padding: 0 4px; }
   .doc-print-a5 .doc-print-service-footer { font-size: 8.5px; }
-  .doc-print-guia-section { border: 1px solid #bbb; border-radius: 6px; padding: 8px 10px; font-size: 9px; margin-bottom: 8px; }
+  .doc-print-guia-section { border: 1px solid #bbb; border-radius: 10px; padding: 8px 10px; font-size: 9px; margin-bottom: 8px; }
   .doc-print-guia-section p { margin: 2px 0; }
 `;
 
