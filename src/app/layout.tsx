@@ -17,6 +17,11 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Facturación Electrónica",
   description: "Sistema de facturación electrónica - Inicia Factura Ya",
+  icons: {
+    icon: [{ url: "/favicon.ico", type: "image/x-icon" }],
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
