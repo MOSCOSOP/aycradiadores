@@ -2183,10 +2183,23 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-header {
+  display: grid;
+  grid-template-columns: minmax(168px, auto) minmax(0, 1fr) 182px;
+  gap: 8px;
+  align-items: start;
+  margin-bottom: 8px;
+}
+
+.doc-print-header-left {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.doc-print-a5 .doc-print-header {
+  grid-template-columns: minmax(140px, auto) minmax(0, 1fr) 148px;
+  gap: 5px;
 }
 
 .doc-print-logo-wrap {
@@ -2230,11 +2243,14 @@ html.ify-dark ::-webkit-scrollbar-track {
 .doc-print-brand-center {
   flex: 1;
   min-width: 0;
+  max-width: 100%;
   padding-top: 2px;
+  padding-right: 4px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: hidden;
 }
 
 .doc-print-logo {
@@ -2261,13 +2277,21 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-docbox {
-  width: 178px;
+  width: 100%;
+  max-width: 182px;
   border: 1px solid #888;
   border-radius: 6px;
   padding: 8px 6px;
   text-align: center;
   font-size: 9px;
   flex-shrink: 0;
+  justify-self: end;
+}
+
+.doc-print-a5 .doc-print-docbox {
+  max-width: 148px;
+  font-size: 8px;
+  padding: 6px 4px;
 }
 
 .doc-print-docbox p {
@@ -2277,22 +2301,33 @@ html.ify-dark ::-webkit-scrollbar-track {
 .doc-print-doc-type {
   font-weight: 700;
   margin: 5px 0;
-  font-size: 9.5px;
-  line-height: 1.25;
+  font-size: 8.5px;
+  line-height: 1.2;
   background: #c41e3a !important;
   color: #fff !important;
-  padding: 5px 4px;
+  padding: 5px 3px;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.doc-print-a5 .doc-print-doc-type {
+  font-size: 7px;
+  padding: 4px 2px;
 }
 .doc-print-titulo {
   display: block;
-  width: auto;
-  max-width: 340px;
+  width: 100%;
+  max-width: 100%;
   height: auto;
   max-height: 62px;
   object-fit: contain;
   margin: 0 auto 4px;
+}
+
+.doc-print-a5 .doc-print-titulo {
+  max-height: 50px;
 }
 .doc-print-email { color: #0d6efd; }
 .doc-print-inline-sep { margin-left: 12px; font-weight: 700; }

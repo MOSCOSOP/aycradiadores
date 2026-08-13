@@ -50,21 +50,23 @@ export function DocumentPrintTemplate({
     >
       <div className="doc-print-inner">
         <header className="doc-print-header">
-          <div className="doc-print-logo-wrap">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={emisor?.logo ?? COMPROBANTE_ASSETS.logo}
-              alt="Logo"
-              className="doc-print-logo"
-            />
-          </div>
-          <div className="doc-print-sello-wrap">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={emisor?.sello ?? COMPROBANTE_ASSETS.sello}
-              alt="Sello A&C"
-              className="doc-print-sello"
-            />
+          <div className="doc-print-header-left">
+            <div className="doc-print-logo-wrap">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={emisor?.logo ?? COMPROBANTE_ASSETS.logo}
+                alt="Logo"
+                className="doc-print-logo"
+              />
+            </div>
+            <div className="doc-print-sello-wrap">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={emisor?.sello ?? COMPROBANTE_ASSETS.sello}
+                alt="Sello A&C"
+                className="doc-print-sello"
+              />
+            </div>
           </div>
           <div className="doc-print-brand-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}

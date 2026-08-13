@@ -5,19 +5,24 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-sheet { width: 100%; max-width: 210mm; margin: 0 auto; background: #fff; color: #111; }
   .doc-print-a5 { max-width: 148mm; font-size: 90%; }
   .doc-print-inner { padding: 6mm; }
-  .doc-print-header { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .doc-print-header { display: grid; grid-template-columns: minmax(168px, auto) minmax(0, 1fr) 182px; gap: 8px; align-items: start; margin-bottom: 8px; }
+  .doc-print-header-left { display: flex; align-items: flex-start; gap: 4px; flex-shrink: 0; }
+  .doc-print-a5 .doc-print-header { grid-template-columns: minmax(140px, auto) minmax(0, 1fr) 148px; gap: 5px; }
   .doc-print-logo-wrap { flex-shrink: 0; width: 100px; text-align: center; }
   .doc-print-logo { width: 96px; height: 96px; object-fit: contain; display: block; margin: 0 auto; }
   .doc-print-sello-wrap { flex-shrink: 0; width: 72px; display: flex; align-items: center; justify-content: center; padding-top: 8px; }
   .doc-print-sello { width: 68px; height: auto; max-height: 72px; object-fit: contain; }
-  .doc-print-brand-center { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; align-items: center; }
-  .doc-print-titulo { display: block; width: auto; max-width: 360px; height: auto; max-height: 68px; object-fit: contain; margin: 0 auto 4px; }
+  .doc-print-brand-center { min-width: 0; max-width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; overflow: hidden; padding-right: 4px; }
+  .doc-print-titulo { display: block; width: 100%; max-width: 100%; height: auto; max-height: 62px; object-fit: contain; margin: 0 auto 4px; }
+  .doc-print-a5 .doc-print-titulo { max-height: 50px; }
   .doc-print-meta { font-size: 9px; margin: 1px 0; line-height: 1.35; color: #222; }
   .doc-print-contact-box { border: 1px solid #ccc; border-radius: 4px; background: #f5f5f5; padding: 4px 8px; margin: 2px 0 4px; font-size: 9px; }
   .doc-print-email { color: #0d6efd; }
-  .doc-print-docbox { width: 178px; flex-shrink: 0; border: 1px solid #888; border-radius: 6px; padding: 8px 6px; text-align: center; font-size: 9px; }
+  .doc-print-docbox { width: 100%; max-width: 182px; flex-shrink: 0; border: 1px solid #888; border-radius: 6px; padding: 8px 6px; text-align: center; font-size: 9px; justify-self: end; }
+  .doc-print-a5 .doc-print-docbox { max-width: 148px; font-size: 8px; padding: 6px 4px; }
   .doc-print-docbox p { margin: 2px 0; }
-  .doc-print-doc-type { font-weight: 700; font-size: 9.5px; margin: 5px 0; line-height: 1.25; background: #c41e3a !important; color: #fff !important; padding: 5px 4px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .doc-print-doc-type { font-weight: 700; font-size: 8.5px; margin: 5px 0; line-height: 1.2; background: #c41e3a !important; color: #fff !important; padding: 5px 3px; word-break: break-word; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .doc-print-a5 .doc-print-doc-type { font-size: 7px; padding: 4px 2px; }
   .doc-print-doc-number { font-weight: 700; font-size: 10px; }
   .doc-print-client-box { border: 1px solid #bbb; border-radius: 6px; padding: 8px 10px; display: grid; grid-template-columns: 1fr 160px; gap: 8px; font-size: 9px; margin-bottom: 8px; }
   .doc-print-client-box p { margin: 2px 0; }
