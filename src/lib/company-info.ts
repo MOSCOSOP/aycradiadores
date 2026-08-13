@@ -1,13 +1,31 @@
 export const COMPANY_INFO = {
-  name: "ALVARES ROSALES ARCIBES BENITO",
-  tradeName: "A&c RADIADORES",
+  name: "Aribes Alvares Rosales",
+  legalName: "ALVARES ROSALES ARCIBES BENITO",
+  tradeName: "A&C RADIADORES",
   ruc: "10447860428",
-  address: "AV. UNIVERSITARIA 2760, PILLCO MARCA, HUÁNUCO - HUÁNUCO",
-  email: "arcibesalvares@gmail.com",
-  phone: "+51 998 624 131",
+  address: "Av. Universitaria N° 2760 – Pillco Marca – Huánuco – Huánuco.",
+  email: "aribesalvares@gmail.com",
+  phone: "998 624 131",
+  phone2: "992 812 035",
   bank: "BANCO DE CREDITO DEL PERU",
-  bankAccount: "193-123456789-0-99",
-  bankCci: "00219300123456789999",
+  bankCurrency: "Soles",
+  bankAccount: "36504097062093",
+  bankCci: "00236510409706209351",
+  detractionLabel: "CUENTA DE DETRACCIONES",
+  detractionBank: "BANCO DE LA NACIÓN:",
+  footerServiceText:
+    "VENTA Y SERVICIO DE RADIADORES, VENTILADORES, GAS R134a, REFRIGERANTES, MANGUERAS PARA TODO TIPO DE VEHICULOS, MAQUINARIAS PESADAS Y LIVIANAS.",
+};
+
+export const COMPROBANTE_ASSETS = {
+  logo: "/assets/comprobantes/logo.jpg",
+  titulo: "/assets/comprobantes/titulo.bmp",
+  brands: [
+    "/assets/comprobantes/toyota.bmp",
+    "/assets/comprobantes/CAT.bmp",
+    "/assets/comprobantes/volvo.bmp",
+    "/assets/comprobantes/ford.bmp",
+  ],
 };
 
 export const DEFAULT_CATEGORIES = [

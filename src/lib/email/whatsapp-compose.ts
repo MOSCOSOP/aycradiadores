@@ -1,9 +1,13 @@
 import type { ReceiptData } from "@/lib/comprobante/types";
 import { formatReceiptNumber } from "@/lib/receipt-format";
+import { buildPublicComprobanteUrl } from "@/lib/comprobante/share-link";
 
-function appBaseUrl(): string {
-  if (typeof window !== "undefined") return window.location.origin.replace(/\/$/, "");
-  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+function resolvePublicUrl(receipt: ReceiptData, documentId?: number): string {
+  if (receipt.share_token) return buildPublicComprobanteUrl(receipt.share_token);
+  if (documentId != null) {
+    throw new Error("Generando enlace seguro…");
+  }
+  throw new Error("Enlace público no disponible");
 }
 
 export function buildWhatsAppUrl(input: {
@@ -11,10 +15,7 @@ export function buildWhatsAppUrl(input: {
   receipt: ReceiptData;
   documentId?: number;
 }): string {
-  const viewUrl =
-    input.documentId != null
-      ? `${appBaseUrl()}/documents/${input.documentId}`
-      : `${appBaseUrl()}/documents`;
+  const viewUrl = resolvePublicUrl(input.receipt, input.documentId);
   const number = formatReceiptNumber(input.receipt.number);
   const text = [
     `${input.receipt.document_type_label} ${number}`,
@@ -31,3 +32,5 @@ export function buildWhatsAppUrl(input: {
 
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
+
+export { resolvePublicUrl as resolveComprobantePublicUrl };

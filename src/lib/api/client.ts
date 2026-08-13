@@ -75,6 +75,8 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, mode }),
       }),
+    shareLink: (id: number | string) =>
+      apiFetch<{ share_token: string; public_url: string }>(local(`/documents/${id}/share-link`)),
     notSent: () =>
       apiFetch<{ data: Record<string, unknown>[] }>(local("/documents/not-sent/records")),
     regularizeShipping: () =>

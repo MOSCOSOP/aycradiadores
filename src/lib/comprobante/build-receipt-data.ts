@@ -1,4 +1,4 @@
-import { COMPANY_INFO } from "@/lib/company-info";
+import { COMPANY_INFO, COMPROBANTE_ASSETS } from "@/lib/company-info";
 import { documentLabel } from "@/lib/receipt-format";
 import { buildSunatQrPayload } from "@/lib/comprobante/sunat-qr";
 import type { ComprobanteEmisor, ReceiptData } from "@/lib/comprobante/types";
@@ -8,12 +8,19 @@ const DEFAULT_EMISOR: ComprobanteEmisor = {
   razonSocial: COMPANY_INFO.name,
   nombreComercial: COMPANY_INFO.tradeName,
   direccion: COMPANY_INFO.address,
-  telefono: COMPANY_INFO.phone || "+51 998 624 131",
+  telefono: COMPANY_INFO.phone,
+  telefono2: COMPANY_INFO.phone2,
   email: COMPANY_INFO.email,
-  logo: "/assets/comprobantes/logo.jpg",
+  logo: COMPROBANTE_ASSETS.logo,
+  titulo: COMPROBANTE_ASSETS.titulo,
   banco: COMPANY_INFO.bank,
+  moneda: COMPANY_INFO.bankCurrency,
   cuentaBancaria: COMPANY_INFO.bankAccount,
   cci: COMPANY_INFO.bankCci,
+  detractionLabel: COMPANY_INFO.detractionLabel,
+  detractionBank: COMPANY_INFO.detractionBank,
+  footerServiceText: COMPANY_INFO.footerServiceText,
+  brandLogos: COMPROBANTE_ASSETS.brands,
 };
 
 function parseLocation(address?: string | null): { province: string; district: string } {
@@ -94,6 +101,7 @@ export function buildReceiptFromApiDoc(doc: Record<string, unknown>): ReceiptDat
     purchase_order: doc.purchase_order ? String(doc.purchase_order) : undefined,
     dispatch_number: doc.dispatch_number ? String(doc.dispatch_number) : undefined,
     hash: doc.hash ? String(doc.hash) : undefined,
+    share_token: doc.share_token ? String(doc.share_token) : undefined,
   };
 
   receipt.qr_payload = buildSunatQrPayload({
@@ -147,6 +155,7 @@ export function buildReceiptFromPos(receipt: Record<string, unknown>): ReceiptDa
     payment_condition: String(receipt.payment_condition ?? "Contado"),
     date_of_issue: String(receipt.date_of_issue ?? new Date().toISOString().slice(0, 10)),
     plate: receipt.plate ? String(receipt.plate) : undefined,
+    share_token: receipt.share_token ? String(receipt.share_token) : undefined,
   };
 
   base.qr_payload = buildSunatQrPayload({

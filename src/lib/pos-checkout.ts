@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { splitIgv, valueFromPrice } from "@/lib/tax";
 import { formatReceiptNumber } from "@/lib/receipt-format";
+import { generateShareToken } from "@/lib/comprobante/share-link";
 import { resolvePosCustomerId, resolvePosItemId, ensurePosInfrastructure } from "@/lib/pos-infrastructure";
 
 type CartLine = {
@@ -25,6 +26,7 @@ export type PosCheckoutResult = {
     customer_number: string;
     customer_address: string;
     items: { code?: string; description: string; quantity: number; unit: string; unit_price: number; total: number }[];
+    share_token?: string;
     customer_email?: string;
     customer_phone?: string;
     total: number;
@@ -172,6 +174,7 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
         total,
         plate: body.plate ? String(body.plate) : null,
         stateTypeId: "01",
+        shareToken: generateShareToken(),
         items: {
           create: lines.map((l) => ({
             itemId: l.itemId,
@@ -220,7 +223,8 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
     paymentCondition,
     dateStr,
     body,
-    creditInstallments
+    creditInstallments,
+    doc.shareToken ?? undefined
   );
 }
 
@@ -238,7 +242,8 @@ function buildResult(
   paymentCondition: string,
   dateStr: string,
   body: Record<string, unknown>,
-  creditInstallments: { amount: number; due_date: string }[]
+  creditInstallments: { amount: number; due_date: string }[],
+  shareToken?: string
 ): PosCheckoutResult {
   const docTypeId = kind === "factura" ? "01" : kind === "boleta" ? "03" : kind === "sale_note" ? "NV" : "COT";
   return {
@@ -255,6 +260,7 @@ function buildResult(
       customer_address: customer.address || "HUÁNUCO - HUÁNUCO - HUÁNUCO",
       customer_email: customer.email ?? undefined,
       customer_phone: customer.telephone ?? undefined,
+      share_token: shareToken,
       items: lines.map((l) => ({
         code: l.internalId ?? undefined,
         description: l.description,

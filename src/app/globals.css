@@ -2248,6 +2248,122 @@ html.ify-dark ::-webkit-scrollbar-track {
   margin: 5px 0;
   font-size: 9.5px;
   line-height: 1.25;
+  background: #d9d9d9;
+  padding: 4px 2px;
+}
+.doc-print-titulo {
+  max-width: 100%;
+  height: auto;
+  max-height: 54px;
+  object-fit: contain;
+  margin-bottom: 4px;
+}
+.doc-print-email { color: #0d6efd; }
+.doc-print-inline-sep { margin-left: 12px; font-weight: 700; }
+.doc-print-meta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8px;
+  margin-bottom: 8px;
+}
+.doc-print-meta-table th,
+.doc-print-meta-table td {
+  border: 1px solid #bbb;
+  padding: 4px 5px;
+  text-align: center;
+}
+.doc-print-meta-table th {
+  background: #efefef;
+  font-weight: 700;
+  font-size: 7.5px;
+}
+.doc-print-summary-row {
+  display: grid;
+  grid-template-columns: 1fr 250px;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 9px;
+}
+.doc-print-obs { min-height: 48px; }
+.doc-print-totals-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+}
+.doc-print-totals-table th,
+.doc-print-totals-table td {
+  border: 1px solid #bbb;
+  padding: 4px 6px;
+}
+.doc-print-totals-table th {
+  background: #d9d9d9;
+  text-align: left;
+  font-weight: 700;
+  width: 58%;
+}
+.doc-print-totals-table td { text-align: right; }
+.doc-print-total-final-row th,
+.doc-print-total-final-row td {
+  font-weight: 700;
+  background: #ececec;
+}
+.doc-print-words-box {
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 9px;
+  margin-bottom: 8px;
+}
+.doc-print-bank-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8px;
+  margin-bottom: 8px;
+}
+.doc-print-bank-table th,
+.doc-print-bank-table td {
+  border: 1px solid #bbb;
+  padding: 4px 6px;
+  text-align: center;
+}
+.doc-print-bank-table th {
+  background: #efefef;
+  font-weight: 700;
+}
+.doc-print-legal-row {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 8px;
+  font-size: 8px;
+}
+.doc-print-detraction {
+  border: 1px solid #bbb;
+  padding: 6px 8px;
+  min-height: 90px;
+}
+.doc-print-qr-wrap { text-align: right; }
+.doc-print-brands {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+.doc-print-brand-logo {
+  height: 42px;
+  width: auto;
+  max-width: 24%;
+  object-fit: contain;
+}
+.doc-print-service-footer {
+  text-align: center;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1.35;
+  margin: 0;
 }
 
 .doc-print-doc-number {

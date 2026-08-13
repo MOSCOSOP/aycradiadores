@@ -14,11 +14,18 @@ export type ComprobanteEmisor = {
   nombreComercial: string;
   direccion: string;
   telefono?: string;
+  telefono2?: string;
   email?: string;
   logo?: string;
+  titulo?: string;
   banco?: string;
+  moneda?: string;
   cuentaBancaria?: string;
   cci?: string;
+  detractionLabel?: string;
+  detractionBank?: string;
+  footerServiceText?: string;
+  brandLogos?: string[];
 };
 
 export type ReceiptData = {
@@ -59,4 +66,6 @@ export type ReceiptData = {
 
   hash?: string;
   qr_payload?: string;
+  share_token?: string;
+  observations?: string;
 };

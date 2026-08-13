@@ -3,7 +3,9 @@
 import Image from "next/image";
 import { sunatQrImageUrl } from "@/lib/comprobante/sunat-qr";
 import { COMPROBANTE_PRINT_CSS, pageRuleForSize } from "@/lib/comprobante/print-styles";
+import { amountWordsEs } from "@/lib/comprobante/amount-words";
 import type { ReceiptData } from "@/lib/comprobante/types";
+import { COMPROBANTE_ASSETS } from "@/lib/company-info";
 import { formatReceiptNumber } from "@/lib/receipt-format";
 
 export type { ReceiptData } from "@/lib/comprobante/types";
@@ -11,32 +13,20 @@ export type { ReceiptData } from "@/lib/comprobante/types";
 function fmtDate(iso: string) {
   try {
     const d = new Date(iso.length <= 10 ? `${iso}T12:00:00` : iso);
-    return d.toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" });
+    return d.toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" });
   } catch {
     return iso;
   }
 }
 
-function amountWords(total: number) {
-  const ent = Math.floor(total);
-  const dec = Math.round((total - ent) * 100);
-  return `${ent} CON ${String(dec).padStart(2, "0")}/100 Soles`;
-}
-
-function payMethodLabel(method: string) {
-  const map: Record<string, string> = {
-    efectivo: "Efectivo",
-    yape: "Yape",
-    transferencia: "Transferencia",
-    contado: "Contado",
-    credito: "Crédito",
-  };
-  return map[method.toLowerCase()] ?? method;
-}
-
 function idDocLabel(number: string) {
   const n = String(number ?? "").replace(/\D/g, "");
   return n.length === 11 ? "R.U.C." : "D.N.I.";
+}
+
+function paymentDisplay(receipt: ReceiptData) {
+  if (receipt.payment_condition?.toLowerCase() === "credito") return "CRÉDITO";
+  return "CONTADO";
 }
 
 export function DocumentPrintTemplate({
@@ -52,8 +42,7 @@ export function DocumentPrintTemplate({
   const number = formatReceiptNumber(receipt.number);
   const qrPayload = receipt.qr_payload ?? `${emisor?.ruc ?? ""}|${number}|${receipt.total.toFixed(2)}`;
   const qrUrl = sunatQrImageUrl(qrPayload, scale === "a5" ? 110 : 140);
-  const paymentLabel =
-    receipt.payment_condition?.toLowerCase() === "credito" ? "Crédito" : "Contado";
+  const discount = receipt.total_discount ?? 0;
 
   return (
     <div
@@ -63,24 +52,29 @@ export function DocumentPrintTemplate({
       <div className="doc-print-inner">
         <header className="doc-print-header">
           <div className="doc-print-logo-wrap">
-            <Image
-              src={emisor?.logo ?? "/assets/comprobantes/logo.jpg"}
-              alt={emisor?.nombreComercial ?? "Logo"}
-              width={72}
-              height={72}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={emisor?.logo ?? COMPROBANTE_ASSETS.logo}
+              alt="Logo"
               className="doc-print-logo"
-              unoptimized
             />
           </div>
           <div className="doc-print-brand-center">
-            <h1 className="doc-print-company">{emisor?.nombreComercial ?? "A&C RADIADORES"}</h1>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={emisor?.titulo ?? COMPROBANTE_ASSETS.titulo}
+              alt={emisor?.nombreComercial ?? "A&C Radiadores"}
+              className="doc-print-titulo"
+            />
             <p className="doc-print-meta">De: {emisor?.razonSocial}</p>
-            <p className="doc-print-meta">RUC {emisor?.ruc}</p>
-            <p className="doc-print-meta">{emisor?.direccion}</p>
-            {emisor?.telefono ? (
-              <p className="doc-print-meta">Central telefónica: {emisor.telefono}</p>
+            <p className="doc-print-meta">
+              Cel: {emisor?.telefono}
+              {emisor?.telefono2 ? ` – ${emisor.telefono2}` : ""}
+            </p>
+            {emisor?.email ? (
+              <p className="doc-print-meta doc-print-email">{emisor.email}</p>
             ) : null}
-            {emisor?.email ? <p className="doc-print-meta">Email: {emisor.email}</p> : null}
+            <p className="doc-print-meta">{emisor?.direccion}</p>
           </div>
           <div className="doc-print-docbox">
             <p>R.U.C. {emisor?.ruc}</p>
@@ -99,14 +93,11 @@ export function DocumentPrintTemplate({
               {receipt.customer_number}
             </p>
             <p>
-              <span className="doc-print-label">Dirección:</span>{" "}
-              {receipt.customer_address || "—"}
+              <span className="doc-print-label">Dirección:</span> {receipt.customer_address || "—"}
             </p>
             <p>
               <span className="doc-print-label">Provincia:</span> {receipt.customer_province || "—"}
-            </p>
-            <p>
-              <span className="doc-print-label">Distrito:</span> {receipt.customer_district || "—"}
+              <span className="doc-print-inline-sep">Distrito:</span> {receipt.customer_district || "—"}
             </p>
           </div>
           <div className="doc-print-client-right">
@@ -116,39 +107,33 @@ export function DocumentPrintTemplate({
           </div>
         </section>
 
-        <section className="doc-print-meta-bar">
-          <div className="doc-print-meta-cell">
-            <span className="lbl">Fecha Emisión</span>
-            <span className="val">{fmtDate(receipt.date_of_issue)}</span>
-          </div>
-          <div className="doc-print-meta-cell">
-            <span className="lbl">Forma de pago</span>
-            <span className="val">
-              {paymentLabel} — {payMethodLabel(receipt.payment_method)}
-            </span>
-          </div>
-          <div className="doc-print-meta-cell">
-            <span className="lbl">N° de placa</span>
-            <span className="val">{receipt.plate || "—"}</span>
-          </div>
-          <div className="doc-print-meta-cell">
-            <span className="lbl">Orden de compra</span>
-            <span className="val">{receipt.purchase_order || "—"}</span>
-          </div>
-          <div className="doc-print-meta-cell">
-            <span className="lbl">Vencimiento</span>
-            <span className="val">{fmtDate(receipt.date_of_due ?? receipt.date_of_issue)}</span>
-          </div>
-          <div className="doc-print-meta-cell">
-            <span className="lbl">N° Guía Remisión</span>
-            <span className="val">{receipt.dispatch_number || "—"}</span>
-          </div>
-        </section>
+        <table className="doc-print-meta-table">
+          <thead>
+            <tr>
+              <th>Fecha Emisión</th>
+              <th>Forma de pago</th>
+              <th>N° de placa</th>
+              <th>Orden de compra</th>
+              <th>Vencimiento</th>
+              <th>N° Guía Remisión</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{fmtDate(receipt.date_of_issue)}</td>
+              <td>{paymentDisplay(receipt)}</td>
+              <td>{receipt.plate || ""}</td>
+              <td>{receipt.purchase_order || ""}</td>
+              <td>{fmtDate(receipt.date_of_due ?? receipt.date_of_issue)}</td>
+              <td>{receipt.dispatch_number || ""}</td>
+            </tr>
+          </tbody>
+        </table>
 
         <table className="doc-print-table">
           <thead>
             <tr>
-              <th className="col-code">CÓDIGO</th>
+              <th className="col-code">CODIGO</th>
               <th className="col-qty">CANT.</th>
               <th className="col-unit">U.M.</th>
               <th className="col-desc">DESCRIPCIÓN</th>
@@ -159,7 +144,7 @@ export function DocumentPrintTemplate({
           <tbody>
             {receipt.items.map((it, i) => (
               <tr key={i}>
-                <td className="col-code">{it.code ?? "—"}</td>
+                <td className="col-code">{it.code ?? ""}</td>
                 <td className="col-qty">{it.quantity}</td>
                 <td className="col-unit">{it.unit}</td>
                 <td className="col-desc">{it.description}</td>
@@ -170,56 +155,86 @@ export function DocumentPrintTemplate({
           </tbody>
         </table>
 
-        <div className="doc-print-bottom">
-          <div className="doc-print-qr-block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrUrl} alt="QR SUNAT" width={100} height={100} className="doc-print-qr" />
-            {receipt.hash ? <p className="doc-print-hash">{receipt.hash}</p> : null}
+        <div className="doc-print-summary-row">
+          <div className="doc-print-obs">
+            <span className="doc-print-label">Observaciones:</span>
+            <p>{receipt.observations || ""}</p>
           </div>
-          <div className="doc-print-totals-wrap">
-            <div className="doc-print-totals">
-              {receipt.total_discount != null && receipt.total_discount > 0 ? (
-                <div className="doc-print-total-row">
-                  <span>DESCUENTO:</span>
-                  <span>S/ {receipt.total_discount.toFixed(2)}</span>
-                </div>
-              ) : null}
-              <div className="doc-print-total-row">
-                <span>OP. GRAVADAS:</span>
-                <span>S/ {receipt.total_taxed.toFixed(2)}</span>
-              </div>
-              {receipt.total_exonerated != null && receipt.total_exonerated > 0 ? (
-                <div className="doc-print-total-row">
-                  <span>OP. EXONERADAS:</span>
-                  <span>S/ {receipt.total_exonerated.toFixed(2)}</span>
-                </div>
-              ) : null}
-              <div className="doc-print-total-row">
-                <span>I.G.V. 18%:</span>
-                <span>S/ {receipt.total_igv.toFixed(2)}</span>
-              </div>
-              <div className="doc-print-total-row doc-print-total-final">
-                <span>TOTAL:</span>
-                <span>S/ {receipt.total.toFixed(2)}</span>
-              </div>
-            </div>
+          <table className="doc-print-totals-table">
+            <tbody>
+              <tr>
+                <th>DESCUENTO (-)</th>
+                <td>S/ {discount.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <th>OP. GRAVADAS</th>
+                <td>S/ {receipt.total_taxed.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <th>OP. EXONERADAS</th>
+                <td>S/ {(receipt.total_exonerated ?? 0).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <th>IGV</th>
+                <td>S/ {receipt.total_igv.toFixed(2)}</td>
+              </tr>
+              <tr className="doc-print-total-final-row">
+                <th>TOTAL</th>
+                <td>S/ {receipt.total.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="doc-print-words-box">
+          Son: <strong>{amountWordsEs(receipt.total)}</strong>
+        </div>
+
+        <table className="doc-print-bank-table">
+          <thead>
+            <tr>
+              <th>BANCO</th>
+              <th>MONEDA</th>
+              <th>N° CUENTA CORRIENTE</th>
+              <th>CUENTA INTERBANCARIA (CCI)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{emisor?.banco}</td>
+              <td>{emisor?.moneda ?? "Soles"}</td>
+              <td>{emisor?.cuentaBancaria}</td>
+              <td>{emisor?.cci}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="doc-print-legal-row">
+          <div className="doc-print-detraction">
+            <p className="doc-print-label">{emisor?.detractionLabel ?? "CUENTA DE DETRACCIONES"}</p>
+            <p>{emisor?.detractionBank ?? "BANCO DE LA NACIÓN:"}</p>
+          </div>
+          <div className="doc-print-qr-wrap">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrUrl} alt="QR SUNAT" className="doc-print-qr" />
           </div>
         </div>
 
-        <p className="doc-print-words">Son: {amountWords(receipt.total)}</p>
-
-        {emisor?.banco ? (
-          <div className="doc-print-bank">
-            <p>{emisor.banco}</p>
-            {emisor.cuentaBancaria ? <p>Cta. {emisor.cuentaBancaria}</p> : null}
-            {emisor.cci ? <p>CCI {emisor.cci}</p> : null}
-          </div>
-        ) : null}
-
         <footer className="doc-print-representation">
-          Representación impresa del Comprobante de Venta Electrónico. Consulte su validez en{" "}
-          https://e-consulta.sunat.gob.pe/ — Autorizado mediante Resolución de Intendencia N° 034-005-0005315
+          <p>
+            REPRESENTACIÓN IMPRESA DE {receipt.document_type_label}. RESOLUCION DE SUPERINTENDENCIA N° 155-2017/SUNAT.
+          </p>
+          {receipt.hash ? <p className="doc-print-hash">{receipt.hash}</p> : null}
         </footer>
+
+        <div className="doc-print-brands">
+          {(emisor?.brandLogos ?? COMPROBANTE_ASSETS.brands).map((src) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={src} src={src} alt="" className="doc-print-brand-logo" />
+          ))}
+        </div>
+
+        <p className="doc-print-service-footer">{emisor?.footerServiceText}</p>
       </div>
     </div>
   );

@@ -749,9 +749,12 @@ export async function handleLocalApi(
       include: { customer: true, seller: true, establishment: true, items: { include: { item: true } } },
     });
     if (!doc) throw new Error("Comprobante no encontrado");
+    const { ensureDocumentShareToken } = await import("@/lib/comprobante/public-document");
+    const shareToken = doc.shareToken ?? (await ensureDocumentShareToken(doc.id));
     return {
       data: {
         ...docToRecord(doc),
+        share_token: shareToken,
         customer_email: doc.customer.email,
         customer_phone: doc.customer.telephone,
         customer_address: doc.customer.address,
@@ -883,6 +886,7 @@ export async function handleLocalApi(
           totalIgv,
           total: totalTaxed + totalIgv,
           plate: payload.plate ? String(payload.plate) : null,
+          shareToken: (await import("@/lib/comprobante/share-link")).generateShareToken(),
           items: { create: lineItems },
         },
         include: { customer: true, seller: true, establishment: true },
@@ -2264,6 +2268,14 @@ export async function handleLocalApi(
     return { data };
   }
 
+  if (method === "GET" && path.match(/^documents\/\d+\/share-link$/)) {
+    const id = Number(path.split("/")[1]);
+    const { ensureDocumentShareToken } = await import("@/lib/comprobante/public-document");
+    const { buildPublicComprobanteUrl } = await import("@/lib/comprobante/share-link");
+    const token = await ensureDocumentShareToken(id);
+    return { share_token: token, public_url: buildPublicComprobanteUrl(token) };
+  }
+
   if (method === "POST" && path.match(/^documents\/\d+\/email$/)) {
     const id = Number(path.split("/")[1]);
     const doc = await prisma.document.findUnique({
@@ -2281,9 +2293,12 @@ export async function handleLocalApi(
 
     const { buildReceiptFromApiDoc } = await import("@/lib/comprobante/build-receipt-data");
     const { sendDocumentEmail } = await import("@/lib/email/send-document-email");
+    const { ensureDocumentShareToken } = await import("@/lib/comprobante/public-document");
+    const shareToken = doc.shareToken ?? (await ensureDocumentShareToken(doc.id));
     const receipt = buildReceiptFromApiDoc({
       ...docToRecord(doc),
       id: doc.id,
+      share_token: shareToken,
       customer_email: doc.customer.email,
       customer_phone: doc.customer.telephone,
       customer_address: doc.customer.address,
@@ -2319,9 +2334,12 @@ export async function handleLocalApi(
 
     const { buildReceiptFromApiDoc } = await import("@/lib/comprobante/build-receipt-data");
     const { buildWhatsAppUrl } = await import("@/lib/email/whatsapp-compose");
+    const { ensureDocumentShareToken } = await import("@/lib/comprobante/public-document");
+    const shareToken = doc.shareToken ?? (await ensureDocumentShareToken(doc.id));
     const receipt = buildReceiptFromApiDoc({
       ...docToRecord(doc),
       id: doc.id,
+      share_token: shareToken,
       customer_email: doc.customer.email,
       customer_phone: doc.customer.telephone,
       customer_address: doc.customer.address,

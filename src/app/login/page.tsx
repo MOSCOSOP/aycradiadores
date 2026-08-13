@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { APP_COMMIT, APP_VERSION, COMPANY } from "@/lib/constants";
 import { api } from "@/lib/api/client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || "/documents/create";
   const [email, setEmail] = useState(process.env.NEXT_PUBLIC_DEFAULT_EMAIL ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,7 @@ export default function LoginPage() {
     setError("");
     try {
       await api.auth.login(email, password);
-      router.push("/documents/create");
+      router.push(nextPath.startsWith("/") ? nextPath : "/documents/create");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar");
     } finally {

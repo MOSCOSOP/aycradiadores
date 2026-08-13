@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { printDocument } from "@/components/documents/DocumentPrintTemplate";
 import { openEmailCompose } from "@/lib/email/gmail-compose";
 import { buildWhatsAppUrl } from "@/lib/email/whatsapp-compose";
+import { api } from "@/lib/api/client";
 import type { ReceiptData } from "@/lib/comprobante/types";
 
 type Props = {
@@ -41,39 +42,65 @@ export function DocumentSendPanel({
   const setPrintSize = onPrintSizeChange ?? setPrintSizeLocal;
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [shareToken, setShareToken] = useState(receipt.share_token ?? "");
+  const [loadingShare, setLoadingShare] = useState(false);
 
   useEffect(() => {
-    setMsg("");
-    setErr("");
-  }, [customerEmail, customerPhone]);
+    setShareToken(receipt.share_token ?? "");
+  }, [receipt.share_token]);
+
+  const receiptWithShare: ReceiptData = { ...receipt, share_token: shareToken || receipt.share_token };
+
+  async function ensureShareToken(): Promise<string> {
+    if (shareToken) return shareToken;
+    if (!documentId) throw new Error("Guarda el comprobante antes de compartir.");
+    setLoadingShare(true);
+    try {
+      const res = await api.documents.shareLink(documentId);
+      setShareToken(res.share_token);
+      return res.share_token;
+    } finally {
+      setLoadingShare(false);
+    }
+  }
 
   const handlePrint = () => printDocument("doc-print-area", printSize);
 
-  const sendEmailGmail = () => {
+  const sendEmailGmail = async () => {
     setErr("");
     setMsg("");
     if (!customerEmail) {
       setErr("Este cliente no tiene correo registrado. Agrégalo en la ficha del cliente.");
       return;
     }
-    openEmailCompose(receipt, customerEmail, documentId);
-    setMsg(`Gmail abierto para ${customerEmail}. Revisa el mensaje y pulsa Enviar.`);
+    try {
+      const token = await ensureShareToken();
+      openEmailCompose({ ...receipt, share_token: token }, customerEmail, documentId);
+      setMsg(`Gmail abierto para ${customerEmail}. Revisa el mensaje y pulsa Enviar.`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "No se pudo abrir Gmail");
+    }
   };
 
-  const sendWhatsApp = () => {
+  const sendWhatsApp = async () => {
     setErr("");
     setMsg("");
-    const url = buildWhatsAppUrl({
-      phone: customerPhone || undefined,
-      receipt,
-      documentId,
-    });
-    window.open(url, "_blank");
-    setMsg(
-      customerPhone
-        ? `WhatsApp abierto para ${formatPhoneDisplay(customerPhone)}.`
-        : "WhatsApp abierto con el mensaje del comprobante."
-    );
+    try {
+      const token = await ensureShareToken();
+      const url = buildWhatsAppUrl({
+        phone: customerPhone || undefined,
+        receipt: { ...receipt, share_token: token },
+        documentId,
+      });
+      window.open(url, "_blank");
+      setMsg(
+        customerPhone
+          ? `WhatsApp abierto para ${formatPhoneDisplay(customerPhone)}.`
+          : "WhatsApp abierto con el mensaje del comprobante."
+      );
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "No se pudo abrir WhatsApp");
+    }
   };
 
   return (
@@ -103,10 +130,9 @@ export function DocumentSendPanel({
           type="button"
           className="ify-btn-outline text-xs"
           onClick={sendEmailGmail}
-          disabled={!customerEmail}
-          title={customerEmail ? `Abrir Gmail para ${customerEmail}` : "Cliente sin correo"}
+          disabled={!customerEmail || loadingShare}
         >
-          <i className="bi bi-envelope" /> Enviar correo
+          <i className="bi bi-envelope" /> {loadingShare ? "Preparando..." : "Enviar correo"}
         </button>
         {customerEmail ? (
           <span className="text-sm font-medium text-[var(--foreground)]">{customerEmail}</span>
@@ -116,8 +142,13 @@ export function DocumentSendPanel({
       </div>
 
       <div className="mb-2 flex flex-wrap items-center gap-3">
-        <button type="button" className="ify-btn-outline text-xs text-green-700" onClick={sendWhatsApp}>
-          <i className="bi bi-whatsapp" /> Enviar WhatsApp
+        <button
+          type="button"
+          className="ify-btn-outline text-xs text-green-700"
+          onClick={sendWhatsApp}
+          disabled={loadingShare}
+        >
+          <i className="bi bi-whatsapp" /> {loadingShare ? "Preparando..." : "Enviar WhatsApp"}
         </button>
         {customerPhone ? (
           <span className="text-sm font-medium text-[var(--foreground)]">{formatPhoneDisplay(customerPhone)}</span>

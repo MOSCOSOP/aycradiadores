@@ -212,6 +212,7 @@ model Document {
   hasXml          Boolean        @default(false)
   hasPdf          Boolean        @default(true)
   hasCdr          Boolean        @default(false)
+  shareToken      String?        @unique
   items           DocumentItem[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
