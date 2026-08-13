@@ -1,30 +1,31 @@
 /** Estilos compartidos para vista e impresión del comprobante (A4/A5) — debe coincidir con globals.css */
 export const COMPROBANTE_PRINT_CSS = `
   * { box-sizing: border-box; }
-  html, body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 8mm; color: #111; background: #fff; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .doc-print-sheet { width: 100%; max-width: 210mm; margin: 0 auto; background: #fff; color: #111; }
-  .doc-print-a5 { max-width: 148mm; font-size: 90%; }
+  html, body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; color: #111; background: #fff; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .doc-print-sheet { width: 210mm; max-width: 210mm; margin: 0 auto; background: #fff; color: #111; }
+  .doc-print-a5 { width: 148mm; max-width: 148mm; font-size: 90%; }
   .doc-print-inner { padding: 5mm; }
-  .doc-print-header { margin-bottom: 4px; }
-  .doc-print-header-main { display: grid; grid-template-columns: 90px minmax(0, 1fr) 158px; gap: 2px 6px; align-items: center; }
-  .doc-print-a5 .doc-print-header-main { grid-template-columns: 68px minmax(0, 1fr) 128px; gap: 2px 4px; }
-  .doc-print-logo-wrap { flex-shrink: 0; width: 90px; text-align: center; }
-  .doc-print-a5 .doc-print-logo-wrap { width: 68px; }
-  .doc-print-header-center { min-width: 0; display: flex; flex-direction: column; align-items: stretch; justify-content: center; padding-top: 0; }
-  .doc-print-titulo { display: block; width: 100%; height: auto; max-height: 24px; object-fit: contain; object-position: left center; margin: 0 0 1px; }
-  .doc-print-a5 .doc-print-titulo { max-height: 18px; }
-  .doc-print-header-brand-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-width: 0; }
-  .doc-print-sello { height: 44px; width: auto; max-width: 96px; object-fit: contain; flex-shrink: 0; }
-  .doc-print-a5 .doc-print-sello { height: 34px; max-width: 72px; }
-  .doc-print-logo { width: 86px; height: 86px; object-fit: contain; display: block; margin: 0 auto; }
-  .doc-print-a5 .doc-print-logo { width: 64px; height: 64px; }
-  .doc-print-brand-center { flex: 1; min-width: 0; padding: 0; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-  .doc-print-brand-center .doc-print-meta { margin: 0; line-height: 1.2; text-align: center; }
-  .doc-print-de-line { background: #e8f4fc; padding: 0 6px; border-radius: 3px; display: inline-block; }
+  .doc-print-a5 .doc-print-inner { padding: 4mm; }
+  .doc-print-header { margin-bottom: 6px; }
+  .doc-print-header-main { display: grid; grid-template-columns: 112px minmax(0, 1fr) 162px; gap: 0 6px; align-items: center; }
+  .doc-print-a5 .doc-print-header-main { grid-template-columns: 82px minmax(0, 1fr) 132px; gap: 0 4px; }
+  .doc-print-logo-wrap { width: 112px; text-align: center; line-height: 0; }
+  .doc-print-a5 .doc-print-logo-wrap { width: 82px; }
+  .doc-print-header-center { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
+  .doc-print-titulo { display: block; width: auto; max-width: 100%; height: auto; max-height: 26px; object-fit: contain; object-position: left center; margin: 0; }
+  .doc-print-a5 .doc-print-titulo { max-height: 20px; }
+  .doc-print-header-brand-row { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; width: auto; max-width: 100%; }
+  .doc-print-sello { height: 48px; width: auto; max-width: 100px; object-fit: contain; flex-shrink: 0; display: block; }
+  .doc-print-a5 .doc-print-sello { height: 36px; max-width: 76px; }
+  .doc-print-contact { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; flex: 0 1 auto; min-width: 0; }
+  .doc-print-contact .doc-print-meta { margin: 0; line-height: 1.25; text-align: left; }
+  .doc-print-contact .doc-print-meta:not(:last-child) { white-space: nowrap; }
+  .doc-print-logo { width: 108px; height: 108px; object-fit: contain; display: block; margin: 0 auto; }
+  .doc-print-a5 .doc-print-logo { width: 78px; height: 78px; }
   .doc-print-meta { font-size: 9px; margin: 1px 0; line-height: 1.35; color: #222; }
   .doc-print-email { color: #0d6efd; }
-  .doc-print-docbox { width: 100%; max-width: 158px; flex-shrink: 0; border: 1px solid #888; border-radius: 6px; padding: 6px 5px; text-align: center; font-size: 9px; justify-self: end; align-self: center; }
-  .doc-print-a5 .doc-print-docbox { max-width: 148px; font-size: 8px; padding: 6px 4px; }
+  .doc-print-docbox { width: 100%; max-width: 162px; flex-shrink: 0; border: 1px solid #888; border-radius: 6px; padding: 6px 5px; text-align: center; font-size: 9px; justify-self: end; align-self: center; }
+  .doc-print-a5 .doc-print-docbox { max-width: 132px; font-size: 8px; padding: 5px 3px; }
   .doc-print-docbox p { margin: 2px 0; }
   .doc-print-doc-type { font-weight: 700; font-size: 8.5px; margin: 5px 0; line-height: 1.2; background: #c41e3a !important; color: #fff !important; padding: 5px 3px; word-break: break-word; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .doc-print-a5 .doc-print-doc-type { font-size: 7px; padding: 4px 2px; }

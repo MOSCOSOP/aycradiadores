@@ -2190,111 +2190,110 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-header {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .doc-print-header-main {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr) 158px;
-  gap: 2px 6px;
+  grid-template-columns: 112px minmax(0, 1fr) 162px;
+  gap: 0 6px;
   align-items: center;
 }
 
 .doc-print-a5 .doc-print-header-main {
-  grid-template-columns: 68px minmax(0, 1fr) 128px;
-  gap: 2px 4px;
+  grid-template-columns: 82px minmax(0, 1fr) 132px;
+  gap: 0 4px;
 }
 
 .doc-print-logo-wrap {
-  flex-shrink: 0;
-  width: 90px;
+  width: 112px;
   text-align: center;
+  line-height: 0;
 }
 
 .doc-print-a5 .doc-print-logo-wrap {
-  width: 68px;
+  width: 82px;
 }
 
 .doc-print-header-center {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: center;
-  padding-top: 0;
+  gap: 2px;
 }
 
 .doc-print-titulo {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: auto;
-  max-height: 24px;
+  max-height: 26px;
   object-fit: contain;
   object-position: left center;
-  margin: 0 0 1px;
+  margin: 0;
 }
 
 .doc-print-a5 .doc-print-titulo {
-  max-height: 18px;
+  max-height: 20px;
 }
 
 .doc-print-header-brand-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
-  min-width: 0;
+  gap: 8px;
+  width: auto;
+  max-width: 100%;
 }
 
 .doc-print-sello {
-  height: 44px;
+  height: 48px;
   width: auto;
-  max-width: 96px;
+  max-width: 100px;
   object-fit: contain;
   flex-shrink: 0;
+  display: block;
 }
 
 .doc-print-a5 .doc-print-sello {
-  height: 34px;
-  max-width: 72px;
+  height: 36px;
+  max-width: 76px;
 }
 
-.doc-print-brand-center {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  text-align: center;
+.doc-print-contact {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  overflow: hidden;
+  gap: 0;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
-.doc-print-brand-center .doc-print-meta {
+.doc-print-contact .doc-print-meta {
   margin: 0;
-  line-height: 1.2;
-  text-align: center;
+  line-height: 1.25;
+  text-align: left;
 }
 
-.doc-print-de-line {
-  background: #e8f4fc;
-  padding: 0 6px;
-  border-radius: 3px;
-  display: inline-block;
+.doc-print-contact .doc-print-meta:not(:last-child) {
+  white-space: nowrap;
 }
 
 .doc-print-logo {
-  width: 86px !important;
-  height: 86px !important;
+  width: 108px !important;
+  height: 108px !important;
   object-fit: contain;
   display: block;
   margin: 0 auto;
 }
 
 .doc-print-a5 .doc-print-logo {
-  width: 64px !important;
-  height: 64px !important;
+  width: 78px !important;
+  height: 78px !important;
 }
 
 .doc-print-company {
@@ -2314,7 +2313,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 
 .doc-print-docbox {
   width: 100%;
-  max-width: 158px;
+  max-width: 162px;
   border: 1px solid #888;
   border-radius: 6px;
   padding: 6px 5px;

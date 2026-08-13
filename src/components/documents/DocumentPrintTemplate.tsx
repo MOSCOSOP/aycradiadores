@@ -73,8 +73,8 @@ export function DocumentPrintTemplate({
                   alt="A&C"
                   className="doc-print-sello"
                 />
-                <div className="doc-print-brand-center">
-                  <p className="doc-print-meta doc-print-de-line">
+                <div className="doc-print-contact">
+                  <p className="doc-print-meta">
                     <span className="doc-print-label">De:</span> {emisor?.razonSocial}
                   </p>
                   <p className="doc-print-meta">

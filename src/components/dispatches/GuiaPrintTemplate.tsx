@@ -47,8 +47,8 @@ export function GuiaPrintTemplate({ data, pageSize = "A4", printId = "doc-print-
               <div className="doc-print-header-brand-row">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={COMPROBANTE_ASSETS.sello} alt="A&C" className="doc-print-sello" />
-                <div className="doc-print-brand-center">
-                  <p className="doc-print-meta doc-print-de-line">
+                <div className="doc-print-contact">
+                  <p className="doc-print-meta">
                     <span className="doc-print-label">De:</span> {COMPANY_INFO.name}
                   </p>
                   <p className="doc-print-meta">
