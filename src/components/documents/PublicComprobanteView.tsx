@@ -9,7 +9,7 @@ export function PublicComprobanteView({ receipt }: { receipt: ReceiptData }) {
   const [printSize, setPrintSize] = useState<"A4" | "A5">("A4");
 
   return (
-    <div className="min-h-screen bg-[#eef1f5] py-6">
+    <div className="min-h-screen overflow-x-hidden bg-[#eef1f5] py-4">
       <div className="mx-auto mb-4 flex max-w-[220mm] flex-wrap items-center justify-center gap-2 px-4">
         <button type="button" className="ify-btn-primary text-sm" onClick={() => printDocument("doc-print-area", printSize)}>
           Imprimir
@@ -30,7 +30,7 @@ export function PublicComprobanteView({ receipt }: { receipt: ReceiptData }) {
         </button>
       </div>
       <div className="px-2">
-        <DocPrintViewport>
+        <DocPrintViewport pageSize={printSize}>
           <DocumentPrintTemplate receipt={receipt} scale={printSize === "A5" ? "a5" : "normal"} />
         </DocPrintViewport>
       </div>

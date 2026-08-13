@@ -11,6 +11,7 @@ import { CustomerSearchField } from "@/components/ui/CustomerSearchField";
 import { ProductSuggestItem } from "@/components/ui/ProductSuggestItem";
 import { Modal } from "@/components/ui/Modal";
 import { DocumentPrintTemplate } from "@/components/documents/DocumentPrintTemplate";
+import { DocPrintViewport } from "@/components/documents/DocPrintViewport";
 import { buildReceiptFromPos, docTypeLabelFromId } from "@/lib/comprobante/build-receipt-data";
 import { downloadCsv } from "@/lib/download-csv";
 
@@ -970,8 +971,10 @@ export function CreateDocumentForm() {
         size="xl"
         onClose={() => setPreviewOpen(false)}
       >
-        <div className="max-h-[70vh] overflow-auto rounded border border-[var(--border-light)] bg-white p-2">
-          <DocumentPrintTemplate key={`${docTypeId}-${previewNumber}`} receipt={previewReceipt} />
+        <div className="max-h-[70vh] overflow-auto rounded border border-[var(--border-light)] bg-[#eef1f5] p-2">
+          <DocPrintViewport>
+            <DocumentPrintTemplate key={`${docTypeId}-${previewNumber}`} receipt={previewReceipt} />
+          </DocPrintViewport>
         </div>
       </Modal>
 

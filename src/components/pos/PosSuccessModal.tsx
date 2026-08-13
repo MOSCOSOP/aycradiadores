@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DocumentPrintTemplate } from "@/components/documents/DocumentPrintTemplate";
+import { DocPrintViewport } from "@/components/documents/DocPrintViewport";
 import { DocumentSendPanel } from "@/components/documents/DocumentSendPanel";
 import type { ReceiptData } from "@/lib/comprobante/types";
 
@@ -23,8 +24,10 @@ export function PosSuccessModal({ receipt, onNewSale }: Props) {
         <div className="text-xs opacity-90">Comprobante emitido correctamente</div>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 md:p-6">
-        <DocumentPrintTemplate receipt={receipt} scale={printSize === "A5" ? "a5" : "normal"} />
+      <div className="flex-1 overflow-auto p-3 md:p-6">
+        <DocPrintViewport pageSize={printSize}>
+          <DocumentPrintTemplate receipt={receipt} scale={printSize === "A5" ? "a5" : "normal"} />
+        </DocPrintViewport>
       </div>
 
       <DocumentSendPanel
