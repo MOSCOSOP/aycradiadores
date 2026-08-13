@@ -235,7 +235,7 @@ export function ServicesList() {
 
 export function DispatchesList({ guideType = "09" }: { guideType?: "09" | "31" }) {
   const isCarrier = guideType === "31";
-  const listTitle = isCarrier ? "G.R. Transportista" : "Guías de remisión remitente";
+  const listTitle = isCarrier ? "Listado G.R. Transportista" : "Listado G.R. Remitente";
   const createHref = isCarrier ? "/dispatches-carrier/create" : "/dispatches/create";
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);

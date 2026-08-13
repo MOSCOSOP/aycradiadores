@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { PageHeader, Field } from "@/components/ui/Modal";
 import { CustomerModal } from "@/components/customers/CustomerModal";
 import { CarrierModal } from "@/components/carriers/CarrierModal";
+import { CustomerSearchField } from "@/components/ui/CustomerSearchField";
+import { CarrierSearchField, LocalCatalogSearchField, type SearchSelection } from "@/components/ui/EntitySearchField";
 import { COMPANY } from "@/lib/constants";
 import { api } from "@/lib/api/client";
 import {
@@ -52,6 +54,14 @@ export function DispatchGuideForm({ guideType }: DispatchGuideFormProps) {
   const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [manual, setManual] = useState({ desc: "", qty: "1", unit: "NIU" });
   const [saving, setSaving] = useState(false);
+  const [freightPayer, setFreightPayer] = useState<SearchSelection | null>(null);
+  const [subcontractor, setSubcontractor] = useState<SearchSelection | null>(null);
+  const [senderSel, setSenderSel] = useState<SearchSelection | null>(null);
+  const [recipientSel, setRecipientSel] = useState<SearchSelection | null>(null);
+  const [vehicleSel, setVehicleSel] = useState<SearchSelection | null>(null);
+  const [driverSel, setDriverSel] = useState<SearchSelection | null>(null);
+  const [secondaryVehicleSel, setSecondaryVehicleSel] = useState<SearchSelection | null>(null);
+  const [secondaryDriverSel, setSecondaryDriverSel] = useState<SearchSelection | null>(null);
 
   const filteredSeries = useMemo(
     () => series.filter((s) => String(s.document_type_id) === guideType),
@@ -109,11 +119,14 @@ export function DispatchGuideForm({ guideType }: DispatchGuideFormProps) {
     const id = Number(c.id);
     const name = String(c.name ?? "");
     const doc = String(c.number ?? "");
+    const sel: SearchSelection = { id: String(id), name, document_number: doc };
     if (customerModalFor === "destinatario") {
+      setRecipientSel(sel);
       setField("customer_id", id);
       setExtra({ recipient_id: String(id), recipient_name: name, recipient_document: doc });
       setField("dest_address", String(c.address ?? form.dest_address));
     } else {
+      setSenderSel(sel);
       setExtra({ sender_id: String(id), sender_name: name, sender_document: doc });
     }
   };
@@ -122,9 +135,13 @@ export function DispatchGuideForm({ guideType }: DispatchGuideFormProps) {
     setCarriers((prev) => [c, ...prev.filter((x) => x.id !== c.id)]);
     const id = String(c.id ?? "");
     const name = String(c.name ?? c.description ?? "");
+    const doc = String(c.document_number ?? "");
+    const sel: SearchSelection = { id, name, document_number: doc };
     if (carrierModalFor === "freight") {
+      setFreightPayer(sel);
       setExtra({ freight_payer_id: id, freight_payer_name: name });
     } else {
+      setSubcontractor(sel);
       setExtra({ subcontractor_id: id, subcontractor_name: name });
     }
   };
@@ -240,24 +257,17 @@ export function DispatchGuideForm({ guideType }: DispatchGuideFormProps) {
                 </>
               }
             >
-              <select
-                className="ify-select"
-                value={form.extra.freight_payer_id ?? ""}
-                onChange={(e) => {
-                  const c = carriers.find((x) => String(x.id) === e.target.value);
+              <CarrierSearchField
+                selected={freightPayer}
+                carriers={carriers}
+                onSelect={(item) => {
+                  setFreightPayer(item);
                   setExtra({
-                    freight_payer_id: e.target.value,
-                    freight_payer_name: c ? String(c.name ?? c.description ?? "") : "",
+                    freight_payer_id: item.id?.startsWith("cust-") ? item.id : item.id,
+                    freight_payer_name: item.name,
                   });
                 }}
-              >
-                <option value="">Escriba el nombre o número de documento...</option>
-                {carriers.map((c) => (
-                  <option key={String(c.id)} value={String(c.id)}>
-                    {String(c.document_number ?? "")} — {String(c.name ?? c.description ?? "")}
-                  </option>
-                ))}
-              </select>
+              />
             </Field>
             <Field
               label={
@@ -272,24 +282,17 @@ export function DispatchGuideForm({ guideType }: DispatchGuideFormProps) {
                 </>
               }
             >
-              <select
-                className="ify-select"
-                value={form.extra.subcontractor_id ?? ""}
-                onChange={(e) => {
-                  const c = carriers.find((x) => String(x.id) === e.target.value);
+              <CarrierSearchField
+                selected={subcontractor}
+                carriers={carriers}
+                onSelect={(item) => {
+                  setSubcontractor(item);
                   setExtra({
-                    subcontractor_id: e.target.value,
-                    subcontractor_name: c ? String(c.name ?? c.description ?? "") : "",
+                    subcontractor_id: item.id?.startsWith("cust-") ? item.id : item.id,
+                    subcontractor_name: item.name,
                   });
                 }}
-              >
-                <option value="">Escriba el nombre o número de documento...</option>
-                {carriers.map((c) => (
-                  <option key={String(c.id)} value={String(c.id)}>
-                    {String(c.document_number ?? "")} — {String(c.name ?? c.description ?? "")}
-                  </option>
-                ))}
-              </select>
+              />
             </Field>
           </div>
         </div>
@@ -310,11 +313,32 @@ export function DispatchGuideForm({ guideType }: DispatchGuideFormProps) {
               </>
             }
           >
-            <input
-              className="ify-input"
-              value={form.extra.sender_name ?? COMPANY.name}
-              onChange={(e) => setExtra({ sender_name: e.target.value })}
-              placeholder="Nombre o documento del remitente"
+            <CustomerSearchField
+              selected={
+                senderSel
+                  ? { id: senderSel.id, number: senderSel.document_number, name: senderSel.name }
+                  : form.extra.sender_name
+                    ? { number: form.extra.sender_document, name: form.extra.sender_name }
+                    : { number: "", name: COMPANY.name }
+              }
+              onSelect={(c) => {
+                const sel: SearchSelection = {
+                  id: String(c.id ?? ""),
+                  name: String(c.name ?? ""),
+                  document_number: String(c.number ?? ""),
+                };
+                setSenderSel(sel);
+                setExtra({
+                  sender_id: String(c.id ?? ""),
+                  sender_name: String(c.name ?? ""),
+                  sender_document: String(c.number ?? ""),
+                });
+              }}
+              onNew={() => {
+                setCustomerModalFor("remitente");
+                setCustomerModal(true);
+              }}
+              placeholder="Buscar remitente por DNI, RUC o nombre..."
             />
           </Field>
           <Field label="Punto de partida *">
@@ -352,30 +376,35 @@ export function DispatchGuideForm({ guideType }: DispatchGuideFormProps) {
               </>
             }
           >
-            <select
-              className="ify-select"
-              value={form.customer_id}
-              onChange={(e) => {
-                const id = Number(e.target.value);
-                const c = customers.find((x) => Number(x.id) === id);
-                setField("customer_id", id);
-                if (c) {
-                  setExtra({
-                    recipient_id: String(id),
-                    recipient_name: String(c.name ?? ""),
-                    recipient_document: String(c.number ?? ""),
-                  });
-                  setField("dest_address", String(c.address ?? ""));
-                }
+            <CustomerSearchField
+              selected={
+                recipientSel
+                  ? { id: recipientSel.id, number: recipientSel.document_number, name: recipientSel.name }
+                  : form.customer_id
+                    ? customers.find((c) => Number(c.id) === form.customer_id) ?? null
+                    : null
+              }
+              onSelect={(c) => {
+                const sel: SearchSelection = {
+                  id: String(c.id ?? ""),
+                  name: String(c.name ?? ""),
+                  document_number: String(c.number ?? ""),
+                };
+                setRecipientSel(sel);
+                setField("customer_id", Number(c.id));
+                setExtra({
+                  recipient_id: String(c.id ?? ""),
+                  recipient_name: String(c.name ?? ""),
+                  recipient_document: String(c.number ?? ""),
+                });
+                setField("dest_address", String(c.address ?? ""));
               }}
-            >
-              <option value={0}>Seleccionar destinatario</option>
-              {customers.map((c) => (
-                <option key={String(c.id)} value={String(c.id)}>
-                  {String(c.number)} — {String(c.name)}
-                </option>
-              ))}
-            </select>
+              onNew={() => {
+                setCustomerModalFor("destinatario");
+                setCustomerModal(true);
+              }}
+              placeholder="Buscar destinatario por DNI, RUC o nombre..."
+            />
           </Field>
           <Field label="Punto de llegada *">
             <input
@@ -391,89 +420,60 @@ export function DispatchGuideForm({ guideType }: DispatchGuideFormProps) {
       <div className="ify-card mb-4 p-4">
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="Datos del vehículo *">
-            <select
-              className="ify-select"
-              value={form.extra.vehicle_id ?? ""}
-              onChange={(e) => {
-                const v = vehicles.find((x) => String(x.id) === e.target.value);
-                setExtra({
-                  vehicle_id: e.target.value,
-                  vehicle_label: v ? String(v.plate ?? v.name ?? "") : "",
-                });
-                if (v?.plate) setField("vehicle_plate", String(v.plate).toUpperCase());
+            <LocalCatalogSearchField
+              selected={vehicleSel}
+              rows={vehicles}
+              labelKeys={["plate", "brand", "model", "name"]}
+              docKey="plate"
+              placeholder="Buscar vehículo por placa..."
+              onSelect={(item) => {
+                setVehicleSel(item);
+                setExtra({ vehicle_id: item.id, vehicle_label: item.document_number || item.name });
+                if (item.document_number) setField("vehicle_plate", item.document_number.toUpperCase());
               }}
-            >
-              <option value="">Seleccionar vehículo</option>
-              {vehicles.map((v) => (
-                <option key={String(v.id)} value={String(v.id)}>
-                  {String(v.plate ?? v.name ?? "Vehículo")}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
           <Field label="Datos del conductor *">
-            <select
-              className="ify-select"
-              value={form.extra.driver_id ?? ""}
-              onChange={(e) => {
-                const d = drivers.find((x) => String(x.id) === e.target.value);
-                setExtra({
-                  driver_id: e.target.value,
-                  driver_label: d ? String(d.name ?? "") : "",
-                });
-                if (d) {
-                  setField("driver_name", String(d.name ?? ""));
-                  setField("driver_document", String(d.document_number ?? d.license ?? ""));
-                }
+            <LocalCatalogSearchField
+              selected={driverSel}
+              rows={drivers}
+              labelKeys={["name", "description"]}
+              docKey="document_number"
+              placeholder="Buscar conductor por DNI o nombre..."
+              onSelect={(item) => {
+                setDriverSel(item);
+                const d = drivers.find((x) => String(x.id) === item.id);
+                setExtra({ driver_id: item.id, driver_label: item.name });
+                setField("driver_name", item.name);
+                setField("driver_document", String(d?.document_number ?? d?.license ?? item.document_number ?? ""));
               }}
-            >
-              <option value="">Seleccionar conductor</option>
-              {drivers.map((d) => (
-                <option key={String(d.id)} value={String(d.id)}>
-                  {String(d.document_number ?? "")} — {String(d.name ?? d.description ?? "")}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
           <Field label="Datos del vehículo secundario">
-            <select
-              className="ify-select"
-              value={form.extra.secondary_vehicle_id ?? ""}
-              onChange={(e) => {
-                const v = vehicles.find((x) => String(x.id) === e.target.value);
-                setExtra({
-                  secondary_vehicle_id: e.target.value,
-                  secondary_vehicle_label: v ? String(v.plate ?? v.name ?? "") : "",
-                });
+            <LocalCatalogSearchField
+              selected={secondaryVehicleSel}
+              rows={vehicles}
+              labelKeys={["plate", "brand", "model", "name"]}
+              docKey="plate"
+              placeholder="Buscar vehículo secundario..."
+              onSelect={(item) => {
+                setSecondaryVehicleSel(item);
+                setExtra({ secondary_vehicle_id: item.id, secondary_vehicle_label: item.document_number || item.name });
               }}
-            >
-              <option value="">Seleccionar vehículo</option>
-              {vehicles.map((v) => (
-                <option key={String(v.id)} value={String(v.id)}>
-                  {String(v.plate ?? v.name ?? "Vehículo")}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
           <Field label="Datos del conductor secundario">
-            <select
-              className="ify-select"
-              value={form.extra.secondary_driver_id ?? ""}
-              onChange={(e) => {
-                const d = drivers.find((x) => String(x.id) === e.target.value);
-                setExtra({
-                  secondary_driver_id: e.target.value,
-                  secondary_driver_label: d ? String(d.name ?? "") : "",
-                });
+            <LocalCatalogSearchField
+              selected={secondaryDriverSel}
+              rows={drivers}
+              labelKeys={["name", "description"]}
+              docKey="document_number"
+              placeholder="Buscar conductor secundario..."
+              onSelect={(item) => {
+                setSecondaryDriverSel(item);
+                setExtra({ secondary_driver_id: item.id, secondary_driver_label: item.name });
               }}
-            >
-              <option value="">Seleccionar conductor</option>
-              {drivers.map((d) => (
-                <option key={String(d.id)} value={String(d.id)}>
-                  {String(d.document_number ?? "")} — {String(d.name ?? d.description ?? "")}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
           <Field label="Motivo traslado">
             <select className="ify-select" value={form.transfer_reason} onChange={(e) => setField("transfer_reason", e.target.value)}>

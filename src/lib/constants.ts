@@ -142,8 +142,10 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Guías de remisión",
     icon: "bi-truck",
     children: [
-      { label: "G.R. Remitente", href: "/dispatches/create" },
-      { label: "G.R. Transportista", href: "/dispatches-carrier/create" },
+      { label: "Nueva G.R. Remitente", href: "/dispatches/create" },
+      { label: "Listado G.R. Remitente", href: "/dispatches" },
+      { label: "Nueva G.R. Transportista", href: "/dispatches-carrier/create" },
+      { label: "Listado G.R. Transportista", href: "/dispatches-carrier" },
       { label: "Transportistas", href: "/transports" },
       { label: "Conductores", href: "/drivers" },
       { label: "Vehículos", href: "/vehicles" },

@@ -2191,12 +2191,10 @@ html.ify-dark ::-webkit-scrollbar-track {
 
 .doc-print-header-title {
   width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   text-align: center;
-  padding: 0 182px 0 0;
-}
-
-.doc-print-a5 .doc-print-header-title {
-  padding-right: 148px;
 }
 
 .doc-print-header-body {
@@ -2452,6 +2450,18 @@ html.ify-dark ::-webkit-scrollbar-track {
   text-transform: uppercase;
   line-height: 1.35;
   margin: 0;
+}
+
+.doc-print-guia-section {
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 9px;
+  margin-bottom: 8px;
+}
+
+.doc-print-guia-section p {
+  margin: 2px 0;
 }
 
 .doc-print-doc-number {

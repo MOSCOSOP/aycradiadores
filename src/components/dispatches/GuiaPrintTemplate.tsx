@@ -1,46 +1,74 @@
 "use client";
 
-import { COMPANY_INFO, COMPROBANTE_ASSETS } from "@/lib/company-info";
+import { buildGuiaQrPayload, type GuiaPrintData } from "@/lib/comprobante/guia-print";
+import { sunatQrImageUrl } from "@/lib/comprobante/sunat-qr";
+import { formatReceiptNumber } from "@/lib/receipt-format";
 import { guideTypeLabel } from "@/lib/dispatch-fields";
-import type { GuiaPrintData } from "@/lib/comprobante/guia-print";
+import { COMPROBANTE_ASSETS, COMPANY_INFO } from "@/lib/company-info";
 
 type GuiaPrintTemplateProps = {
   data: GuiaPrintData;
   pageSize?: "A4" | "A5";
+  printId?: string;
 };
 
-export function GuiaPrintTemplate({ data, pageSize = "A4" }: GuiaPrintTemplateProps) {
+export function GuiaPrintTemplate({ data, pageSize = "A4", printId = "doc-print-area" }: GuiaPrintTemplateProps) {
   const extra = data.extra ?? {};
   const typeLabel = guideTypeLabel(data.guide_type);
+  const number = formatReceiptNumber(data.number);
+  const recipientDoc = extra.recipient_document ?? "";
+  const qrPayload = buildGuiaQrPayload({
+    guideType: data.guide_type,
+    number: data.number,
+    dateOfIssue: data.date_of_issue,
+    customerNumber: recipientDoc,
+  });
+  const qrUrl = sunatQrImageUrl(qrPayload, pageSize === "A5" ? 110 : 140);
 
   return (
-    <div id="doc-print-area" className={`guia-print-sheet ${pageSize === "A5" ? "guia-print-a5" : ""}`}>
-      <div className="guia-print-inner">
-        <header className="guia-print-header">
-          <div className="guia-print-header-title">
+    <div
+      id={printId}
+      className={`doc-print-sheet mx-auto bg-white text-black shadow-sm ${pageSize === "A5" ? "doc-print-a5" : "doc-print-a4"}`}
+    >
+      <div className="doc-print-inner">
+        <header className="doc-print-header">
+          <div className="doc-print-header-title">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={COMPROBANTE_ASSETS.titulo} alt={COMPANY_INFO.tradeName} className="guia-print-titulo" />
+            <img src={COMPROBANTE_ASSETS.titulo} alt={COMPANY_INFO.tradeName} className="doc-print-titulo" />
           </div>
-          <div className="guia-print-header-body">
-            <div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={COMPROBANTE_ASSETS.logo} alt="Logo" className="guia-print-logo" />
+          <div className="doc-print-header-body">
+            <div className="doc-print-header-left">
+              <div className="doc-print-logo-wrap">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={COMPROBANTE_ASSETS.logo} alt="Logo" className="doc-print-logo" />
+              </div>
+              <div className="doc-print-sello-wrap">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={COMPROBANTE_ASSETS.sello} alt="Sello A&C" className="doc-print-sello" />
+              </div>
             </div>
-            <div style={{ textAlign: "center", fontSize: "9px" }}>
-              <p><span className="guia-print-label">De:</span> {COMPANY_INFO.legalName}</p>
-              <p>Cel: {COMPANY_INFO.phone}{COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}</p>
-              <p>Correo: {COMPANY_INFO.email}</p>
-              <p>Av.: {COMPANY_INFO.address}</p>
+            <div className="doc-print-brand-center">
+              <div className="doc-print-contact-box">
+                <p className="doc-print-meta">
+                  <span className="doc-print-label">De:</span> {extra.sender_name || COMPANY_INFO.legalName}
+                </p>
+              </div>
+              <p className="doc-print-meta">
+                Cel: {COMPANY_INFO.phone}
+                {COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}
+              </p>
+              <p className="doc-print-meta doc-print-email">Correo elec: {COMPANY_INFO.email}</p>
+              <p className="doc-print-meta">Av.: {COMPANY_INFO.address.replace(/^Av\.\s*/i, "")}</p>
             </div>
-            <div className="guia-print-docbox">
+            <div className="doc-print-docbox">
               <p>R.U.C. {COMPANY_INFO.ruc}</p>
-              <p className="guia-print-doc-type">{typeLabel}</p>
-              <p style={{ fontWeight: 700 }}>Nro. {data.number}</p>
+              <p className="doc-print-doc-type">{typeLabel}</p>
+              <p className="doc-print-doc-number">Nro. {number}</p>
             </div>
           </div>
         </header>
 
-        <table className="guia-print-meta-table">
+        <table className="doc-print-meta-table">
           <thead>
             <tr>
               <th>F. Emisión</th>
@@ -65,49 +93,105 @@ export function GuiaPrintTemplate({ data, pageSize = "A4" }: GuiaPrintTemplatePr
           </tbody>
         </table>
 
-        <div className="guia-print-section">
-          <p><span className="guia-print-label">Remitente:</span> {extra.sender_name || COMPANY_INFO.legalName}</p>
-          <p><span className="guia-print-label">Destinatario:</span> {extra.recipient_name || data.customer_name}</p>
-          <p><span className="guia-print-label">Punto de partida:</span> {data.origin_address || "—"}</p>
-          <p><span className="guia-print-label">Punto de llegada:</span> {data.dest_address || "—"}</p>
+        <section className="doc-print-guia-section">
+          <p>
+            <span className="doc-print-label">Remitente:</span> {extra.sender_name || COMPANY_INFO.legalName}
+          </p>
+          <p>
+            <span className="doc-print-label">Destinatario:</span> {extra.recipient_name || data.customer_name}
+          </p>
+          <p>
+            <span className="doc-print-label">Punto de partida:</span> {data.origin_address || "—"}
+          </p>
+          <p>
+            <span className="doc-print-label">Punto de llegada:</span> {data.dest_address || "—"}
+          </p>
           {data.guide_type === "31" && (
             <>
-              <p><span className="guia-print-label">Pagador flete:</span> {extra.freight_payer_name || "—"}</p>
-              <p><span className="guia-print-label">Subcontratada:</span> {extra.subcontractor_name || "—"}</p>
+              <p>
+                <span className="doc-print-label">Pagador flete:</span> {extra.freight_payer_name || "—"}
+              </p>
+              <p>
+                <span className="doc-print-label">Subcontratada:</span> {extra.subcontractor_name || "—"}
+              </p>
             </>
           )}
-          <p><span className="guia-print-label">Vehículo:</span> {extra.vehicle_label || data.vehicle_plate || "—"}</p>
-          <p><span className="guia-print-label">Conductor:</span> {data.driver_name || extra.driver_label || "—"} {data.driver_document ? `(${data.driver_document})` : ""}</p>
+          <p>
+            <span className="doc-print-label">Vehículo:</span> {extra.vehicle_label || data.vehicle_plate || "—"}
+          </p>
+          <p>
+            <span className="doc-print-label">Conductor:</span> {data.driver_name || extra.driver_label || "—"}
+            {data.driver_document ? ` (${data.driver_document})` : ""}
+          </p>
           {(extra.secondary_vehicle_label || extra.secondary_driver_label) && (
-            <p><span className="guia-print-label">Secundario:</span> {extra.secondary_vehicle_label || "—"} / {extra.secondary_driver_label || "—"}</p>
+            <p>
+              <span className="doc-print-label">Secundario:</span> {extra.secondary_vehicle_label || "—"} /{" "}
+              {extra.secondary_driver_label || "—"}
+            </p>
           )}
-          {data.purchase_order && <p><span className="guia-print-label">O/C:</span> {data.purchase_order}</p>}
-          {data.observations && <p><span className="guia-print-label">Obs.:</span> {data.observations}</p>}
+          {data.purchase_order && (
+            <p>
+              <span className="doc-print-label">O/C:</span> {data.purchase_order}
+            </p>
+          )}
+          {data.observations && (
+            <p>
+              <span className="doc-print-label">Obs.:</span> {data.observations}
+            </p>
+          )}
           {extra.related_guides?.length ? (
-            <p><span className="guia-print-label">G.R. relacionadas:</span> {extra.related_guides.join(", ")}</p>
+            <p>
+              <span className="doc-print-label">G.R. relacionadas:</span> {extra.related_guides.join(", ")}
+            </p>
           ) : null}
-        </div>
+        </section>
 
-        <table className="guia-print-table">
+        <table className="doc-print-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Unidad</th>
-              <th>Descripción</th>
-              <th>Cantidad / Peso</th>
+              <th className="col-qty">#</th>
+              <th className="col-unit">Unidad</th>
+              <th className="col-desc">Descripción</th>
+              <th className="col-total">Cantidad / Peso</th>
             </tr>
           </thead>
           <tbody>
             {data.items.map((item, idx) => (
               <tr key={idx}>
-                <td>{idx + 1}</td>
-                <td>{item.unit_type_id || data.unit_measure}</td>
-                <td>{item.description}</td>
-                <td style={{ textAlign: "right" }}>{item.quantity}</td>
+                <td className="col-qty">{idx + 1}</td>
+                <td className="col-unit">{item.unit_type_id || data.unit_measure}</td>
+                <td className="col-desc">{item.description}</td>
+                <td className="col-total">{item.quantity}</td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        <div className="doc-print-legal-row">
+          <div className="doc-print-detraction">
+            <p className="doc-print-label">{COMPANY_INFO.detractionLabel}</p>
+            <p>{COMPANY_INFO.detractionBank}</p>
+          </div>
+          <div className="doc-print-qr-wrap">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrUrl} alt="QR SUNAT" className="doc-print-qr" />
+          </div>
+        </div>
+
+        <footer className="doc-print-representation">
+          <p>
+            REPRESENTACIÓN IMPRESA DE {typeLabel}. RESOLUCION DE SUPERINTENDENCIA N° 155-2017/SUNAT.
+          </p>
+        </footer>
+
+        <div className="doc-print-brands">
+          {COMPROBANTE_ASSETS.brands.map((src) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={src} src={src} alt="" className="doc-print-brand-logo" />
+          ))}
+        </div>
+
+        <p className="doc-print-service-footer">{COMPANY_INFO.footerServiceText}</p>
       </div>
     </div>
   );

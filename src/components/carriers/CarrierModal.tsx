@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Modal, Field } from "@/components/ui/Modal";
+import { lookupDocument } from "@/lib/document-lookup";
 import { api } from "@/lib/api/client";
 
 export type CarrierFormData = {
@@ -37,12 +38,19 @@ type CarrierModalProps = {
 };
 
 export function CarrierModal({ open, onClose, onSaved, editId }: CarrierModalProps) {
-  const [form, setForm] = useState<CarrierFormData>(emptyCarrierForm);
+  const [form, setForm] = useState<CarrierFormData>(emptyCarrierForm());
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [looking, setLooking] = useState(false);
+  const [lookupMsg, setLookupMsg] = useState("");
+
+  const isDni = form.identity_document_type_id === "1";
+  const isRuc = form.identity_document_type_id === "6";
+  const canLookup = isDni || isRuc;
 
   useEffect(() => {
     if (!open) return;
+    setLookupMsg("");
     if (editId) {
       setLoading(true);
       api.generic
@@ -65,25 +73,27 @@ export function CarrierModal({ open, onClose, onSaved, editId }: CarrierModalPro
     }
   }, [open, editId]);
 
-  const lookupSunat = async () => {
-    if (form.identity_document_type_id !== "6" || form.document_number.length !== 11) {
-      alert("Ingrese un RUC válido de 11 dígitos");
+  const handleLookup = async () => {
+    const num = form.document_number.replace(/\D/g, "");
+    if (!num) {
+      setLookupMsg("Ingrese el número de documento");
       return;
     }
+    setLooking(true);
+    setLookupMsg("");
     try {
-      const res = await api.customers.search(form.document_number, 5);
-      const hit = (res.data ?? []).find((r) => String(r.number) === form.document_number);
-      if (hit) {
-        setForm((f) => ({
-          ...f,
-          name: String(hit.name ?? f.name),
-          address: String(hit.address ?? f.address),
-        }));
-      } else {
-        alert("No se encontró el RUC en SUNAT/local. Complete los datos manualmente.");
-      }
-    } catch {
-      alert("No se pudo consultar SUNAT. Complete los datos manualmente.");
+      const data = await lookupDocument(form.identity_document_type_id, num);
+      setForm((f) => ({
+        ...f,
+        document_number: data.number,
+        name: data.name || f.name,
+        address: data.address || f.address,
+      }));
+      setLookupMsg(isDni ? "Datos del DNI cargados" : "Datos del RUC cargados desde SUNAT");
+    } catch (e) {
+      setLookupMsg(e instanceof Error ? e.message : "No se pudo consultar");
+    } finally {
+      setLooking(false);
     }
   };
 
@@ -107,7 +117,8 @@ export function CarrierModal({ open, onClose, onSaved, editId }: CarrierModalPro
       const res = editId
         ? await api.generic.update("transports", editId, payload)
         : await api.generic.create("transports", payload);
-      onSaved((res as { data?: Record<string, unknown> }).data ?? payload);
+      const saved = (res as { data?: Record<string, unknown> }).data ?? { ...payload, id: Date.now() };
+      onSaved(saved);
       onClose();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Error al guardar transportista");
@@ -141,7 +152,9 @@ export function CarrierModal({ open, onClose, onSaved, editId }: CarrierModalPro
             <select
               className="ify-select"
               value={form.identity_document_type_id}
-              onChange={(e) => setForm({ ...form, identity_document_type_id: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, identity_document_type_id: e.target.value, document_number: "", name: "" })
+              }
             >
               {DOC_TYPES.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -155,16 +168,22 @@ export function CarrierModal({ open, onClose, onSaved, editId }: CarrierModalPro
               <input
                 className="ify-input flex-1"
                 value={form.document_number}
-                maxLength={form.identity_document_type_id === "6" ? 11 : 20}
+                maxLength={isDni ? 8 : isRuc ? 11 : 20}
                 onChange={(e) => setForm({ ...form, document_number: e.target.value.replace(/\D/g, "") })}
-                placeholder={form.identity_document_type_id === "6" ? "11 dígitos" : "N° documento"}
+                placeholder={isDni ? "8 dígitos" : isRuc ? "11 dígitos" : "N° documento"}
               />
-              {form.identity_document_type_id === "6" && (
-                <button type="button" className="ify-btn-outline whitespace-nowrap px-3 text-xs" onClick={lookupSunat}>
-                  <i className="bi bi-search" /> SUNAT
+              {canLookup && (
+                <button
+                  type="button"
+                  className="ify-btn-outline whitespace-nowrap px-3 text-xs"
+                  onClick={handleLookup}
+                  disabled={looking}
+                >
+                  {looking ? "..." : isRuc ? "SUNAT" : "Buscar"}
                 </button>
               )}
             </div>
+            {lookupMsg ? <p className="mt-1 text-xs text-[var(--muted)]">{lookupMsg}</p> : null}
           </Field>
           <Field label="Nombre *" className="sm:col-span-2">
             <input className="ify-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -177,11 +196,7 @@ export function CarrierModal({ open, onClose, onSaved, editId }: CarrierModalPro
           </Field>
           <Field label="Predeterminado">
             <label className="flex cursor-pointer items-center gap-2 pt-2">
-              <input
-                type="checkbox"
-                checked={form.is_default}
-                onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
-              />
+              <input type="checkbox" checked={form.is_default} onChange={(e) => setForm({ ...form, is_default: e.target.checked })} />
               <span className="text-sm">Usar como transportista predeterminado</span>
             </label>
           </Field>

@@ -6,8 +6,7 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-a5 { max-width: 148mm; font-size: 90%; }
   .doc-print-inner { padding: 6mm; }
   .doc-print-header { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
-  .doc-print-header-title { width: 100%; text-align: center; padding: 0 182px 0 0; }
-  .doc-print-a5 .doc-print-header-title { padding-right: 148px; }
+  .doc-print-header-title { width: 100%; display: flex; justify-content: center; align-items: center; text-align: center; }
   .doc-print-header-body { display: grid; grid-template-columns: minmax(168px, auto) minmax(0, 1fr) 182px; gap: 8px; align-items: start; }
   .doc-print-a5 .doc-print-header-body { grid-template-columns: minmax(140px, auto) minmax(0, 1fr) 148px; gap: 5px; }
   .doc-print-header-left { display: flex; align-items: flex-start; gap: 4px; flex-shrink: 0; }
@@ -64,6 +63,8 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-brands { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 12px 0 8px; padding: 0 4px; }
   .doc-print-brand-logo { height: 72px; width: auto; max-width: 23%; object-fit: contain; }
   .doc-print-service-footer { text-align: center; font-size: 8px; font-weight: 700; text-transform: uppercase; line-height: 1.35; margin: 0; }
+  .doc-print-guia-section { border: 1px solid #bbb; border-radius: 6px; padding: 8px 10px; font-size: 9px; margin-bottom: 8px; }
+  .doc-print-guia-section p { margin: 2px 0; }
 `;
 
 export function pageRuleForSize(pageSize: "A4" | "A5"): string {
