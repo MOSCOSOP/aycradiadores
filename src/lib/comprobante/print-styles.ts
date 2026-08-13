@@ -7,14 +7,13 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-inner { padding: 5mm; }
   .doc-print-a5 .doc-print-inner { padding: 4mm; }
   .doc-print-header { margin-bottom: 6px; }
-  .doc-print-header-main { display: grid; grid-template-columns: auto minmax(0, 1fr) 162px; gap: 0 4px; align-items: center; }
-  .doc-print-a5 .doc-print-header-main { grid-template-columns: auto minmax(0, 1fr) 132px; gap: 0 3px; }
-  .doc-print-header-left { display: flex; flex-direction: row; align-items: center; gap: 22mm; flex-shrink: 0; }
-  .doc-print-a5 .doc-print-header-left { gap: 14mm; }
+  .doc-print-header-main { position: relative; display: grid; grid-template-columns: 108px minmax(0, 1fr) 162px; gap: 0 4px; align-items: center; }
+  .doc-print-a5 .doc-print-header-main { grid-template-columns: 78px minmax(0, 1fr) 132px; gap: 0 3px; }
+  .doc-print-header-left { display: flex; flex-direction: row; align-items: center; gap: 0; flex-shrink: 0; }
   .doc-print-logo-wrap { width: 108px; text-align: center; line-height: 0; }
   .doc-print-a5 .doc-print-logo-wrap { width: 78px; }
-  .doc-print-sello { height: 52px; width: auto; max-width: 108px; object-fit: contain; flex-shrink: 0; display: block; margin-left: 0; }
-  .doc-print-a5 .doc-print-sello { height: 38px; max-width: 80px; margin-left: 0; }
+  .doc-print-sello { position: absolute; left: calc(108px + 22mm); top: 58%; transform: translateY(-50%); height: 52px; width: auto; max-width: 108px; object-fit: contain; z-index: 1; pointer-events: none; }
+  .doc-print-a5 .doc-print-sello { left: calc(78px + 14mm); height: 38px; max-width: 80px; }
   .doc-print-header-center { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; }
   .doc-print-titulo { display: block; width: auto; max-width: 100%; height: auto; max-height: 28px; object-fit: contain; object-position: center center; margin: 0 auto; }
   .doc-print-a5 .doc-print-titulo { max-height: 22px; }

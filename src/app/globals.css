@@ -2194,14 +2194,15 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-header-main {
+  position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 162px;
+  grid-template-columns: 108px minmax(0, 1fr) 162px;
   gap: 0 4px;
   align-items: center;
 }
 
 .doc-print-a5 .doc-print-header-main {
-  grid-template-columns: auto minmax(0, 1fr) 132px;
+  grid-template-columns: 78px minmax(0, 1fr) 132px;
   gap: 0 3px;
 }
 
@@ -2209,7 +2210,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 22mm;
+  gap: 0;
   flex-shrink: 0;
 }
 
@@ -2224,23 +2225,22 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-sello {
+  position: absolute;
+  left: calc(108px + 22mm);
+  top: 58%;
+  transform: translateY(-50%);
   height: 52px;
   width: auto;
   max-width: 108px;
   object-fit: contain;
-  flex-shrink: 0;
-  display: block;
-  margin-left: 0;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .doc-print-a5 .doc-print-sello {
+  left: calc(78px + 14mm);
   height: 38px;
   max-width: 80px;
-  margin-left: 0;
-}
-
-.doc-print-a5 .doc-print-header-left {
-  gap: 14mm;
 }
 
 .doc-print-header-center {
