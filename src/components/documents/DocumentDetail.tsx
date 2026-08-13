@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { api } from "@/lib/api/client";
 import { PageHeader } from "@/components/ui/Modal";
 import { DocumentPrintTemplate } from "@/components/documents/DocumentPrintTemplate";
+import { DocPrintViewport } from "@/components/documents/DocPrintViewport";
 import { DocumentSendPanel } from "@/components/documents/DocumentSendPanel";
 import { buildReceiptFromApiDoc } from "@/lib/comprobante/build-receipt-data";
 
@@ -109,8 +110,10 @@ export function DocumentDetail() {
         </div>
       </div>
 
-      <div className="ify-card mt-4 overflow-x-auto p-4">
-        <DocumentPrintTemplate receipt={receipt} />
+      <div className="ify-card mt-4 overflow-hidden p-4">
+        <DocPrintViewport>
+          <DocumentPrintTemplate receipt={receipt} />
+        </DocPrintViewport>
       </div>
 
       <DocumentSendPanel

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DocumentPrintTemplate, printDocument } from "@/components/documents/DocumentPrintTemplate";
+import { DocPrintViewport } from "@/components/documents/DocPrintViewport";
 import type { ReceiptData } from "@/lib/comprobante/types";
 
 export function PublicComprobanteView({ receipt }: { receipt: ReceiptData }) {
@@ -29,7 +30,9 @@ export function PublicComprobanteView({ receipt }: { receipt: ReceiptData }) {
         </button>
       </div>
       <div className="px-2">
-        <DocumentPrintTemplate receipt={receipt} scale={printSize === "A5" ? "a5" : "normal"} />
+        <DocPrintViewport>
+          <DocumentPrintTemplate receipt={receipt} scale={printSize === "A5" ? "a5" : "normal"} />
+        </DocPrintViewport>
       </div>
       <p className="mx-auto mt-4 max-w-[210mm] px-4 text-center text-xs text-[#666]">
         Comprobante electrónico emitido por A&amp;C Radiadores. Este enlace es de solo consulta.

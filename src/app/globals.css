@@ -2199,42 +2199,42 @@ html.ify-dark ::-webkit-scrollbar-track {
 
 .doc-print-header-body {
   display: grid;
-  grid-template-columns: minmax(168px, auto) minmax(0, 1fr) 182px;
-  gap: 8px;
+  grid-template-columns: minmax(200px, auto) minmax(0, 1fr) 182px;
+  gap: 6px;
   align-items: start;
 }
 
 .doc-print-a5 .doc-print-header-body {
-  grid-template-columns: minmax(140px, auto) minmax(0, 1fr) 148px;
-  gap: 5px;
+  grid-template-columns: minmax(168px, auto) minmax(0, 1fr) 148px;
+  gap: 4px;
 }
 
 .doc-print-header-left {
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
 .doc-print-logo-wrap {
   flex-shrink: 0;
-  width: 100px;
+  width: 130px;
   text-align: center;
 }
 
 .doc-print-sello-wrap {
   flex-shrink: 0;
-  width: 72px;
+  width: 88px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 8px;
+  padding-top: 4px;
 }
 
 .doc-print-sello {
-  width: 68px;
+  width: 82px;
   height: auto;
-  max-height: 72px;
+  max-height: 88px;
   object-fit: contain;
 }
 
@@ -2268,8 +2268,8 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-logo {
-  width: 96px !important;
-  height: 96px !important;
+  width: 124px !important;
+  height: 124px !important;
   object-fit: contain;
   display: block;
   margin: 0 auto;
@@ -2333,15 +2333,15 @@ html.ify-dark ::-webkit-scrollbar-track {
 .doc-print-titulo {
   display: block;
   width: auto;
-  max-width: 100%;
+  max-width: 92%;
   height: auto;
-  max-height: 70px;
+  max-height: 48px;
   object-fit: contain;
   margin: 0 auto;
 }
 
 .doc-print-a5 .doc-print-titulo {
-  max-height: 56px;
+  max-height: 40px;
 }
 .doc-print-email { color: #0d6efd; }
 .doc-print-inline-sep { margin-left: 12px; font-weight: 700; }
@@ -2350,6 +2350,9 @@ html.ify-dark ::-webkit-scrollbar-track {
   border-collapse: collapse;
   font-size: 8px;
   margin-bottom: 8px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  overflow: hidden;
 }
 .doc-print-meta-table th,
 .doc-print-meta-table td {
@@ -2374,6 +2377,9 @@ html.ify-dark ::-webkit-scrollbar-track {
   width: 100%;
   border-collapse: collapse;
   font-size: 9px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  overflow: hidden;
 }
 .doc-print-totals-table th,
 .doc-print-totals-table td {
@@ -2404,6 +2410,9 @@ html.ify-dark ::-webkit-scrollbar-track {
   border-collapse: collapse;
   font-size: 8px;
   margin-bottom: 8px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  overflow: hidden;
 }
 .doc-print-bank-table th,
 .doc-print-bank-table td {
@@ -2433,23 +2442,43 @@ html.ify-dark ::-webkit-scrollbar-track {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin: 12px 0 8px;
-  padding: 0 4px;
+  gap: 8px;
+  margin: 14px 0 10px;
+  padding: 0 2px;
 }
 .doc-print-brand-logo {
-  height: 72px;
+  height: 100px;
   width: auto;
-  max-width: 23%;
+  max-width: 24%;
   object-fit: contain;
+}
+.doc-print-a5 .doc-print-brand-logo {
+  height: 78px;
 }
 .doc-print-service-footer {
   text-align: center;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  line-height: 1.35;
+  line-height: 1.45;
   margin: 0;
+  padding: 0 4px;
+}
+.doc-print-a5 .doc-print-service-footer {
+  font-size: 8.5px;
+}
+
+.doc-print-viewport {
+  overflow: hidden;
+}
+.doc-print-viewport-spacer {
+  position: relative;
+  width: 100%;
+}
+.doc-print-viewport-inner {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .doc-print-guia-section {
@@ -2538,6 +2567,9 @@ html.ify-dark ::-webkit-scrollbar-track {
   border-collapse: collapse;
   font-size: 9px;
   margin-bottom: 8px;
+  border: 1px solid #888;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .doc-print-table thead th {
@@ -2551,7 +2583,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-table tbody td {
-  border-bottom: 1px solid #ddd;
+  border: 1px solid #ccc;
   padding: 4px 5px;
   vertical-align: top;
 }
