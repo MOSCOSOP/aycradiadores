@@ -23,10 +23,16 @@ export async function getSunatOAuthToken(config: CompanySunatConfig): Promise<Su
 
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Token SUNAT ${res.status}: ${text.slice(0, 300)}`);
+    throw new Error(`Token SUNAT ${res.status}: ${text.slice(0, 300) || "sin detalle"}`);
   }
-
-  return JSON.parse(text) as SunatTokenResponse;
+  if (!text.trim()) {
+    throw new Error("SUNAT devolvió respuesta vacía. Verifique Client ID y Client Secret guardados.");
+  }
+  try {
+    return JSON.parse(text) as SunatTokenResponse;
+  } catch {
+    throw new Error(`Respuesta SUNAT no válida: ${text.slice(0, 200)}`);
+  }
 }
 
 export async function testSunatApiConnection(config: CompanySunatConfig) {

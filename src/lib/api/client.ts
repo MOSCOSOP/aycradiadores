@@ -12,11 +12,18 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { Accept: "application/json", ...init?.headers },
   });
+  const raw = await res.text();
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+    try {
+      const err = raw ? JSON.parse(raw) : { error: res.statusText };
+      throw new Error(err.error || `HTTP ${res.status}`);
+    } catch (e) {
+      if (e instanceof Error && e.message !== res.statusText) throw e;
+      throw new Error(raw || res.statusText || `HTTP ${res.status}`);
+    }
   }
-  return res.json() as Promise<T>;
+  if (!raw.trim()) return {} as T;
+  return JSON.parse(raw) as T;
 }
 
 function local(path: string, query?: PaginatedQuery) {

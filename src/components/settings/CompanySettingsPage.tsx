@@ -105,10 +105,18 @@ export function CompanySettingsPage() {
   const runTest = async (kind: "soap" | "api" | "sire") => {
     setTestMsg("");
     try {
+      if (kind === "api" && String(form.api_sunat_secret).trim()) {
+        await api.company.update({
+          ...form,
+          api_sunat_secret: form.api_sunat_secret,
+        });
+        setMsg("Client Secret guardado antes de probar API");
+      }
       const fn =
         kind === "soap" ? api.company.testSoap : kind === "api" ? api.company.testApi : api.company.testSire;
       const res = await fn();
       setTestMsg((res as { message?: string }).message || "Conexión exitosa");
+      if (kind === "api") load();
     } catch (e) {
       setTestMsg(e instanceof Error ? e.message : "Error de conexión");
     }
@@ -320,6 +328,10 @@ export function CompanySettingsPage() {
             <input type="password" className="ify-input mt-1" value={String(form.api_sunat_secret)} onChange={(e) => set("api_sunat_secret", e.target.value)} placeholder={configStatus.has_api_secret ? "•••••••• (guardada — vacío = no cambiar)" : "Pegue el Client Secret de SUNAT"} />
           </label>
         </div>
+        <p className="mt-2 text-xs text-[var(--muted)]">
+          La API SUNAT es para SIRE/consultas. <strong>No es necesaria para emitir boletas</strong> (eso usa SOAP, que ya funciona).
+          Pegue el Client Secret y pulse <strong>Guardar</strong>, o use <strong>Probar API</strong> (guarda el secret automáticamente si lo escribió).
+        </p>
         {testMsg && <p className="mt-3 text-sm text-[var(--foreground)]">{testMsg}</p>}
       </section>
 
