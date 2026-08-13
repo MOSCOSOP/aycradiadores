@@ -635,6 +635,48 @@ export async function handleLocalApi(
     return { success: true, data };
   }
 
+  if (method === "POST" && path === "company/upload-certificate") {
+    const { getCompanyApiRecord } = await import("@/lib/sunat/company-config");
+    const { certificateFileToPem } = await import("@/lib/sunat/certificate-utils");
+    const p = (body || {}) as Record<string, unknown>;
+    const filename = String(p.filename || "certificado.p12");
+    const password = String(p.password || "");
+    const fileBase64 = String(p.file_base64 || "");
+    if (!fileBase64) throw new Error("Falta el archivo del certificado");
+
+    const buffer = Buffer.from(fileBase64, "base64");
+    const converted = certificateFileToPem(buffer, filename, password);
+
+    const existing = await prisma.company.findFirst();
+    const certLabel = filename.replace(/\.(p12|pfx|pem|crt)$/i, ".pem");
+    const updateData = {
+      certificate: certLabel,
+      certificatePem: converted.pem,
+      ...(password ? { certificatePassword: password } : {}),
+      ...(converted.validTo ? { certificateDue: new Date(converted.validTo) } : {}),
+    };
+
+    if (existing) {
+      await prisma.company.update({ where: { id: existing.id }, data: updateData });
+    } else {
+      await prisma.company.create({
+        data: {
+          name: "Empresa",
+          tradeName: "Empresa",
+          ruc: "00000000000",
+          ...updateData,
+        },
+      });
+    }
+
+    const data = await getCompanyApiRecord(true);
+    return {
+      success: true,
+      message: `Certificado cargado (${converted.certificateName})${converted.validTo ? ` — vigente hasta ${converted.validTo}` : ""}`,
+      data,
+    };
+  }
+
   if (method === "POST" && path === "company/test-soap") {
     const { getCompanySunatConfig } = await import("@/lib/sunat/company-config");
     const { testSoapConnection } = await import("@/lib/sunat/soap");

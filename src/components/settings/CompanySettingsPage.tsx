@@ -34,6 +34,11 @@ export function CompanySettingsPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [testMsg, setTestMsg] = useState("");
+  const [hasCertificate, setHasCertificate] = useState(false);
+  const [certificateDue, setCertificateDue] = useState<string | null>(null);
+  const [certPassword, setCertPassword] = useState("");
+  const [certUploading, setCertUploading] = useState(false);
+  const [certMsg, setCertMsg] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -62,6 +67,8 @@ export function CompanySettingsPage() {
           type_send_pse: Number(d.type_send_pse ?? 2),
           is_rus: Boolean(d.is_rus),
         });
+        setHasCertificate(Boolean(d.has_certificate));
+        setCertificateDue(d.certificate_due ? String(d.certificate_due) : null);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -99,6 +106,30 @@ export function CompanySettingsPage() {
       setTestMsg((res as { message?: string }).message || "Conexión exitosa");
     } catch (e) {
       setTestMsg(e instanceof Error ? e.message : "Error de conexión");
+    }
+  };
+
+  const uploadCertificate = async (file: File) => {
+    setCertUploading(true);
+    setCertMsg("");
+    try {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const file_base64 = btoa(binary);
+      const res = await api.company.uploadCertificate({
+        filename: file.name,
+        file_base64,
+        password: certPassword,
+      });
+      setCertMsg(res.message || "Certificado cargado correctamente");
+      setCertPassword("");
+      load();
+    } catch (e) {
+      setCertMsg(e instanceof Error ? e.message : "Error al subir certificado");
+    } finally {
+      setCertUploading(false);
     }
   };
 
@@ -143,6 +174,58 @@ export function CompanySettingsPage() {
       </section>
 
       <section className="ify-card mb-4 p-4">
+        <h2 className="mb-3 text-sm font-bold text-[var(--primary)]">Certificado digital SUNAT</h2>
+        <p className="mb-3 text-xs text-[var(--muted)]">
+          Suba el archivo <strong>certificado.p12</strong> que descargó de SUNAT. El sistema lo convierte a .pem y lo guarda en la base de datos (funciona en aycradiadores.vercel.app sin OpenSSL).
+        </p>
+        {hasCertificate ? (
+          <div className="mb-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+            Certificado cargado {form.certificate ? `(${form.certificate})` : ""}
+            {certificateDue ? ` — vigente hasta ${certificateDue}` : ""}
+          </div>
+        ) : (
+          <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Aún no hay certificado en el sistema. Suba su archivo .p12 de SUNAT.
+          </div>
+        )}
+        {certMsg && (
+          <div className={`mb-3 rounded border p-3 text-sm ${certMsg.includes("Error") || certMsg.toLowerCase().includes("incorrecta") || certMsg.toLowerCase().includes("no se") ? "border-red-200 bg-red-50 text-red-800" : "border-green-200 bg-green-50 text-green-800"}`}>
+            {certMsg}
+          </div>
+        )}
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="ify-label md:col-span-2">
+            Archivo certificado (.p12, .pfx o .pem)
+            <input
+              type="file"
+              accept=".p12,.pfx,.pem,.crt"
+              className="ify-input mt-1 py-2"
+              disabled={certUploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadCertificate(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <label className="ify-label md:col-span-2">
+            Contraseña del certificado (.p12)
+            <input
+              type="password"
+              className="ify-input mt-1"
+              value={certPassword}
+              onChange={(e) => setCertPassword(e.target.value)}
+              placeholder="Clave que SUNAT le dio al descargar el certificado"
+              autoComplete="new-password"
+            />
+          </label>
+        </div>
+        <p className="mt-2 text-xs text-[var(--muted)]">
+          También regístrelo en SUNAT → Comprobantes de pago → Certificado Digital → Agregar nuevo certificado (mismo archivo .p12).
+        </p>
+      </section>
+
+      <section className="ify-card mb-4 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-bold text-[var(--primary)]">SOAP SUNAT (emisión CPE)</h2>
           <button type="button" className="ify-btn-outline text-xs" onClick={() => runTest("soap")}>
@@ -158,8 +241,8 @@ export function CompanySettingsPage() {
             </select>
           </label>
           <label className="ify-label">
-            Certificado (.pem)
-            <input className="ify-input mt-1" value={String(form.certificate)} onChange={(e) => set("certificate", e.target.value)} placeholder="certificate_RUC.pem" />
+            Referencia certificado
+            <input className="ify-input mt-1 bg-[var(--background)]" readOnly value={String(form.certificate || (hasCertificate ? "Cargado en servidor" : ""))} placeholder="Se llena al subir el .p12" />
           </label>
           <label className="ify-label">
             Usuario SOL
@@ -179,7 +262,7 @@ export function CompanySettingsPage() {
           </label>
         </div>
         <p className="mt-2 text-xs text-[var(--muted)]">
-          En Vercel sube el certificado como variable <code>SUNAT_CERTIFICATE_BASE64</code> (contenido .pem en base64).
+          Suba el certificado en la sección de arriba. En Vercel también puede usar la variable opcional <code>SUNAT_CERTIFICATE_BASE64</code>.
         </p>
       </section>
 

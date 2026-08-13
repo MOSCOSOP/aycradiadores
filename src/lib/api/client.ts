@@ -407,6 +407,15 @@ export const api = {
       apiFetch<{ success: boolean; message: string }>(local("/company/test-api"), { method: "POST" }),
     testSire: () =>
       apiFetch<{ success: boolean; message: string }>(local("/company/test-sire"), { method: "POST" }),
+    uploadCertificate: (payload: { filename: string; file_base64: string; password?: string }) =>
+      apiFetch<{ success: boolean; message: string; data: Record<string, unknown> }>(
+        local("/company/upload-certificate"),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      ),
   },
 
   accounting: {
