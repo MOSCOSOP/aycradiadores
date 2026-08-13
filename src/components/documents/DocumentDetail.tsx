@@ -17,6 +17,9 @@ export function DocumentDetail() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState("");
+  const [sunatMsg, setSunatMsg] = useState("");
+  const [sunatOk, setSunatOk] = useState<boolean | null>(null);
+  const [sendingSunat, setSendingSunat] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -24,6 +27,18 @@ export function DocumentDetail() {
       setDoc(r.data);
       setItems((r.data.items as Record<string, unknown>[]) || []);
     }).finally(() => setLoading(false));
+
+    try {
+      const flash = sessionStorage.getItem("ify_sunat_flash");
+      if (flash) {
+        const parsed = JSON.parse(flash) as { ok?: boolean; message?: string };
+        setSunatOk(Boolean(parsed.ok));
+        setSunatMsg(String(parsed.message ?? ""));
+        sessionStorage.removeItem("ify_sunat_flash");
+      }
+    } catch {
+      /* ignore */
+    }
   }, [id]);
 
   const printDoc = () => {
@@ -58,6 +73,23 @@ export function DocumentDetail() {
     }
   };
 
+  const sendSunat = async () => {
+    setSendingSunat(true);
+    setSunatMsg("");
+    try {
+      const res = await api.documents.resend(Number(id));
+      setSunatOk(true);
+      setSunatMsg(res.message || "Enviado a SUNAT");
+      const refreshed = await api.documents.get(id);
+      setDoc(refreshed.data);
+    } catch (e) {
+      setSunatOk(false);
+      setSunatMsg(e instanceof Error ? e.message : "Error al enviar a SUNAT");
+    } finally {
+      setSendingSunat(false);
+    }
+  };
+
   if (loading) return <div className="p-5">Cargando...</div>;
   if (!doc) return <div className="p-5">Comprobante no encontrado</div>;
 
@@ -70,6 +102,11 @@ export function DocumentDetail() {
       />
 
       {msg && <div className="mb-3 rounded border border-green-200 bg-green-50 p-3 text-sm text-green-800">{msg}</div>}
+      {sunatMsg && (
+        <div className={`mb-3 rounded border p-3 text-sm ${sunatOk ? "border-green-200 bg-green-50 text-green-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
+          <strong>SUNAT:</strong> {sunatMsg}
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="ify-card p-4">
@@ -79,6 +116,8 @@ export function DocumentDetail() {
             <div className="flex justify-between"><dt className="text-[var(--muted)]">RUC/DNI</dt><dd>{String(doc.customer_number)}</dd></div>
             <div className="flex justify-between"><dt className="text-[var(--muted)]">Fecha</dt><dd>{String(doc.date_of_issue)}</dd></div>
             <div className="flex justify-between"><dt className="text-[var(--muted)]">Estado</dt><dd>{String(doc.state_type_description)}</dd></div>
+            <div className="flex justify-between"><dt className="text-[var(--muted)]">XML</dt><dd>{doc.has_xml ? "Sí" : "No"}</dd></div>
+            <div className="flex justify-between"><dt className="text-[var(--muted)]">CDR SUNAT</dt><dd>{doc.has_cdr ? "Sí" : "No"}</dd></div>
             {doc.plate ? (
               <div className="flex justify-between"><dt className="text-[var(--muted)]">Placa</dt><dd>{String(doc.plate)}</dd></div>
             ) : null}
@@ -90,6 +129,9 @@ export function DocumentDetail() {
         <div className="ify-card p-4">
           <h3 className="mb-3 font-bold">Acciones</h3>
           <div className="flex flex-wrap gap-2">
+            <button type="button" className="ify-btn-primary text-xs" onClick={sendSunat} disabled={sendingSunat}>
+              {sendingSunat ? "Enviando..." : "Enviar a SUNAT"}
+            </button>
             <button type="button" className="ify-btn-outline" onClick={printDoc}><i className="bi bi-printer" /> Imprimir</button>
             <button type="button" className="ify-btn-outline" onClick={() => setEmailOpen(true)}><i className="bi bi-envelope" /> Enviar email</button>
             <button type="button" className="ify-btn-outline" onClick={downloadPdf}><i className="bi bi-file-pdf" /> Descargar PDF</button>

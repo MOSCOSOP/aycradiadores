@@ -39,6 +39,8 @@ export function CompanySettingsPage() {
   const [certPassword, setCertPassword] = useState("");
   const [certUploading, setCertUploading] = useState(false);
   const [certMsg, setCertMsg] = useState("");
+  const [configStatus, setConfigStatus] = useState<Record<string, boolean>>({});
+  const [usesEnvCredentials, setUsesEnvCredentials] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -53,9 +55,9 @@ export function CompanySettingsPage() {
           trade_name: String(d.trade_name ?? ""),
           soap_send_id: String(d.soap_send_id ?? "01"),
           soap_type_id: String(d.soap_type_id ?? "02"),
-          soap_username: "",
+          soap_username: String(d.soap_username ?? ""),
           soap_password: "",
-          soap_sunat_username: "",
+          soap_sunat_username: String(d.soap_sunat_username ?? d.soap_username ?? ""),
           soap_sunat_password: "",
           api_sunat_id: String(d.api_sunat_id ?? ""),
           api_sunat_secret: "",
@@ -67,6 +69,9 @@ export function CompanySettingsPage() {
           type_send_pse: Number(d.type_send_pse ?? 2),
           is_rus: Boolean(d.is_rus),
         });
+        const st = (d.config_status as Record<string, boolean>) ?? {};
+        setConfigStatus(st);
+        setUsesEnvCredentials(Boolean(st.uses_env_credentials));
         setHasCertificate(Boolean(d.has_certificate));
         setCertificateDue(d.certificate_due ? String(d.certificate_due) : null);
       })
@@ -154,6 +159,33 @@ export function CompanySettingsPage() {
           {msg}
         </div>
       )}
+
+      <section className="ify-card mb-4 p-4">
+        <h2 className="mb-3 text-sm font-bold text-[var(--primary)]">Estado de configuración</h2>
+        <div className="grid gap-2 text-sm md:grid-cols-2">
+          <div className={configStatus.has_certificate ? "text-green-700" : "text-amber-700"}>
+            {configStatus.has_certificate ? "✓" : "○"} Certificado digital cargado
+          </div>
+          <div className={configStatus.has_soap_username ? "text-green-700" : "text-amber-700"}>
+            {configStatus.has_soap_username ? "✓" : "○"} Usuario SOL guardado
+            {form.soap_username ? ` (${form.soap_username})` : ""}
+          </div>
+          <div className={configStatus.has_soap_password ? "text-green-700" : "text-amber-700"}>
+            {configStatus.has_soap_password ? "✓" : "○"} Clave SOL guardada
+          </div>
+          <div className={configStatus.has_api_secret ? "text-green-700" : "text-amber-700"}>
+            {configStatus.has_api_secret ? "✓" : "○"} Client Secret API guardado
+          </div>
+        </div>
+        {usesEnvCredentials && (
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            Parte de las credenciales SOAP vienen de variables de entorno en Vercel (no se muestran completas por seguridad).
+          </p>
+        )}
+        <p className="mt-2 text-xs text-[var(--muted)]">
+          Las contraseñas nunca se vuelven a mostrar completas. Si el estado marca ✓, ya están guardadas — deje el campo de clave vacío para mantenerlas.
+        </p>
+      </section>
 
       <section className="ify-card mb-4 p-4">
         <h2 className="mb-3 text-sm font-bold text-[var(--primary)]">Datos generales</h2>
@@ -250,7 +282,7 @@ export function CompanySettingsPage() {
           </label>
           <label className="ify-label">
             Clave SOL
-            <input type="password" className="ify-input mt-1" value={String(form.soap_password)} onChange={(e) => set("soap_password", e.target.value)} placeholder="Dejar vacío para no cambiar" autoComplete="new-password" />
+            <input type="password" className="ify-input mt-1" value={String(form.soap_password)} onChange={(e) => set("soap_password", e.target.value)} placeholder={configStatus.has_soap_password ? "•••••••• (guardada — vacío = no cambiar)" : "Clave del usuario SOL"} autoComplete="new-password" />
           </label>
           <label className="ify-label">
             Usuario SOAP SUNAT
@@ -258,7 +290,7 @@ export function CompanySettingsPage() {
           </label>
           <label className="ify-label">
             Clave SOAP SUNAT
-            <input type="password" className="ify-input mt-1" value={String(form.soap_sunat_password)} onChange={(e) => set("soap_sunat_password", e.target.value)} placeholder="Dejar vacío para no cambiar" />
+            <input type="password" className="ify-input mt-1" value={String(form.soap_sunat_password)} onChange={(e) => set("soap_sunat_password", e.target.value)} placeholder={configStatus.has_soap_sunat_password ? "•••••••• (guardada — vacío = no cambiar)" : "Igual que clave SOL"} />
           </label>
         </div>
         <p className="mt-2 text-xs text-[var(--muted)]">
@@ -285,7 +317,7 @@ export function CompanySettingsPage() {
           </label>
           <label className="ify-label">
             Client Secret (api_sunat_secret)
-            <input type="password" className="ify-input mt-1" value={String(form.api_sunat_secret)} onChange={(e) => set("api_sunat_secret", e.target.value)} placeholder="Dejar vacío para no cambiar" />
+            <input type="password" className="ify-input mt-1" value={String(form.api_sunat_secret)} onChange={(e) => set("api_sunat_secret", e.target.value)} placeholder={configStatus.has_api_secret ? "•••••••• (guardada — vacío = no cambiar)" : "Pegue el Client Secret de SUNAT"} />
           </label>
         </div>
         {testMsg && <p className="mt-3 text-sm text-[var(--foreground)]">{testMsg}</p>}

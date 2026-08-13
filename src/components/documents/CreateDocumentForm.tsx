@@ -267,7 +267,7 @@ export function CreateDocumentForm() {
     }
     setSaving(true);
     try {
-      await api.documents.create({
+      const res = await api.documents.create({
         document_type_id: docTypeId,
         series_id: seriesId,
         establishment_id: establishmentId,
@@ -287,8 +287,30 @@ export function CreateDocumentForm() {
           unit_value: i.unitValue,
           unit_price: i.unitPrice,
         })),
-      });
-      router.push("/documents");
+      }) as { data?: { id?: number }; sunat?: { success?: boolean; message?: string } | null };
+
+      const docId = res.data?.id;
+      const sunat = res.sunat;
+      if (sunat?.message) {
+        const ok = sunat.success !== false;
+        sessionStorage.setItem(
+          "ify_sunat_flash",
+          JSON.stringify({
+            ok,
+            message: sunat.message,
+          })
+        );
+      } else {
+        sessionStorage.setItem(
+          "ify_sunat_flash",
+          JSON.stringify({
+            ok: false,
+            message: "Comprobante guardado localmente. No se intentó envío SUNAT (revise usuario SOL en Empresa).",
+          })
+        );
+      }
+
+      router.push(docId ? `/documents/${docId}` : "/documents");
     } catch (e) {
       alert(e instanceof Error ? e.message : "Error al guardar");
     } finally {

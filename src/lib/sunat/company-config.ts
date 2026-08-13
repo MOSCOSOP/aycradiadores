@@ -62,6 +62,19 @@ export function companyToApiRecord(c: NonNullable<CompanyRow>, maskSecrets = tru
     pending_ruc_name: c.pendingRucName,
     has_certificate: Boolean(c.certificatePem || envCert()),
     soap_type_description: c.soapTypeId === "01" ? "Beta" : "Producción",
+    config_status: {
+      has_certificate: Boolean(c.certificatePem || envCert()),
+      has_soap_username: Boolean(c.soapUsername || process.env.SUNAT_SOAP_USERNAME),
+      has_soap_password: Boolean(c.soapPassword || process.env.SUNAT_SOAP_PASSWORD),
+      has_soap_sunat_username: Boolean(c.soapSunatUsername || c.soapUsername || process.env.SUNAT_SOAP_SUNAT_USERNAME),
+      has_soap_sunat_password: Boolean(
+        c.soapSunatPassword || c.soapPassword || process.env.SUNAT_SOAP_SUNAT_PASSWORD
+      ),
+      has_api_secret: Boolean(c.apiSunatSecret || process.env.SUNAT_API_SECRET),
+      uses_env_credentials: Boolean(
+        !c.soapUsername && Boolean(process.env.SUNAT_SOAP_USERNAME || process.env.SUNAT_SOAP_PASSWORD)
+      ),
+    },
   };
 }
 
