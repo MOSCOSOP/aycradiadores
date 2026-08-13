@@ -84,11 +84,11 @@ export function DocumentPrintTemplate({
                   <p className="doc-print-meta doc-print-email">
                     Correo elec: {emisor?.email ?? COMPANY_INFO.email}
                   </p>
+                  <p className="doc-print-meta">
+                    Av.: {emisor?.direccion?.replace(/^Av\.\s*/i, "")}
+                  </p>
                 </div>
               </div>
-              <p className="doc-print-meta doc-print-address">
-                Av.: {emisor?.direccion?.replace(/^Av\.\s*/i, "")}
-              </p>
             </div>
             <div className="doc-print-docbox">
               <p>R.U.C. {emisor?.ruc}</p>

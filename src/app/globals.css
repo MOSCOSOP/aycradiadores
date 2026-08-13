@@ -2234,7 +2234,8 @@ html.ify-dark ::-webkit-scrollbar-track {
 .doc-print-header-brand-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -2262,15 +2263,15 @@ html.ify-dark ::-webkit-scrollbar-track {
   overflow: hidden;
 }
 
-.doc-print-de-line {
-  background: #e8f4fc;
-  padding: 1px 6px;
-  border-radius: 3px;
-  margin-bottom: 1px !important;
+.doc-print-brand-center .doc-print-meta {
+  margin: 0;
+  line-height: 1.25;
 }
 
-.doc-print-address {
-  margin-top: 2px !important;
+.doc-print-de-line {
+  background: #e8f4fc;
+  padding: 0 5px;
+  border-radius: 3px;
 }
 
 .doc-print-logo {
