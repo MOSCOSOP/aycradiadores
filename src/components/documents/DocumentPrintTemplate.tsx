@@ -51,12 +51,20 @@ export function DocumentPrintTemplate({
       <div className="doc-print-inner">
         <header className="doc-print-header">
           <div className="doc-print-header-main">
-            <div className="doc-print-logo-wrap">
+            <div className="doc-print-header-left">
+              <div className="doc-print-logo-wrap">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={emisor?.logo ?? COMPROBANTE_ASSETS.logo}
+                  alt="Logo A&C"
+                  className="doc-print-logo"
+                />
+              </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={emisor?.logo ?? COMPROBANTE_ASSETS.logo}
-                alt="Logo A&C"
-                className="doc-print-logo"
+                src={emisor?.sello ?? COMPROBANTE_ASSETS.sello}
+                alt="A&C"
+                className="doc-print-sello"
               />
             </div>
             <div className="doc-print-header-center">
@@ -66,28 +74,20 @@ export function DocumentPrintTemplate({
                 alt="RADIADORES & AIRE ACONDICIONADO"
                 className="doc-print-titulo"
               />
-              <div className="doc-print-header-brand-row">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={emisor?.sello ?? COMPROBANTE_ASSETS.sello}
-                  alt="A&C"
-                  className="doc-print-sello"
-                />
-                <div className="doc-print-contact">
-                  <p className="doc-print-meta">
-                    <span className="doc-print-label">De:</span> {emisor?.razonSocial}
-                  </p>
-                  <p className="doc-print-meta">
-                    Cel: {emisor?.telefono}
-                    {emisor?.telefono2 ? ` – ${emisor.telefono2}` : ""}
-                  </p>
-                  <p className="doc-print-meta doc-print-email">
-                    Correo elec: {emisor?.email ?? COMPANY_INFO.email}
-                  </p>
-                  <p className="doc-print-meta">
-                    Av.: {emisor?.direccion?.replace(/^Av\.\s*/i, "")}
-                  </p>
-                </div>
+              <div className="doc-print-contact">
+                <p className="doc-print-meta">
+                  <span className="doc-print-label">De:</span> {emisor?.razonSocial}
+                </p>
+                <p className="doc-print-meta">
+                  Cel: {emisor?.telefono}
+                  {emisor?.telefono2 ? ` – ${emisor.telefono2}` : ""}
+                </p>
+                <p className="doc-print-meta doc-print-email">
+                  Correo elec: {emisor?.email ?? COMPANY_INFO.email}
+                </p>
+                <p className="doc-print-meta">
+                  Av.: {emisor?.direccion?.replace(/^Av\.\s*/i, "")}
+                </p>
               </div>
             </div>
             <div className="doc-print-docbox">

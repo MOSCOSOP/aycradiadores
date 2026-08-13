@@ -33,9 +33,13 @@ export function GuiaPrintTemplate({ data, pageSize = "A4", printId = "doc-print-
       <div className="doc-print-inner">
         <header className="doc-print-header">
           <div className="doc-print-header-main">
-            <div className="doc-print-logo-wrap">
+            <div className="doc-print-header-left">
+              <div className="doc-print-logo-wrap">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={COMPROBANTE_ASSETS.logo} alt="Logo A&C" className="doc-print-logo" />
+              </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={COMPROBANTE_ASSETS.logo} alt="Logo A&C" className="doc-print-logo" />
+              <img src={COMPROBANTE_ASSETS.sello} alt="A&C" className="doc-print-sello" />
             </div>
             <div className="doc-print-header-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -44,22 +48,18 @@ export function GuiaPrintTemplate({ data, pageSize = "A4", printId = "doc-print-
                 alt="RADIADORES & AIRE ACONDICIONADO"
                 className="doc-print-titulo"
               />
-              <div className="doc-print-header-brand-row">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={COMPROBANTE_ASSETS.sello} alt="A&C" className="doc-print-sello" />
-                <div className="doc-print-contact">
-                  <p className="doc-print-meta">
-                    <span className="doc-print-label">De:</span> {COMPANY_INFO.name}
-                  </p>
-                  <p className="doc-print-meta">
-                    Cel: {COMPANY_INFO.phone}
-                    {COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}
-                  </p>
-                  <p className="doc-print-meta doc-print-email">Correo elec: {COMPANY_INFO.email}</p>
-                  <p className="doc-print-meta">
-                    Av.: {COMPANY_INFO.address.replace(/^Av\.\s*/i, "")}
-                  </p>
-                </div>
+              <div className="doc-print-contact">
+                <p className="doc-print-meta">
+                  <span className="doc-print-label">De:</span> {COMPANY_INFO.name}
+                </p>
+                <p className="doc-print-meta">
+                  Cel: {COMPANY_INFO.phone}
+                  {COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}
+                </p>
+                <p className="doc-print-meta doc-print-email">Correo elec: {COMPANY_INFO.email}</p>
+                <p className="doc-print-meta">
+                  Av.: {COMPANY_INFO.address.replace(/^Av\.\s*/i, "")}
+                </p>
               </div>
             </div>
             <div className="doc-print-docbox">
