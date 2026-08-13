@@ -15,13 +15,13 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-sello { position: absolute; left: calc(108px + 7mm); top: calc(58% + 2mm); transform: translateY(-50%); height: 52px; width: auto; max-width: 108px; object-fit: contain; z-index: 1; pointer-events: none; }
   .doc-print-a5 .doc-print-sello { left: calc(78px + 4mm); top: calc(58% + 2mm); height: 38px; max-width: 80px; }
   .doc-print-header-center { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; }
-  .doc-print-titulo { display: block; width: auto; max-width: 100%; height: auto; max-height: 32px; object-fit: contain; object-position: center center; margin: 0 auto; }
-  .doc-print-a5 .doc-print-titulo { max-height: 24px; }
+  .doc-print-titulo { display: block; width: auto; max-width: 100%; height: auto; max-height: 38px; object-fit: contain; object-position: center center; margin: 0 auto; }
+  .doc-print-a5 .doc-print-titulo { max-height: 28px; }
   .doc-print-contact { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; min-width: 0; }
   .doc-print-contact .doc-print-meta { margin: 0; line-height: 1.35; text-align: center; font-size: 11.5px; font-weight: 700; color: #111; }
   .doc-print-contact .doc-print-phone { color: #1d4ed8; }
   .doc-print-contact .doc-print-email { color: #1d4ed8; }
-  .doc-print-contact .doc-print-address { padding-left: 1.4em; }
+  .doc-print-contact .doc-print-address { padding-left: 2.8em; }
   .doc-print-logo { width: 104px; height: 104px; object-fit: contain; display: block; margin: 0 auto; }
   .doc-print-a5 .doc-print-logo { width: 74px; height: 74px; }
   .doc-print-meta { font-size: 10.5px; margin: 1px 0; line-height: 1.35; color: #222; }
