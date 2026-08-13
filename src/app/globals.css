@@ -2183,96 +2183,66 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-header {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   margin-bottom: 8px;
 }
 
-.doc-print-header-title {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-.doc-print-header-body {
+.doc-print-header-main {
   display: grid;
-  grid-template-columns: minmax(200px, auto) minmax(0, 1fr) 182px;
-  gap: 6px;
-  align-items: start;
+  grid-template-columns: 98px minmax(130px, 30%) minmax(0, 1fr) 175px;
+  gap: 6px 8px;
+  align-items: center;
 }
 
-.doc-print-a5 .doc-print-header-body {
-  grid-template-columns: minmax(168px, auto) minmax(0, 1fr) 148px;
-  gap: 4px;
-}
-
-.doc-print-header-left {
-  display: flex;
-  align-items: flex-start;
-  gap: 2px;
-  flex-shrink: 0;
+.doc-print-a5 .doc-print-header-main {
+  grid-template-columns: 72px minmax(100px, 28%) minmax(0, 1fr) 138px;
+  gap: 4px 6px;
 }
 
 .doc-print-logo-wrap {
   flex-shrink: 0;
-  width: 130px;
+  width: 98px;
   text-align: center;
 }
 
-.doc-print-sello-wrap {
-  flex-shrink: 0;
-  width: 88px;
+.doc-print-a5 .doc-print-logo-wrap {
+  width: 72px;
+}
+
+.doc-print-header-title-wrap {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding-top: 4px;
-}
-
-.doc-print-sello {
-  width: 82px;
-  height: auto;
-  max-height: 88px;
-  object-fit: contain;
-}
-
-.doc-print-contact-box {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #f5f5f5;
-  padding: 4px 8px;
-  margin: 2px 0 4px;
-  font-size: 9px;
-}
-
-.doc-print-brand {
-  display: flex;
-  gap: 10px;
-  flex: 1;
-  align-items: flex-start;
+  min-width: 0;
 }
 
 .doc-print-brand-center {
-  flex: 1;
   min-width: 0;
-  max-width: 100%;
-  padding-top: 2px;
-  padding-right: 4px;
-  text-align: center;
+  padding: 0 2px;
+  text-align: left;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: center;
   overflow: hidden;
 }
 
+.doc-print-de-line {
+  background: #e8f4fc;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-bottom: 2px !important;
+}
+
 .doc-print-logo {
-  width: 124px !important;
-  height: 124px !important;
+  width: 94px !important;
+  height: 94px !important;
   object-fit: contain;
   display: block;
   margin: 0 auto;
+}
+
+.doc-print-a5 .doc-print-logo {
+  width: 68px !important;
+  height: 68px !important;
 }
 
 .doc-print-company {
@@ -2292,7 +2262,7 @@ html.ify-dark ::-webkit-scrollbar-track {
 
 .doc-print-docbox {
   width: 100%;
-  max-width: 182px;
+  max-width: 175px;
   border: 1px solid #888;
   border-radius: 6px;
   padding: 8px 6px;
@@ -2300,6 +2270,7 @@ html.ify-dark ::-webkit-scrollbar-track {
   font-size: 9px;
   flex-shrink: 0;
   justify-self: end;
+  align-self: start;
 }
 
 .doc-print-a5 .doc-print-docbox {
@@ -2330,18 +2301,17 @@ html.ify-dark ::-webkit-scrollbar-track {
   font-size: 7px;
   padding: 4px 2px;
 }
-.doc-print-titulo {
+.doc-print-titulo-inline {
   display: block;
-  width: auto;
-  max-width: 92%;
+  width: 100%;
   height: auto;
-  max-height: 48px;
+  max-height: 40px;
   object-fit: contain;
-  margin: 0 auto;
+  object-position: left center;
 }
 
-.doc-print-a5 .doc-print-titulo {
-  max-height: 40px;
+.doc-print-a5 .doc-print-titulo-inline {
+  max-height: 32px;
 }
 .doc-print-email { color: #0d6efd; }
 .doc-print-inline-sep { margin-left: 12px; font-weight: 700; }
@@ -2375,11 +2345,9 @@ html.ify-dark ::-webkit-scrollbar-track {
 .doc-print-obs { min-height: 48px; }
 .doc-print-totals-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 3px;
   font-size: 9px;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  overflow: hidden;
 }
 .doc-print-totals-table th,
 .doc-print-totals-table td {
@@ -2391,17 +2359,29 @@ html.ify-dark ::-webkit-scrollbar-track {
   text-align: left;
   font-weight: 700;
   width: 58%;
+  border-radius: 4px 0 0 4px;
+  border-right: none;
 }
-.doc-print-totals-table td { text-align: right; }
+.doc-print-totals-table td {
+  text-align: right;
+  border-radius: 0 4px 4px 0;
+  background: #fff;
+}
 .doc-print-total-final-row th,
 .doc-print-total-final-row td {
   font-weight: 700;
-  background: #ececec;
+}
+.doc-print-total-final-row th {
+  background: #c8c8c8;
+}
+.doc-print-total-final-row td {
+  background: #f3f3f3;
 }
 .doc-print-words-box {
   border: 1px solid #bbb;
-  border-radius: 4px;
-  padding: 6px 8px;
+  border-radius: 6px;
+  background: #efefef;
+  padding: 6px 10px;
   font-size: 9px;
   margin-bottom: 8px;
 }
@@ -2440,11 +2420,11 @@ html.ify-dark ::-webkit-scrollbar-track {
 .doc-print-qr-wrap { text-align: right; }
 .doc-print-brands {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 18px;
   margin: 14px 0 10px;
-  padding: 0 2px;
+  padding: 0 8px;
 }
 .doc-print-brand-logo {
   height: 100px;

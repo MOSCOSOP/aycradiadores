@@ -32,27 +32,23 @@ export function GuiaPrintTemplate({ data, pageSize = "A4", printId = "doc-print-
     >
       <div className="doc-print-inner">
         <header className="doc-print-header">
-          <div className="doc-print-header-title">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={COMPROBANTE_ASSETS.titulo} alt={COMPANY_INFO.tradeName} className="doc-print-titulo" />
-          </div>
-          <div className="doc-print-header-body">
-            <div className="doc-print-header-left">
-              <div className="doc-print-logo-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={COMPROBANTE_ASSETS.logo} alt="Logo" className="doc-print-logo" />
-              </div>
-              <div className="doc-print-sello-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={COMPROBANTE_ASSETS.sello} alt="Sello A&C" className="doc-print-sello" />
-              </div>
+          <div className="doc-print-header-main">
+            <div className="doc-print-logo-wrap">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={COMPROBANTE_ASSETS.logo} alt="Logo A&C" className="doc-print-logo" />
+            </div>
+            <div className="doc-print-header-title-wrap">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={COMPROBANTE_ASSETS.titulo}
+                alt={COMPANY_INFO.tradeName}
+                className="doc-print-titulo-inline"
+              />
             </div>
             <div className="doc-print-brand-center">
-              <div className="doc-print-contact-box">
-                <p className="doc-print-meta">
-                  <span className="doc-print-label">De:</span> {extra.sender_name || COMPANY_INFO.legalName}
-                </p>
-              </div>
+              <p className="doc-print-meta doc-print-de-line">
+                <span className="doc-print-label">De:</span> {extra.sender_name || COMPANY_INFO.legalName}
+              </p>
               <p className="doc-print-meta">
                 Cel: {COMPANY_INFO.phone}
                 {COMPANY_INFO.phone2 ? ` – ${COMPANY_INFO.phone2}` : ""}
