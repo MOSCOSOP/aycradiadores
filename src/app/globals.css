@@ -2259,14 +2259,14 @@ html.ify-dark ::-webkit-scrollbar-track {
   width: 100%;
   max-width: 100%;
   height: auto;
-  max-height: 52px;
+  max-height: 64px;
   object-fit: contain;
   object-position: center center;
   margin: 0 auto;
 }
 
 .doc-print-a5 .doc-print-titulo {
-  max-height: 38px;
+  max-height: 46px;
 }
 
 .doc-print-contact {
