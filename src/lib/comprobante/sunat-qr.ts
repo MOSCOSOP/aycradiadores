@@ -99,6 +99,18 @@ export function buildPrintQrMessage(input: {
   return lines.join("\n");
 }
 
+/** Contenido del QR impreso: el enlace oficial (los celulares abren URLs al escanear). */
+export function buildPrintQrContent(input: {
+  documentLabel: string;
+  sunatPayload: string;
+  shareToken?: string;
+}): string {
+  if (input.shareToken) {
+    return `${publicAppUrl()}/c/${input.shareToken}`;
+  }
+  return buildPrintQrMessage(input);
+}
+
 export function sunatQrImageUrl(payload: string, size = 140): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(payload)}`;
 }

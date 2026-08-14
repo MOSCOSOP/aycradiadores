@@ -1,6 +1,6 @@
 "use client";
 
-import { sunatQrImageUrl, buildPrintQrMessage } from "@/lib/comprobante/sunat-qr";
+import { sunatQrImageUrl, buildPrintQrContent } from "@/lib/comprobante/sunat-qr";
 import { amountWordsEs } from "@/lib/comprobante/amount-words";
 import type { ReceiptData } from "@/lib/comprobante/types";
 import { COMPROBANTE_ASSETS, COMPANY_INFO } from "@/lib/company-info";
@@ -40,7 +40,7 @@ export function DocumentPrintTemplate({
   const emisor = receipt.emisor;
   const number = formatReceiptNumber(receipt.number);
   const sunatPayload = receipt.qr_payload ?? `${emisor?.ruc ?? ""}|${number}|${receipt.total.toFixed(2)}`;
-  const qrPayload = buildPrintQrMessage({
+  const qrPayload = buildPrintQrContent({
     documentLabel: receipt.document_type_label,
     sunatPayload,
     shareToken: receipt.share_token,
