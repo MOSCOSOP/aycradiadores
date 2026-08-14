@@ -2256,17 +2256,17 @@ html.ify-dark ::-webkit-scrollbar-track {
 
 .doc-print-titulo {
   display: block;
-  width: auto;
+  width: 100%;
   max-width: 100%;
   height: auto;
-  max-height: 38px;
+  max-height: 52px;
   object-fit: contain;
   object-position: center center;
   margin: 0 auto;
 }
 
 .doc-print-a5 .doc-print-titulo {
-  max-height: 28px;
+  max-height: 38px;
 }
 
 .doc-print-contact {
