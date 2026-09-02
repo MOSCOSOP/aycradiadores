@@ -36,6 +36,8 @@ export type SunatSendResult = {
   code?: string;
   ticket?: string;
   cdr?: string;
+  /** XML UBL exacto que se envió a SUNAT (para guardar y permitir su descarga posterior). */
+  xml?: string;
   mode: "soap" | "pse" | "simulated";
 };
 

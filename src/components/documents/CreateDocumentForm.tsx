@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { COMPANY } from "@/lib/constants";
 import { api } from "@/lib/api/client";
@@ -14,6 +14,7 @@ import { DocumentPrintTemplate } from "@/components/documents/DocumentPrintTempl
 import { DocPrintViewport } from "@/components/documents/DocPrintViewport";
 import { buildReceiptFromPos, docTypeLabelFromId } from "@/lib/comprobante/build-receipt-data";
 import { downloadCsv } from "@/lib/download-csv";
+import { IGV_FACTOR } from "@/lib/tax";
 
 const PARK_KEY = "ify_parked_docs";
 
@@ -37,6 +38,10 @@ type LineItem = {
   quantity: number;
   unitValue: number;
   unitPrice: number;
+  /** ¿Esta línea está afecta a IGV? Se toma del ítem, pero es editable por línea. */
+  hasIgv: boolean;
+  /** Código SUNAT tabla 07: 10 Gravado, 20 Exonerado, 30 Inafecto, 40 Exportación. */
+  saleAffectationTypeId: string;
 };
 
 function Field({
@@ -58,6 +63,10 @@ function Field({
 
 export function CreateDocumentForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  const duplicateFromId = searchParams.get("from");
+  const sourceDocId = editId || duplicateFromId;
   const today = new Date().toISOString().split("T")[0];
   const [showAdditional, setShowAdditional] = useState(false);
   const [items, setItems] = useState<LineItem[]>([]);
@@ -110,13 +119,59 @@ export function CreateDocumentForm() {
         if (est) setEstablishmentId(est.id);
         if (sel) setSellerId(sel.id);
         if (ser) setSeriesId(ser.id);
-        api.customers.records({ page: 1, limit: 1 }).then((r) => {
-          if (r.data?.[0]) setSelectedCustomer(r.data[0]);
-        });
+        // Al editar/duplicar, el cliente lo trae el comprobante de origen — no pisar con el default.
+        if (!sourceDocId) {
+          api.customers.records({ page: 1, limit: 1 }).then((r) => {
+            if (r.data?.[0]) setSelectedCustomer(r.data[0]);
+          });
+        }
       })
       .catch((e) => setApiError(e instanceof Error ? e.message : "Error API"));
     api.cash.records().then((r) => setCashBoxes(r.data ?? [])).catch(() => {});
-  }, []);
+  }, [sourceDocId]);
+
+  // Carga los datos de un comprobante existente para editarlo (rectificar) o duplicarlo.
+  useEffect(() => {
+    if (!sourceDocId) return;
+    api.documents.get(sourceDocId).then((r) => {
+      const doc = r.data;
+      const docItems = (doc.items as Record<string, unknown>[]) ?? [];
+      setSelectedCustomer({
+        id: doc.customer_id,
+        name: doc.customer_name,
+        number: doc.customer_number,
+        address: doc.customer_address,
+        email: doc.customer_email,
+        telephone: doc.customer_phone,
+      });
+      setDocTypeId(String(doc.document_type_id ?? "01"));
+      setCurrencyId(String(doc.currency_type_id ?? "PEN"));
+      setDateIssue(String(doc.date_of_issue ?? today));
+      setDateDue(String(doc.date_of_due ?? today));
+      setPlate(doc.plate ? String(doc.plate) : "");
+      if (doc.seller_id) setSellerId(Number(doc.seller_id));
+      if (doc.establishment_id) setEstablishmentId(Number(doc.establishment_id));
+      if (doc.operation_type_id) setOperationTypeId(String(doc.operation_type_id));
+      setItems(
+        docItems.map((i, idx) => {
+          const affectation = String(i.sale_affectation_type_id ?? (i.has_igv === false ? "20" : "10"));
+          const hasIgv = i.has_igv !== undefined ? Boolean(i.has_igv) : affectation === "10";
+          return {
+            id: Date.now() + idx,
+            itemId: i.item_id ? Number(i.item_id) : undefined,
+            product: String(i.description ?? ""),
+            unit: String(i.unit_type_id ?? "NIU"),
+            quantity: Number(i.quantity ?? 1),
+            unitValue: Number(i.unit_value ?? 0),
+            unitPrice: Number(i.unit_price ?? 0),
+            hasIgv,
+            saleAffectationTypeId: affectation,
+          };
+        })
+      );
+    }).catch((e) => setApiError(e instanceof Error ? e.message : "No se pudo cargar el comprobante de origen"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceDocId]);
 
   useEffect(() => {
     if (productSearch.length < 1) {
@@ -211,14 +266,21 @@ export function CreateDocumentForm() {
   const currencies = (tables?.currency_types as { id: string; description: string }[]) ?? [];
 
   const totals = items.reduce(
-    (acc, item) => ({
-      value: acc.value + item.quantity * item.unitValue,
-      price: acc.price + item.quantity * item.unitPrice,
-    }),
-    { value: 0, price: 0 }
+    (acc, item) => {
+      const lineValue = item.quantity * item.unitValue;
+      const linePrice = item.quantity * item.unitPrice;
+      if (item.hasIgv) {
+        acc.taxed += lineValue;
+        acc.igv += linePrice - lineValue;
+      } else {
+        acc.exonerated += lineValue;
+      }
+      acc.price += linePrice;
+      return acc;
+    },
+    { taxed: 0, exonerated: 0, igv: 0, price: 0 }
   );
-
-  const igv = round2(totals.price - totals.value);
+  const igv = round2(totals.igv);
   const grandTotal = round2(totals.price - discount + (useOtherCharges ? otherCharges : 0));
   const defaultDestination =
     String(cashBoxes[0]?.description ?? "CAJA GENERAL - ADMINISTRADOR");
@@ -241,6 +303,11 @@ export function CreateDocumentForm() {
 
   const addProductFromApi = (product: Record<string, unknown>) => {
     const itemId = product.local_id ? Number(product.local_id) : product.id ? Number(product.id) : undefined;
+    // El ítem manda si está afecto a IGV; una línea manual (sin producto de catálogo)
+    // se agrega por defecto sin IGV, ya que la mayoría de ventas del negocio son exoneradas.
+    const hasIgv = product.has_igv !== undefined ? Boolean(product.has_igv) : false;
+    const saleAffectationTypeId = String(product.sale_affectation_igv_type_id ?? (hasIgv ? "10" : "20"));
+    const price = round2(Number(product.sale_unit_price ?? 0));
     setItems((prev) => [
       ...prev,
       {
@@ -249,8 +316,10 @@ export function CreateDocumentForm() {
         product: String(product.description ?? product.full_description ?? ""),
         unit: String(product.unit_type_id ?? "NIU"),
         quantity: 1,
-        unitValue: round2(Number(product.sale_unit_price ?? 0) / 1.18),
-        unitPrice: round2(Number(product.sale_unit_price ?? 0)),
+        unitValue: hasIgv ? round2(price / IGV_FACTOR) : price,
+        unitPrice: price,
+        hasIgv,
+        saleAffectationTypeId,
       },
     ]);
     setProductSearch("");
@@ -269,7 +338,7 @@ export function CreateDocumentForm() {
     }
     setSaving(true);
     try {
-      const res = await api.documents.create({
+      const payload = {
         document_type_id: docTypeId,
         series_id: seriesId,
         establishment_id: establishmentId,
@@ -288,8 +357,16 @@ export function CreateDocumentForm() {
           quantity: i.quantity,
           unit_value: i.unitValue,
           unit_price: i.unitPrice,
+          has_igv: i.hasIgv,
+          sale_affectation_type_id: i.saleAffectationTypeId,
         })),
-      }) as { data?: { id?: number }; sunat?: { success?: boolean; message?: string } | null };
+      };
+      const res = (editId
+        ? await api.documents.update(editId, payload)
+        : await api.documents.create(payload)) as {
+        data?: { id?: number };
+        sunat?: { success?: boolean; message?: string } | null;
+      };
 
       const docId = res.data?.id;
       const sunat = res.sunat;
@@ -325,10 +402,14 @@ export function CreateDocumentForm() {
       prev.map((i) => {
         if (i.id !== id) return i;
         const next = { ...i, ...patch };
-        if ("unitPrice" in patch && patch.unitPrice !== undefined) {
-          next.unitValue = round2(patch.unitPrice / 1.18);
+        if ("hasIgv" in patch && patch.hasIgv !== undefined) {
+          // Cambió la afectación de la línea: recalcula valor/precio manteniendo el precio de venta.
+          next.saleAffectationTypeId = patch.hasIgv ? "10" : "20";
+          next.unitValue = patch.hasIgv ? round2(next.unitPrice / IGV_FACTOR) : next.unitPrice;
+        } else if ("unitPrice" in patch && patch.unitPrice !== undefined) {
+          next.unitValue = next.hasIgv ? round2(patch.unitPrice / IGV_FACTOR) : patch.unitPrice;
         } else if ("unitValue" in patch && patch.unitValue !== undefined) {
-          next.unitPrice = round2(patch.unitValue * 1.18);
+          next.unitPrice = next.hasIgv ? round2(patch.unitValue * IGV_FACTOR) : patch.unitValue;
         }
         return next;
       })
@@ -366,8 +447,9 @@ export function CreateDocumentForm() {
           total: round2(i.quantity * i.unitPrice),
         })),
         total: grandTotal,
-        total_taxed: round2(totals.value),
+        total_taxed: round2(totals.taxed),
         total_igv: igv,
+        total_exonerated: round2(totals.exonerated),
         payment_method: "Efectivo",
         payment_condition: paymentCondition,
         date_of_issue: dateIssue,
@@ -380,7 +462,8 @@ export function CreateDocumentForm() {
       selectedCustomer,
       items,
       grandTotal,
-      totals.value,
+      totals.taxed,
+      totals.exonerated,
       igv,
       paymentCondition,
       dateIssue,
@@ -407,6 +490,16 @@ export function CreateDocumentForm() {
           API: {apiError}. <a href="/login" className="underline">Inicia sesión</a> primero.
         </div>
       )}
+      {editId && (
+        <div className="mb-3 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+          Editando/rectificando el comprobante #{editId}. Solo disponible mientras no haya sido aceptado por SUNAT.
+        </div>
+      )}
+      {duplicateFromId && (
+        <div className="mb-3 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+          Duplicando el comprobante #{duplicateFromId} — revisa los datos antes de generar uno nuevo.
+        </div>
+      )}
       {/* Encabezado empresa */}
       <div className="ify-card mb-3 p-4">
         <div className="flex items-center gap-4">
@@ -431,6 +524,8 @@ export function CreateDocumentForm() {
             <select
               className="ify-select"
               value={docTypeId}
+              disabled={Boolean(editId)}
+              title={editId ? "No se puede cambiar el tipo al editar — usa Duplicar para emitir otro tipo" : undefined}
               onChange={(e) => {
                 setDocTypeId(e.target.value);
                 const match = series.find((s) => s.document_type_id === e.target.value);
@@ -475,7 +570,12 @@ export function CreateDocumentForm() {
             </select>
           </Field>
           <Field label="Serie">
-            <select className="ify-select" value={seriesId} onChange={(e) => setSeriesId(Number(e.target.value))}>
+            <select
+              className="ify-select"
+              value={seriesId}
+              disabled={Boolean(editId)}
+              onChange={(e) => setSeriesId(Number(e.target.value))}
+            >
               {series.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.number}
@@ -631,6 +731,7 @@ export function CreateDocumentForm() {
                 <th style={{ minWidth: 260 }}>Productos o Servicios</th>
                 <th>Unidad</th>
                 <th>Cantidad</th>
+                <th title="¿La línea está afecta a IGV?">¿IGV?</th>
                 <th>Valor U.</th>
                 <th>Precio U.</th>
                 <th>Valor Total</th>
@@ -640,7 +741,7 @@ export function CreateDocumentForm() {
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <div className="doc-form-empty">No hay productos agregados — busca o crea un producto arriba</div>
                   </td>
                 </tr>
@@ -680,6 +781,14 @@ export function CreateDocumentForm() {
                         min={1}
                         value={item.quantity}
                         onChange={(e) => updateItem(item.id, { quantity: Number(e.target.value) || 1 })}
+                      />
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={item.hasIgv}
+                        title={item.hasIgv ? "Afecto a IGV (Gravado)" : "Sin IGV (Exonerado)"}
+                        onChange={(e) => updateItem(item.id, { hasIgv: e.target.checked })}
                       />
                     </td>
                     <td>
@@ -826,8 +935,14 @@ export function CreateDocumentForm() {
               </div>
               <div className="doc-form-summary-row">
                 <span>Op. Gravadas</span>
-                <strong>S/ {round2(totals.value).toFixed(2)}</strong>
+                <strong>S/ {round2(totals.taxed).toFixed(2)}</strong>
               </div>
+              {totals.exonerated > 0 && (
+                <div className="doc-form-summary-row">
+                  <span>Op. Exoneradas</span>
+                  <strong>S/ {round2(totals.exonerated).toFixed(2)}</strong>
+                </div>
+              )}
               <div className="doc-form-summary-row">
                 <span>IGV (18%)</span>
                 <strong>S/ {igv.toFixed(2)}</strong>
@@ -885,7 +1000,7 @@ export function CreateDocumentForm() {
           Cancelar
         </button>
         <button type="button" className="ify-btn-primary px-6" onClick={handleSave} disabled={saving}>
-          {saving ? "Generando..." : "Generar"}
+          {saving ? "Guardando..." : editId ? "Guardar cambios" : "Generar"}
         </button>
       </div>
 
@@ -984,6 +1099,7 @@ export function CreateDocumentForm() {
             <p><strong>Producto:</strong> {detailItem.product}</p>
             <p><strong>Unidad:</strong> {detailItem.unit}</p>
             <p><strong>Cantidad:</strong> {detailItem.quantity}</p>
+            <p><strong>Afecto a IGV:</strong> {detailItem.hasIgv ? "Sí (Gravado)" : "No (Exonerado)"}</p>
             <p><strong>Valor unitario:</strong> S/ {round2(detailItem.unitValue).toFixed(2)}</p>
             <p><strong>Precio unitario:</strong> S/ {round2(detailItem.unitPrice).toFixed(2)}</p>
             <p><strong>Total:</strong> S/ {round2(detailItem.quantity * detailItem.unitPrice).toFixed(2)}</p>

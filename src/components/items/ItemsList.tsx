@@ -134,7 +134,17 @@ export function ItemsList() {
             label: "P.Unitario (Compra)",
             render: (r) => `S/ ${Number(r.purchase_price ?? 0).toFixed(2)}`,
           },
-          { key: "has_igv_description", label: "Tiene Igv (Venta)" },
+          {
+            key: "has_igv_description",
+            label: "Afectación IGV",
+            render: (r) => {
+              const code = String(r.sale_affectation_igv_type_id ?? "10");
+              const label =
+                code === "10" ? "Gravado" : code === "20" ? "Exonerado" : code === "30" ? "Inafecto" : code === "40" ? "Exportación" : String(r.has_igv_description ?? "");
+              const cls = code === "10" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700";
+              return <span className={`rounded px-2 py-0.5 text-[11px] ${cls}`}>{label}</span>;
+            },
+          },
           {
             key: "actions",
             label: "Acciones",

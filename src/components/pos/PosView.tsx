@@ -9,7 +9,7 @@ import { PosSuccessModal } from "@/components/pos/PosSuccessModal";
 import type { ReceiptData } from "@/lib/comprobante/types";
 import { buildReceiptFromPos } from "@/lib/comprobante/build-receipt-data";
 import { mergeCategoriesList } from "@/lib/default-categories";
-import { splitIgv } from "@/lib/tax";
+import { IGV_FACTOR } from "@/lib/tax";
 import { api } from "@/lib/api/client";
 
 type CartItem = {
@@ -20,6 +20,7 @@ type CartItem = {
   unit_type_id: string;
   internal_id?: string;
   stock?: number;
+  has_igv: boolean;
 };
 
 const PAGE_SIZE = 30;
@@ -185,6 +186,7 @@ export function PosView() {
           unit_type_id: String(item.unit_type_id || "NIU"),
           internal_id: String(item.internal_id || ""),
           stock: Number(item.stock),
+          has_igv: item.has_igv !== undefined ? Boolean(item.has_igv) : true,
         },
       ];
     });
@@ -208,7 +210,19 @@ export function PosView() {
   const rate = Number(exchangeRate) || 1;
   const totalPen = cart.reduce((s, i) => s + i.quantity * i.sale_unit_price, 0);
   const displayTotal = currencyPen ? totalPen : totalPen / rate;
-  const { taxed, igv } = useMemo(() => splitIgv(totalPen), [totalPen]);
+  const { taxed, igv } = useMemo(() => {
+    let t = 0;
+    let g = 0;
+    for (const i of cart) {
+      const linePrice = i.quantity * i.sale_unit_price;
+      if (i.has_igv) {
+        const lineValue = linePrice / IGV_FACTOR;
+        t += lineValue;
+        g += linePrice - lineValue;
+      }
+    }
+    return { taxed: Math.round(t * 100) / 100, igv: Math.round(g * 100) / 100 };
+  }, [cart]);
 
   const confirmCheckout = async (extra: Record<string, unknown>) => {
     if (cart.length === 0) return;

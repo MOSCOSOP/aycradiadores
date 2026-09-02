@@ -1,8 +1,12 @@
 import { prisma } from "@/lib/db/prisma";
-import { splitIgv, valueFromPrice } from "@/lib/tax";
+import { IGV_FACTOR } from "@/lib/tax";
 import { formatReceiptNumber } from "@/lib/receipt-format";
 import { generateShareToken } from "@/lib/comprobante/share-link";
 import { resolvePosCustomerId, resolvePosItemId, ensurePosInfrastructure } from "@/lib/pos-infrastructure";
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
 
 type CartLine = {
   id?: unknown;
@@ -32,6 +36,7 @@ export type PosCheckoutResult = {
     total: number;
     total_taxed: number;
     total_igv: number;
+    total_exonerated: number;
     payment_method: string;
     payment_condition: string;
     date_of_issue: string;
@@ -74,16 +79,28 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
     cart.map(async (it) => {
       const qty = Number(it.quantity || 1);
       const unitPrice = Number(it.sale_unit_price || 0);
-      const unitValue = valueFromPrice(unitPrice);
       const itemId = await resolvePosItemId(it.id ?? it.item_id);
       let internalId: string | null = null;
+      // La afectación a IGV se toma del ítem real en BD (fuente de verdad), no del carrito del cliente.
+      let hasIgv = true;
+      let saleAffectationTypeId = "10";
       if (itemId) {
-        const dbItem = await prisma.item.findUnique({ where: { id: itemId }, select: { internalId: true } });
+        const dbItem = await prisma.item.findUnique({
+          where: { id: itemId },
+          select: { internalId: true, hasIgv: true, saleAffectationTypeId: true },
+        });
         internalId = dbItem?.internalId ?? null;
+        if (dbItem) {
+          hasIgv = dbItem.hasIgv;
+          saleAffectationTypeId = dbItem.saleAffectationTypeId;
+        }
       }
+      const unitValue = hasIgv ? Math.round((unitPrice / IGV_FACTOR) * 10000) / 10000 : unitPrice;
       return {
         itemId,
         internalId,
+        hasIgv,
+        saleAffectationTypeId,
         description: String(it.description || ""),
         unitTypeId: String(it.unit_type_id || "NIU"),
         quantity: qty,
@@ -96,7 +113,9 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
   );
 
   const total = lines.reduce((s, l) => s + l.totalPrice, 0);
-  const { taxed: totalTaxed, igv: totalIgv } = splitIgv(total);
+  const totalTaxed = round2(lines.filter((l) => l.hasIgv).reduce((s, l) => s + l.totalValue, 0));
+  const totalExonerated = round2(lines.filter((l) => !l.hasIgv).reduce((s, l) => s + l.totalValue, 0));
+  const totalIgv = round2(lines.filter((l) => l.hasIgv).reduce((s, l) => s + (l.totalPrice - l.totalValue), 0));
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10);
 
@@ -120,7 +139,7 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
         },
       },
     });
-    return buildResult("sale_note", note.id, num, "NV", customer, lines, total, totalTaxed, totalIgv, paymentMethod, paymentCondition, dateStr, body, creditInstallments);
+    return buildResult("sale_note", note.id, num, "NV", customer, lines, total, totalTaxed, totalIgv, totalExonerated, paymentMethod, paymentCondition, dateStr, body, creditInstallments);
   }
 
   if (kind === "quotation") {
@@ -141,7 +160,7 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
         },
       },
     });
-    return buildResult("quotation", q.id, num, "COT", customer, lines, total, totalTaxed, totalIgv, paymentMethod, paymentCondition, dateStr, body, creditInstallments);
+    return buildResult("quotation", q.id, num, "COT", customer, lines, total, totalTaxed, totalIgv, totalExonerated, paymentMethod, paymentCondition, dateStr, body, creditInstallments);
   }
 
   const docTypeId = kind === "factura" ? "01" : "03";
@@ -151,6 +170,15 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
   if (!series) throw new Error(`Serie no configurada para ${kind}`);
 
   const nextNum = series.currentNumber + 1;
+  // Evita repetir un número ya usado en el historial importado del sistema anterior (ver
+  // src/lib/api/local/router.ts::assertNoNumberCollision — misma verificación, POS es otra
+  // vía de emisión).
+  const importedDocs = await (await import("@/lib/imported-data")).readImportedModule("documents");
+  if (importedDocs?.some((d) => String((d as Record<string, unknown>).number ?? "") === `${series.number}-${nextNum}`)) {
+    throw new Error(
+      `El número ${series.number}-${nextNum} ya fue usado en el historial del sistema anterior. El contador de la serie está desincronizado — hay que corregirlo antes de emitir.`
+    );
+  }
   const fullNumber = `${series.number}-${nextNum}`;
 
   const doc = await prisma.$transaction(async (tx) => {
@@ -171,6 +199,7 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
         operationTypeId: "0101",
         totalTaxed,
         totalIgv,
+        totalExonerated,
         total,
         plate: body.plate ? String(body.plate) : null,
         stateTypeId: "01",
@@ -185,6 +214,7 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
             unitPrice: l.unitPrice,
             totalValue: l.totalValue,
             totalPrice: l.totalPrice,
+            saleAffectationTypeId: l.saleAffectationTypeId,
           })),
         },
       },
@@ -219,6 +249,7 @@ export async function processPosCheckout(body: Record<string, unknown>): Promise
     total,
     totalTaxed,
     totalIgv,
+    totalExonerated,
     paymentMethod,
     paymentCondition,
     dateStr,
@@ -238,6 +269,7 @@ function buildResult(
   total: number,
   totalTaxed: number,
   totalIgv: number,
+  totalExonerated: number,
   paymentMethod: string,
   paymentCondition: string,
   dateStr: string,
@@ -272,6 +304,7 @@ function buildResult(
       total,
       total_taxed: totalTaxed,
       total_igv: totalIgv,
+      total_exonerated: totalExonerated,
       payment_method: paymentMethod,
       payment_condition: paymentCondition,
       date_of_issue: dateStr,

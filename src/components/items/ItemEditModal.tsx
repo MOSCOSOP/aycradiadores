@@ -75,6 +75,8 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
           unit_type_id: raw.unitTypeId ?? form.unit_type_id,
           sale_unit_price: raw.saleUnitPrice ?? Number(form.sale_unit_price),
           stock: raw.stock ?? Number(form.stock),
+          has_igv: raw.hasIgv ?? form.has_igv,
+          sale_affectation_igv_type_id: raw.saleAffectationTypeId ?? form.sale_affectation_type_id,
         });
       }
       onClose();

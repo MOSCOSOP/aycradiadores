@@ -28,6 +28,7 @@ export function MassDocumentEmission() {
   const [establishmentId, setEstablishmentId] = useState(0);
   const [sellerId, setSellerId] = useState(0);
   const [dateIssue, setDateIssue] = useState(today);
+  const [hasIgv, setHasIgv] = useState(false);
   const [rows, setRows] = useState<BatchRow[]>([]);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState("");
@@ -100,6 +101,8 @@ export function MassDocumentEmission() {
         establishment_id: establishmentId,
         seller_id: sellerId,
         date_of_issue: dateIssue,
+        has_igv: hasIgv,
+        sale_affectation_type_id: hasIgv ? "10" : "20",
         rows: valid,
       });
       setResult(`Emitidos ${res.created} comprobantes correctamente.`);
@@ -159,6 +162,12 @@ export function MassDocumentEmission() {
             <select className="ify-select" value={sellerId} onChange={(e) => setSellerId(Number(e.target.value))}>
               {sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
+          </Field>
+          <Field label="Afectación IGV">
+            <label className="ify-checkbox-inline mt-2 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={hasIgv} onChange={(e) => setHasIgv(e.target.checked)} />
+              {hasIgv ? "Con IGV (Gravado)" : "Sin IGV (Exonerado)"}
+            </label>
           </Field>
         </div>
       </div>

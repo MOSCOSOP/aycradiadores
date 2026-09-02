@@ -47,7 +47,7 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-meta-table tbody tr:last-child td:last-child { border-bottom-right-radius: 9px; }
   .doc-print-meta-table th { background: #efefef !important; font-weight: 700; font-size: 8.5px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .doc-print-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10.5px; margin-bottom: 6px; border: 1px solid #888; border-radius: 10px; overflow: hidden; }
-  .doc-print-table thead th { background: #555 !important; color: #fff !important; font-weight: 700; padding: 6px 4px; text-align: center; border-right: 1px solid #666; font-size: 9px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .doc-print-table thead th { background: #c41e3a !important; color: #fff !important; font-weight: 700; padding: 6px 4px; text-align: center; border-right: 1px solid #8f1529; font-size: 9px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .doc-print-table thead th:last-child { border-right: none; }
   .doc-print-table thead th:first-child { border-top-left-radius: 9px; }
   .doc-print-table thead th:last-child { border-top-right-radius: 9px; }
@@ -79,7 +79,7 @@ export const COMPROBANTE_PRINT_CSS = `
   .doc-print-bank-table th:last-child { border-top-right-radius: 9px; }
   .doc-print-bank-table tbody tr:last-child td:first-child { border-bottom-left-radius: 9px; }
   .doc-print-bank-table tbody tr:last-child td:last-child { border-bottom-right-radius: 9px; }
-  .doc-print-bank-table th { background: #efefef !important; font-weight: 700; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .doc-print-bank-table th { background: #c41e3a !important; color: #fff !important; font-weight: 700; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .doc-print-legal-row { display: grid; grid-template-columns: 1fr 120px; gap: 10px; align-items: start; margin-bottom: 5px; font-size: 9px; }
   .doc-print-detraction { border: 1px solid #bbb; padding: 6px 8px; min-height: 70px; border-radius: 10px; }
   .doc-print-qr-wrap { text-align: right; }

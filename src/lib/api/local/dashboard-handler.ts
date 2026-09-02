@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+import { prisma, getStateDescription } from "@/lib/db/prisma";
 import { mapImportedDocument, readImportedModule } from "@/lib/imported-data";
 import { buildAiAnalysis } from "@/lib/dashboard-ai-insights";
 
@@ -29,7 +29,9 @@ type DashDoc = {
   total: number;
   total_taxed?: number;
   total_igv?: number;
+  total_exonerated?: number;
   balance?: number;
+  state_type_id?: string;
   state_type_description?: string;
 };
 
@@ -50,7 +52,9 @@ async function loadAllDocuments(): Promise<DashDoc[]> {
       total: Number(d.total ?? 0),
       total_taxed: Number(d.total_taxed ?? 0),
       total_igv: Number(d.total_igv ?? 0),
+      total_exonerated: Number(d.total_exonerated ?? 0),
       balance: Number(d.balance ?? 0),
+      state_type_id: String(d.state_type_id ?? "05"),
       state_type_description: String(d.state_type_description ?? ""),
     });
   }
@@ -64,8 +68,10 @@ async function loadAllDocuments(): Promise<DashDoc[]> {
       total: d.total,
       total_taxed: d.totalTaxed,
       total_igv: d.totalIgv,
+      total_exonerated: d.totalExonerated,
       balance: 0,
-      state_type_description: "Aceptado",
+      state_type_id: d.stateTypeId,
+      state_type_description: getStateDescription(d.stateTypeId),
     });
   }
   return [...byNumber.values()];
@@ -219,6 +225,27 @@ export async function buildDashboardStats(searchParams: URLSearchParams) {
     };
   });
 
+  // Desglose gravado/exonerado/IGV — muy relevante para el negocio (mayoría de ventas exoneradas)
+  // y para la contadora al revisar el periodo.
+  const taxBreakdown = {
+    taxed: fmt(filteredDocs.reduce((s, d) => s + Number(d.total_taxed ?? 0), 0)),
+    exonerated: fmt(filteredDocs.reduce((s, d) => s + Number(d.total_exonerated ?? 0), 0)),
+    igv: fmt(filteredDocs.reduce((s, d) => s + Number(d.total_igv ?? 0), 0)),
+  };
+
+  // Estado real ante SUNAT de los comprobantes del periodo — para que el cliente esté informado
+  // de cuántos están realmente aceptados, pendientes de envío, en proceso de baja, etc.
+  const sunatStatus = { accepted: 0, pending: 0, void_pending: 0, voided: 0, rejected: 0, other: 0 };
+  for (const d of filteredDocs) {
+    const id = String(d.state_type_id ?? "");
+    if (id === "05") sunatStatus.accepted += 1;
+    else if (id === "01") sunatStatus.pending += 1;
+    else if (id === "12") sunatStatus.void_pending += 1;
+    else if (id === "11") sunatStatus.voided += 1;
+    else if (id === "09") sunatStatus.rejected += 1;
+    else sunatStatus.other += 1;
+  }
+
   const establishments = await prisma.establishment.findMany({ where: { active: true } });
   const dbItems = await prisma.item.findMany({ where: { active: true } });
   const lowStock = dbItems.filter((i) => i.stockMin > 0 && i.stock <= i.stockMin);
@@ -287,6 +314,8 @@ export async function buildDashboardStats(searchParams: URLSearchParams) {
       documents: salesDocs,
       totals: salesTotals,
     },
+    tax_breakdown: taxBreakdown,
+    sunat_status: sunatStatus,
     top_customers: topCustomers,
     monthly_history: monthlyHistory,
     recent: filteredDocs.slice(0, 8),

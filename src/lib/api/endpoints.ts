@@ -96,6 +96,8 @@ export type PaginatedQuery = {
   value?: string;
   order?: "asc" | "desc";
   input?: string;
+  document_type_id?: string;
+  state_type_id?: string;
 };
 
 export function toSearchParams(q: PaginatedQuery): Record<string, string> {
@@ -106,5 +108,7 @@ export function toSearchParams(q: PaginatedQuery): Record<string, string> {
   if (q.value) p.value = q.value;
   if (q.order) p.order = q.order;
   if (q.input) p.input = q.input;
+  if (q.document_type_id) p.document_type_id = q.document_type_id;
+  if (q.state_type_id) p.state_type_id = q.state_type_id;
   return p;
 }

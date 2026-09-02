@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { splitIgv } from "@/lib/tax";
+import { IGV_FACTOR } from "@/lib/tax";
 
 type CartItem = {
   id: number;
@@ -9,6 +9,7 @@ type CartItem = {
   sale_unit_price: number;
   quantity: number;
   unit_type_id: string;
+  has_igv: boolean;
 };
 
 type Props = {
@@ -54,7 +55,19 @@ export function PosCheckoutModal({ open, mode, cart, total, series, onClose, onC
     }
   }, [open, total]);
 
-  const { taxed, igv } = useMemo(() => splitIgv(total), [total]);
+  const { taxed, igv } = useMemo(() => {
+    let t = 0;
+    let g = 0;
+    for (const c of cart) {
+      const linePrice = c.quantity * c.sale_unit_price;
+      if (c.has_igv) {
+        const lineValue = linePrice / IGV_FACTOR;
+        t += lineValue;
+        g += linePrice - lineValue;
+      }
+    }
+    return { taxed: Math.round(t * 100) / 100, igv: Math.round(g * 100) / 100 };
+  }, [cart]);
   const change = Math.max(0, Number(amountIn || 0) - total);
   const assigned = creditRows.reduce((s, r) => s + Number(r.amount || 0), 0);
   const pendingCredit = Math.max(0, total - assigned);

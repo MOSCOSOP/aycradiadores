@@ -152,6 +152,7 @@ export function buildReceiptFromPos(receipt: Record<string, unknown>): ReceiptDa
     total: Number(receipt.total ?? 0),
     total_taxed: Number(receipt.total_taxed ?? 0),
     total_igv: Number(receipt.total_igv ?? 0),
+    total_exonerated: receipt.total_exonerated != null ? Number(receipt.total_exonerated) : undefined,
     payment_method: String(receipt.payment_method ?? "Efectivo"),
     payment_condition: String(receipt.payment_condition ?? "Contado"),
     date_of_issue: String(receipt.date_of_issue ?? new Date().toISOString().slice(0, 10)),

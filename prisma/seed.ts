@@ -1,7 +1,32 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 
 const prisma = new PrismaClient();
+
+/** Lee imported-data/documents.json (si existe) y devuelve el número más alto usado por serie,
+ * para que el contador de cada serie nunca arranque en 0 si ya hay historial importado — de lo
+ * contrario SUNAT rechaza el primer comprobante nuevo por repetir un número ya emitido. */
+function maxDocumentNumberBySeries(): Map<string, number> {
+  const max = new Map<string, number>();
+  const filePath = path.join(process.cwd(), "imported-data", "documents.json");
+  if (!fs.existsSync(filePath)) return max;
+  let rows: { number?: string }[] = [];
+  try {
+    rows = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch {
+    return max;
+  }
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const match = String(row?.number ?? "").match(/^([A-Za-z0-9]+)-(\d+)$/);
+    if (!match) continue;
+    const [, series, n] = match;
+    const current = max.get(series) ?? 0;
+    if (Number(n) > current) max.set(series, Number(n));
+  }
+  return max;
+}
 
 const DOC_TYPES = [
   { id: "01", description: "Factura" },
@@ -131,12 +156,13 @@ async function main() {
     },
   });
 
+  const maxBySeries = maxDocumentNumberBySeries();
   await prisma.series.createMany({
     data: [
-      { number: "F001", documentTypeId: "01", establishmentId: establishment.id, currentNumber: 0 },
-      { number: "B001", documentTypeId: "03", establishmentId: establishment.id, currentNumber: 0 },
-      { number: "T001", documentTypeId: "09", establishmentId: establishment.id, currentNumber: 0 },
-      { number: "V001", documentTypeId: "31", establishmentId: establishment.id, currentNumber: 0 },
+      { number: "F001", documentTypeId: "01", establishmentId: establishment.id, currentNumber: maxBySeries.get("F001") ?? 0 },
+      { number: "B001", documentTypeId: "03", establishmentId: establishment.id, currentNumber: maxBySeries.get("B001") ?? 0 },
+      { number: "T001", documentTypeId: "09", establishmentId: establishment.id, currentNumber: maxBySeries.get("T001") ?? 0 },
+      { number: "V001", documentTypeId: "31", establishmentId: establishment.id, currentNumber: maxBySeries.get("V001") ?? 0 },
     ],
   });
 

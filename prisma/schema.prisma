@@ -212,6 +212,12 @@ model Document {
   hasXml          Boolean        @default(false)
   hasPdf          Boolean        @default(true)
   hasCdr          Boolean        @default(false)
+  xmlContent      String?        @db.Text
+  cdrContent      String?        @db.Text
+  voidReason      String?
+  voidTicket      String?
+  voidXmlContent  String?        @db.Text
+  voidCdrContent  String?        @db.Text
   shareToken      String?        @unique
   items           DocumentItem[]
   createdAt       DateTime       @default(now())
@@ -219,18 +225,19 @@ model Document {
 }
 
 model DocumentItem {
-  id          Int      @id @default(autoincrement())
-  documentId  Int
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  itemId      Int?
-  item        Item?    @relation(fields: [itemId], references: [id])
-  description String
-  unitTypeId  String   @default("NIU")
-  quantity    Float
-  unitValue   Float
-  unitPrice   Float
-  totalValue  Float
-  totalPrice  Float
+  id                    Int      @id @default(autoincrement())
+  documentId            Int
+  document              Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  itemId                Int?
+  item                  Item?    @relation(fields: [itemId], references: [id])
+  description           String
+  unitTypeId            String   @default("NIU")
+  quantity              Float
+  unitValue             Float
+  unitPrice             Float
+  totalValue            Float
+  totalPrice            Float
+  saleAffectationTypeId String   @default("10")
 }
 
 model SaleNote {

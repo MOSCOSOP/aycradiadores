@@ -19,6 +19,8 @@ type DashStats = {
   balance?: { totals: number; payments: number };
   utilities?: { income: number; expense: number; profit: number };
   purchases?: { perceptions: number; purchases: number; total: number; monthly: { month: string; amount: number }[] };
+  tax_breakdown?: { taxed: number; exonerated: number; igv: number };
+  sunat_status?: { accepted: number; pending: number; void_pending: number; voided: number; rejected: number; other: number };
   sales_chart?: { labels: string[]; sale_notes: number[]; documents: number[]; totals: number[] };
   top_customers?: { rank: number; name: string; count: number; total: number }[];
   monthly_history?: { month: string; sunat_sales: number; internal_sales: number; purchases_expenses: number }[];
@@ -222,6 +224,11 @@ export function DashboardView() {
   const chart = stats?.sales_chart ?? { labels: [], sale_notes: [], documents: [], totals: [] };
   const history = stats?.monthly_history ?? [];
   const tops = stats?.top_customers ?? [];
+  const tax = stats?.tax_breakdown ?? { taxed: 0, exonerated: 0, igv: 0 };
+  const sunatState = stats?.sunat_status ?? { accepted: 0, pending: 0, void_pending: 0, voided: 0, rejected: 0, other: 0 };
+  const taxTotal = tax.taxed + tax.exonerated || 1;
+  const sunatDocsTotal =
+    sunatState.accepted + sunatState.pending + sunatState.void_pending + sunatState.voided + sunatState.rejected + sunatState.other;
 
   const snTotal = sn.collected + sn.pending || 1;
   const docTotal = doc.collected + doc.pending || 1;
@@ -376,6 +383,76 @@ export function DashboardView() {
               { label: "Total", value: (kpi?.total_sales ?? 0) },
             ]}
           />
+        </section>
+      </div>
+
+      {/* Fila IGV/Exoneración y Estado SUNAT — para mantener informados al cliente y su contadora */}
+      <div className="dash-widgets-row mt-3">
+        <section className="ify-card dash-widget">
+          <h2 className="dash-small-title">
+            IGV y Exoneración <i className="bi bi-info-circle text-[var(--muted)] text-xs" />
+          </h2>
+          <DonutChart
+            segments={[
+              { value: tax.taxed, color: "#36a2eb", pct: (tax.taxed / taxTotal) * 100 },
+              { value: tax.exonerated, color: "#f6a92b", pct: (tax.exonerated / taxTotal) * 100 },
+            ]}
+            center={
+              <>
+                <div>{Math.round((tax.taxed / taxTotal) * 100)}%</div>
+                <small>Gravado</small>
+              </>
+            }
+          />
+          <SummaryTable
+            rows={[
+              { label: "Op. Gravadas", value: tax.taxed, tone: "info" },
+              { label: "Op. Exoneradas", value: tax.exonerated },
+              { label: "IGV", value: tax.igv, tone: "danger" },
+              { label: "Total", value: tax.taxed + tax.exonerated },
+            ]}
+          />
+        </section>
+
+        <section className="ify-card dash-widget dash-widget-wide">
+          <h2 className="dash-small-title">
+            Estado ante SUNAT <i className="bi bi-info-circle text-[var(--muted)] text-xs" />
+          </h2>
+          <p className="text-xs text-[var(--muted)] mb-2">Comprobantes del periodo — {sunatDocsTotal} en total</p>
+          <div className="grid grid-cols-2 gap-2 px-3 pb-3 sm:grid-cols-3">
+            <div className="rounded border border-green-200 bg-green-50 p-2 text-center">
+              <p className="text-[11px] text-green-700">Aceptados</p>
+              <p className="text-lg font-bold text-green-700">{sunatState.accepted}</p>
+            </div>
+            <div className="rounded border border-amber-200 bg-amber-50 p-2 text-center">
+              <p className="text-[11px] text-amber-700">Pendientes de envío</p>
+              <p className="text-lg font-bold text-amber-700">{sunatState.pending}</p>
+            </div>
+            <div className="rounded border border-amber-200 bg-amber-50 p-2 text-center">
+              <p className="text-[11px] text-amber-700">Baja en proceso</p>
+              <p className="text-lg font-bold text-amber-700">{sunatState.void_pending}</p>
+            </div>
+            <div className="rounded border border-red-200 bg-red-50 p-2 text-center">
+              <p className="text-[11px] text-red-700">Anulados</p>
+              <p className="text-lg font-bold text-red-700">{sunatState.voided}</p>
+            </div>
+            <div className="rounded border border-red-200 bg-red-50 p-2 text-center">
+              <p className="text-[11px] text-red-700">Rechazados</p>
+              <p className="text-lg font-bold text-red-700">{sunatState.rejected}</p>
+            </div>
+            {sunatState.other > 0 && (
+              <div className="rounded border border-[var(--border-light)] p-2 text-center">
+                <p className="text-[11px] text-[var(--muted)]">Otros</p>
+                <p className="text-lg font-bold">{sunatState.other}</p>
+              </div>
+            )}
+          </div>
+          {(sunatState.rejected > 0 || sunatState.pending > 0) && (
+            <p className="px-3 pb-3 text-xs text-amber-700">
+              <i className="bi bi-exclamation-triangle" /> Hay comprobantes que todavía no están aceptados por
+              SUNAT — revísalos en <Link href="/documents" className="underline">Comprobantes</Link>.
+            </p>
+          )}
         </section>
       </div>
 

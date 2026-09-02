@@ -476,6 +476,46 @@ type DocForRecord = {
   updatedAt: Date;
 };
 
+/**
+ * Arma las líneas de un comprobante y sus totales (gravado/IGV/exonerado) a partir del
+ * payload recibido, respetando la afectación por línea (Fase 1: fix IGV). Compartida por
+ * la creación (POST) y la edición (PUT) de comprobantes.
+ */
+async function buildDocumentLineItems(items: Record<string, unknown>[]) {
+  const { IGV_FACTOR } = await import("@/lib/tax");
+  let totalTaxed = 0;
+  let totalIgv = 0;
+  let totalExonerated = 0;
+
+  const lineItems = items.map((it) => {
+    const qty = Number(it.quantity || 1);
+    const unitValue = Number(it.unit_value || 0);
+    // "10" = Gravado (afecto a IGV); "20"/"30"/"40" = Exonerado/Inafecto/Exportación (sin IGV).
+    const saleAffectationTypeId = String(it.sale_affectation_type_id || (it.has_igv === false ? "20" : "10"));
+    const hasIgv = it.has_igv !== undefined ? Boolean(it.has_igv) : saleAffectationTypeId === "10";
+    const unitPrice = Number(it.unit_price ?? (hasIgv ? unitValue * IGV_FACTOR : unitValue));
+    if (hasIgv) {
+      totalTaxed += qty * unitValue;
+      totalIgv += qty * (unitPrice - unitValue);
+    } else {
+      totalExonerated += qty * unitValue;
+    }
+    return {
+      itemId: it.item_id ? Number(it.item_id) : null,
+      description: String(it.description || ""),
+      unitTypeId: String(it.unit_type_id || "NIU"),
+      quantity: qty,
+      unitValue,
+      unitPrice,
+      totalValue: qty * unitValue,
+      totalPrice: qty * unitPrice,
+      saleAffectationTypeId,
+    };
+  });
+
+  return { lineItems, totalTaxed, totalIgv, totalExonerated };
+}
+
 function docToRecord(doc: DocForRecord) {
   return {
     id: doc.id,
@@ -492,7 +532,7 @@ function docToRecord(doc: DocForRecord) {
     exchange_rate_sale: String(doc.exchangeRate),
     total_taxed: doc.totalTaxed.toFixed(2),
     total_igv: doc.totalIgv.toFixed(2),
-    total_exonerated: doc.totalExonerated.toFixed(0),
+    total_exonerated: doc.totalExonerated.toFixed(2),
     total: doc.total,
     state_type_id: doc.stateTypeId,
     state_type_description: getStateDescription(doc.stateTypeId),
@@ -507,10 +547,53 @@ function docToRecord(doc: DocForRecord) {
   };
 }
 
+/**
+ * Evita repetir un número ya usado en el historial importado del sistema anterior (ver
+ * imported-data/documents.json). Si el contador de la serie quedó desincronizado con ese
+ * historial — como pasó una vez con B001 — esto corta la emisión con un mensaje claro en vez de
+ * dejar pasar un comprobante con un número que SUNAT ya conoce como usado.
+ */
+async function assertNoNumberCollision(seriesNumber: string, candidateNumber: number) {
+  const imported = await readImportedModule("documents");
+  if (!imported?.length) return;
+  const target = `${seriesNumber}-${candidateNumber}`;
+  const clash = imported.some((d) => String((d as Record<string, unknown>).number ?? "") === target);
+  if (clash) {
+    throw new Error(
+      `El número ${target} ya fue usado en el historial del sistema anterior. El contador de la serie ${seriesNumber} está desincronizado — hay que corregirlo antes de emitir (no se generó el comprobante para evitar un duplicado ante SUNAT).`
+    );
+  }
+}
+
 async function fetchDocuments() {
   return prisma.document.findMany({
     include: { customer: true, seller: true, establishment: true, items: true },
     orderBy: { id: "desc" },
+  });
+}
+
+/** Combina comprobantes de BD + datos importados (legado), igual que el listado histórico. */
+async function getAllDocumentRows(): Promise<Record<string, unknown>[]> {
+  const dbRows = (await fetchDocuments()).map(docToRecord);
+  const imported = await readImportedModule("documents");
+  const importedRows = imported?.length ? imported.map(mapImportedDocument) : [];
+
+  const byNumber = new Map<string, Record<string, unknown>>();
+  for (const row of importedRows) {
+    const r = row as Record<string, unknown>;
+    const key = String(r.number ?? r.full_number ?? r.id ?? "");
+    if (key) byNumber.set(key, r);
+  }
+  for (const row of dbRows) {
+    const r = row as Record<string, unknown>;
+    const key = String(r.number ?? r.full_number ?? r.id ?? "");
+    if (key) byNumber.set(key, r);
+  }
+
+  return [...byNumber.values()].sort((a, b) => {
+    const ra = a as Record<string, unknown>;
+    const rb = b as Record<string, unknown>;
+    return String(rb.date_of_issue ?? rb.date ?? "").localeCompare(String(ra.date_of_issue ?? ra.date ?? ""));
   });
 }
 
@@ -758,9 +841,19 @@ export async function handleLocalApi(
         customer_email: doc.customer.email,
         customer_phone: doc.customer.telephone,
         customer_address: doc.customer.address,
+        seller_id: doc.sellerId,
         seller_name: doc.seller?.name ?? "ADMINISTRADOR",
+        establishment_id: doc.establishmentId,
+        series: doc.series,
+        operation_type_id: doc.operationTypeId,
+        xml_content: doc.xmlContent ?? null,
+        cdr_content: doc.cdrContent ?? null,
+        void_ticket: doc.voidTicket ?? null,
+        void_reason: doc.voidReason ?? null,
+        void_cdr_content: doc.voidCdrContent ?? null,
         items: doc.items.map((i) => ({
           id: i.id,
+          item_id: i.itemId ?? undefined,
           description: i.description,
           quantity: i.quantity,
           unit_type_id: i.unitTypeId,
@@ -769,38 +862,53 @@ export async function handleLocalApi(
           total: i.totalPrice,
           code: i.item?.internalId ?? undefined,
           internal_id: i.item?.internalId ?? undefined,
+          sale_affectation_type_id: i.saleAffectationTypeId,
+          has_igv: i.saleAffectationTypeId === "10",
         })),
       },
     };
   }
 
-  if (method === "GET" && path === "documents/records") {
+  if (method === "GET" && (path === "documents/records" || path === "documents/summary")) {
+    let rows = await getAllDocumentRows();
+
+    if (path === "documents/summary") {
+      const byType = new Map<string, { document_type_id: string; label: string; count: number; total: number }>();
+      let voided = 0;
+      for (const d of rows) {
+        const typeId = String(d.document_type_id ?? "");
+        const key = byType.get(typeId) ?? {
+          document_type_id: typeId,
+          label: String(d.document_type_description ?? typeId),
+          count: 0,
+          total: 0,
+        };
+        key.count += 1;
+        key.total += Number(d.total ?? 0);
+        byType.set(typeId, key);
+        if (String(d.state_type_id) === "11") voided += 1;
+      }
+      return {
+        data: {
+          total_count: rows.length,
+          voided_count: voided,
+          by_type: [...byType.values()].sort((a, b) => b.count - a.count),
+        },
+      };
+    }
+
     const limit = Number(searchParams.get("limit") || 20);
     const page = Number(searchParams.get("page") || 1);
     const value = searchParams.get("value") || "";
+    const documentTypeId = searchParams.get("document_type_id") || "";
+    const stateTypeId = searchParams.get("state_type_id") || "";
 
-    const dbRows = (await fetchDocuments()).map(docToRecord);
-    const imported = await readImportedModule("documents");
-    const importedRows = imported?.length ? imported.map(mapImportedDocument) : [];
-
-    const byNumber = new Map<string, Record<string, unknown>>();
-    for (const row of importedRows) {
-      const r = row as Record<string, unknown>;
-      const key = String(r.number ?? r.full_number ?? r.id ?? "");
-      if (key) byNumber.set(key, r);
+    if (documentTypeId) {
+      rows = rows.filter((d) => String(d.document_type_id ?? "") === documentTypeId);
     }
-    for (const row of dbRows) {
-      const r = row as Record<string, unknown>;
-      const key = String(r.number ?? r.full_number ?? r.id ?? "");
-      if (key) byNumber.set(key, r);
+    if (stateTypeId) {
+      rows = rows.filter((d) => String(d.state_type_id ?? "") === stateTypeId);
     }
-
-    let rows = [...byNumber.values()].sort((a, b) => {
-      const ra = a as Record<string, unknown>;
-      const rb = b as Record<string, unknown>;
-      return String(rb.date_of_issue ?? rb.date ?? "").localeCompare(String(ra.date_of_issue ?? ra.date ?? ""));
-    });
-
     if (value) {
       const q = value.toLowerCase();
       rows = rows.filter((d) => {
@@ -844,27 +952,9 @@ export async function handleLocalApi(
     if (!seriesRow) throw new Error("Serie no encontrada");
 
     const nextNum = seriesRow.currentNumber + 1;
+    await assertNoNumberCollision(seriesRow.number, nextNum);
     const fullNumber = `${seriesRow.number}-${nextNum}`;
-    let totalTaxed = 0;
-    let totalIgv = 0;
-
-    const lineItems = items.map((it) => {
-      const qty = Number(it.quantity || 1);
-      const unitValue = Number(it.unit_value || 0);
-      const unitPrice = Number(it.unit_price || unitValue * 1.18);
-      totalTaxed += qty * unitValue;
-      totalIgv += qty * (unitPrice - unitValue);
-      return {
-        itemId: it.item_id ? Number(it.item_id) : null,
-        description: String(it.description || ""),
-        unitTypeId: String(it.unit_type_id || "NIU"),
-        quantity: qty,
-        unitValue,
-        unitPrice,
-        totalValue: qty * unitValue,
-        totalPrice: qty * unitPrice,
-      };
-    });
+    const { lineItems, totalTaxed, totalIgv, totalExonerated } = await buildDocumentLineItems(items);
 
     const doc = await prisma.$transaction(async (tx) => {
       await tx.series.update({ where: { id: seriesRow.id }, data: { currentNumber: nextNum } });
@@ -884,7 +974,8 @@ export async function handleLocalApi(
           operationTypeId: String(payload.operation_type_id || "0101"),
           totalTaxed,
           totalIgv,
-          total: totalTaxed + totalIgv,
+          totalExonerated,
+          total: totalTaxed + totalIgv + totalExonerated,
           plate: payload.plate ? String(payload.plate) : null,
           shareToken: (await import("@/lib/comprobante/share-link")).generateShareToken(),
           items: { create: lineItems },
@@ -925,6 +1016,94 @@ export async function handleLocalApi(
     return { success: true, data: docToRecord(doc), sunat };
   }
 
+  if (method === "PUT" && path.match(/^documents\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const payload = body as Record<string, unknown>;
+    const items = (payload.items as Record<string, unknown>[]) || [];
+    const existing = await prisma.document.findUnique({ where: { id }, include: { items: true } });
+    if (!existing) throw new Error("Comprobante no encontrado");
+    if (existing.stateTypeId === "05") {
+      throw new Error(
+        "Este comprobante ya fue aceptado por SUNAT y no se puede editar. Usa Duplicar para crear uno nuevo."
+      );
+    }
+
+    const { lineItems, totalTaxed, totalIgv, totalExonerated } = await buildDocumentLineItems(items);
+
+    const doc = await prisma.$transaction(async (tx) => {
+      // Repone el stock de las líneas anteriores antes de aplicar las nuevas.
+      for (const li of existing.items) {
+        if (li.itemId) {
+          await tx.item.update({ where: { id: li.itemId }, data: { stock: { increment: li.quantity } } });
+        }
+      }
+      await tx.documentItem.deleteMany({ where: { documentId: id } });
+      const updated = await tx.document.update({
+        where: { id },
+        data: {
+          documentTypeId: String(payload.document_type_id || existing.documentTypeId),
+          customerId: Number(payload.customer_id || existing.customerId),
+          sellerId: Number(payload.seller_id || existing.sellerId),
+          establishmentId: Number(payload.establishment_id || existing.establishmentId),
+          dateOfIssue: payload.date_of_issue ? new Date(String(payload.date_of_issue)) : existing.dateOfIssue,
+          dateOfDue: payload.date_of_due ? new Date(String(payload.date_of_due)) : existing.dateOfDue,
+          currencyTypeId: String(payload.currency_type_id || existing.currencyTypeId),
+          exchangeRate: payload.exchange_rate ? Number(payload.exchange_rate) : existing.exchangeRate,
+          operationTypeId: String(payload.operation_type_id || existing.operationTypeId),
+          totalTaxed,
+          totalIgv,
+          totalExonerated,
+          total: totalTaxed + totalIgv + totalExonerated,
+          plate: payload.plate !== undefined ? (payload.plate ? String(payload.plate) : null) : existing.plate,
+          items: { create: lineItems },
+        },
+        include: { customer: true, seller: true, establishment: true },
+      });
+
+      for (const li of lineItems) {
+        if (li.itemId) {
+          await tx.item.update({ where: { id: li.itemId }, data: { stock: { decrement: li.quantity } } });
+          await tx.inventoryMovement.create({
+            data: {
+              itemId: li.itemId,
+              type: "out",
+              quantity: li.quantity,
+              description: "Venta (editado)",
+              reference: existing.fullNumber,
+            },
+          });
+        }
+      }
+      return updated;
+    });
+
+    let sunat: { success: boolean; message: string } | null = null;
+    try {
+      const { autoSendAfterCreate } = await import("@/lib/sunat/send-document");
+      sunat = await autoSendAfterCreate(doc.id);
+    } catch {
+      /* envío SUNAT opcional */
+    }
+
+    return { success: true, data: docToRecord(doc), sunat };
+  }
+
+  if (method === "POST" && path.match(/^documents\/\d+\/void$/)) {
+    const id = Number(path.split("/")[1]);
+    const reason = String((body as Record<string, unknown>)?.reason || "Error en la emisión");
+    const { requestDocumentVoid } = await import("@/lib/sunat/void-document");
+    const result = await requestDocumentVoid(id, reason);
+    if (!result.success) throw new Error(result.message);
+    return { success: true, message: result.message, ticket: result.ticket };
+  }
+
+  if (method === "POST" && path.match(/^documents\/\d+\/void-status$/)) {
+    const id = Number(path.split("/")[1]);
+    const { checkDocumentVoidStatus } = await import("@/lib/sunat/void-document");
+    const result = await checkDocumentVoidStatus(id);
+    return result;
+  }
+
   if (method === "DELETE" && path.match(/^documents\/\d+$/)) {
     const id = Number(path.split("/")[1]);
     const doc = await prisma.document.findUnique({ where: { id }, include: { items: true } });
@@ -949,9 +1128,14 @@ export async function handleLocalApi(
   if (method === "POST" && path === "documents/massive") {
     const p = body as Record<string, unknown>;
     const batchRows = (p.rows as Record<string, unknown>[]) || [];
+    const { IGV_FACTOR } = await import("@/lib/tax");
+    // Afectación uniforme para todo el lote (definida en el formulario de emisión masiva).
+    const saleAffectationTypeId = String(p.sale_affectation_type_id || (p.has_igv === false ? "20" : "10"));
+    const hasIgv = p.has_igv !== undefined ? Boolean(p.has_igv) : saleAffectationTypeId === "10";
     let created = 0;
     for (const row of batchRows) {
       try {
+        const unitPrice = Number(row.unit_price);
         await handleLocalApi("POST", ["documents"], searchParams, {
           document_type_id: p.document_type_id,
           series_id: p.series_id,
@@ -969,8 +1153,10 @@ export async function handleLocalApi(
               description: row.description,
               unit_type_id: "NIU",
               quantity: row.quantity || 1,
-              unit_value: Number(row.unit_price) / 1.18,
-              unit_price: row.unit_price,
+              unit_value: hasIgv ? unitPrice / IGV_FACTOR : unitPrice,
+              unit_price: unitPrice,
+              has_igv: hasIgv,
+              sale_affectation_type_id: saleAffectationTypeId,
             },
           ],
         });
@@ -2822,6 +3008,52 @@ export async function handleLocalApi(
         reference: r.reference,
         entries: r._count,
         type: "Automático",
+      })),
+    };
+  }
+
+  // ── Libro de Ventas en Excel (/accounting/books-excel) ──
+  if (method === "GET" && path === "accounting/sales-book") {
+    const dateFrom = searchParams.get("date_from");
+    const dateTo = searchParams.get("date_to");
+    const documentTypeId = searchParams.get("document_type_id") || "";
+
+    const where: Record<string, unknown> = {};
+    if (dateFrom || dateTo) {
+      const range: Record<string, Date> = {};
+      if (dateFrom) range.gte = new Date(`${dateFrom}T00:00:00`);
+      if (dateTo) range.lte = new Date(`${dateTo}T23:59:59`);
+      where.dateOfIssue = range;
+    }
+    if (documentTypeId) where.documentTypeId = documentTypeId;
+
+    const docs = await prisma.document.findMany({
+      where,
+      include: { customer: true },
+      orderBy: [{ dateOfIssue: "asc" }, { id: "asc" }],
+    });
+
+    return {
+      data: docs.map((d) => ({
+        period: formatDate(d.dateOfIssue).slice(0, 7), // YYYY-MM
+        date_of_issue: formatDate(d.dateOfIssue),
+        document_type_id: d.documentTypeId,
+        document_type_description: getDocTypeDescription(d.documentTypeId),
+        series: d.series,
+        number: d.number,
+        full_number: d.fullNumber,
+        customer_document_type_id: d.customer.identityDocumentTypeId,
+        customer_number: d.customer.number,
+        customer_name: d.customer.name,
+        currency_type_id: d.currencyTypeId,
+        exchange_rate: d.exchangeRate,
+        total_taxed: d.totalTaxed,
+        total_exonerated: d.totalExonerated,
+        total_igv: d.totalIgv,
+        total: d.total,
+        state_type_id: d.stateTypeId,
+        state_type_description: d.stateTypeId === "11" ? "Anulado" : getStateDescription(d.stateTypeId),
+        reference: d.plate || "",
       })),
     };
   }

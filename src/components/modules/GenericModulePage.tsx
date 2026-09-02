@@ -44,6 +44,7 @@ import {
 } from "@/components/modules/ModuleLists";
 import { DispatchesCarrierList, TransportsList } from "@/components/carriers/TransportsList";
 import { CatalogListPage } from "@/components/modules/CatalogListPage";
+import { AccountingBooksExcelPage } from "@/components/accounting/AccountingBooksExcelPage";
 import { findReportByHref } from "@/lib/reports-catalog";
 
 const ItemSetsList = () => (
@@ -95,7 +96,7 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/accounting/daily": AccountingDailyList,
   "/accounting/entries": AccountingEntriesList,
   "/accounting/books": AccountingDailyList,
-  "/accounting/books-excel": AccountingDailyList,
+  "/accounting/books-excel": AccountingBooksExcelPage,
   "/inventory-references": catalog("/inventory-references", "Referencias de inventario"),
   "/transfers": catalog("/transfers", "Traslados"),
   "/devolutions": catalog("/devolutions", "Devoluciones"),

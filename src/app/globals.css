@@ -2498,7 +2498,8 @@ html.ify-dark ::-webkit-scrollbar-track {
   border-bottom-right-radius: 9px;
 }
 .doc-print-bank-table th {
-  background: #efefef;
+  background: #c41e3a;
+  color: #fff;
   font-weight: 700;
 }
 .doc-print-legal-row {
@@ -2663,12 +2664,12 @@ html.ify-dark ::-webkit-scrollbar-track {
 }
 
 .doc-print-table thead th {
-  background: #555;
+  background: #c41e3a;
   color: #fff;
   font-weight: 700;
   padding: 6px 4px;
   text-align: center;
-  border-right: 1px solid #666;
+  border-right: 1px solid #8f1529;
   font-size: 9px;
 }
 

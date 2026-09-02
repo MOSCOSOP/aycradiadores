@@ -41,6 +41,7 @@ export async function sendDocumentToSunat(documentId: number): Promise<SunatSend
       currencyTypeId: doc.currencyTypeId,
       totalTaxed: doc.totalTaxed,
       totalIgv: doc.totalIgv,
+      totalExonerated: doc.totalExonerated,
       total: doc.total,
       customer: {
         name: doc.customer.name,
@@ -52,13 +53,33 @@ export async function sendDocumentToSunat(documentId: number): Promise<SunatSend
         quantity: i.quantity,
         unitValue: i.unitValue,
         unitPrice: i.unitPrice,
+        saleAffectationTypeId: i.saleAffectationTypeId,
       })),
     });
 
     if (result.success) {
+      // Código de respuesta SUNAT = 0: aceptado de verdad (ver soap.ts, ya no se asume por HTTP 200).
       await prisma.document.update({
         where: { id: doc.id },
-        data: { hasXml: true, hasCdr: true, stateTypeId: "05" },
+        data: {
+          hasXml: true,
+          hasCdr: true,
+          stateTypeId: "05",
+          xmlContent: result.xml ?? undefined,
+          cdrContent: result.cdr ?? undefined,
+        },
+      });
+    } else if (result.xml || result.cdr) {
+      // Guarda XML/CDR igual aunque SUNAT lo rechace u observe, para poder inspeccionarlo —
+      // pero NO se marca como aceptado (stateTypeId se queda como estaba).
+      await prisma.document.update({
+        where: { id: doc.id },
+        data: {
+          hasXml: result.xml ? true : undefined,
+          hasCdr: result.cdr ? true : undefined,
+          xmlContent: result.xml ?? undefined,
+          cdrContent: result.cdr ?? undefined,
+        },
       });
     }
 

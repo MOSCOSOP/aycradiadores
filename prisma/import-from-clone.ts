@@ -42,6 +42,20 @@ async function clearBusinessData() {
   await prisma.supplier.deleteMany();
 }
 
+/** Lee imported-data/documents.json y devuelve el número más alto ya usado por cada serie. */
+function maxDocumentNumberBySeries(): Map<string, number> {
+  const max = new Map<string, number>();
+  const rows = asRows(readJson<{ number?: string }[]>("documents"));
+  for (const row of rows) {
+    const match = String(row.number ?? "").match(/^([A-Za-z0-9]+)-(\d+)$/);
+    if (!match) continue;
+    const [, series, n] = match;
+    const current = max.get(series) ?? 0;
+    if (Number(n) > current) max.set(series, Number(n));
+  }
+  return max;
+}
+
 async function ensureBaseStructure() {
   const adminEmail = process.env.ADMIN_EMAIL || "arcibesalvares@gmail.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "ARCHI2052";
@@ -90,11 +104,15 @@ async function ensureBaseStructure() {
 
   const seriesCount = await prisma.series.count();
   if (seriesCount === 0) {
+    // El contador de cada serie DEBE arrancar del máximo número ya usado en el sistema anterior
+    // (imported-data/documents.json), o SUNAT rechazará el primer comprobante nuevo por repetir
+    // un número ya emitido. Nunca arrancar en 0 si hay historial importado.
+    const maxBySeries = maxDocumentNumberBySeries();
     await prisma.series.createMany({
       data: [
-        { number: "F001", documentTypeId: "01", establishmentId: establishment.id },
-        { number: "B001", documentTypeId: "03", establishmentId: establishment.id },
-        { number: "T001", documentTypeId: "09", establishmentId: establishment.id },
+        { number: "F001", documentTypeId: "01", establishmentId: establishment.id, currentNumber: maxBySeries.get("F001") ?? 0 },
+        { number: "B001", documentTypeId: "03", establishmentId: establishment.id, currentNumber: maxBySeries.get("B001") ?? 0 },
+        { number: "T001", documentTypeId: "09", establishmentId: establishment.id, currentNumber: maxBySeries.get("T001") ?? 0 },
       ],
     });
   }

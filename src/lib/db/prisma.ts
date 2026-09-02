@@ -31,6 +31,7 @@ export function getStateDescription(id: string): string {
     "05": "Enviado",
     "09": "Rechazado",
     "11": "Anulado",
+    "12": "Baja en proceso (SUNAT)",
   };
   return map[id] ?? "Registrado";
 }

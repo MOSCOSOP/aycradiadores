@@ -63,6 +63,26 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }),
+    update: (id: number | string, payload: Record<string, unknown>) =>
+      apiFetch(local(`/documents/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    void: (id: number | string, reason?: string) =>
+      apiFetch<{ success: boolean; message: string; ticket?: string }>(local(`/documents/${id}/void`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      }),
+    checkVoidStatus: (id: number | string) =>
+      apiFetch<{ done: boolean; accepted?: boolean; message: string }>(local(`/documents/${id}/void-status`), {
+        method: "POST",
+      }),
+    summary: () =>
+      apiFetch<{ data: { total_count: number; voided_count: number; by_type: { document_type_id: string; label: string; count: number; total: number }[] } }>(
+        local("/documents/summary")
+      ),
     email: (id: number | string, email: string) =>
       apiFetch<{ success: boolean; message: string }>(local(`/documents/${id}/email`), {
         method: "POST",
@@ -448,6 +468,12 @@ export const api = {
       }),
     deleteChart: (id: number) => apiFetch(local(`/accounting/chart/${id}`), { method: "DELETE" }),
     deleteDaily: (id: number) => apiFetch(local(`/accounting/daily/${id}`), { method: "DELETE" }),
+    salesBook: (params: { date_from?: string; date_to?: string; document_type_id?: string }) => {
+      const qs = new URLSearchParams(
+        Object.fromEntries(Object.entries(params).filter(([, v]) => v)) as Record<string, string>
+      ).toString();
+      return apiFetch<{ data: Record<string, unknown>[] }>(`${local("/accounting/sales-book")}${qs ? `?${qs}` : ""}`);
+    },
   },
 
   reports: {
