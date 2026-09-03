@@ -269,6 +269,7 @@ function mapItemRecord(i: {
   barcode: string | null;
   brand: string | null;
   imageUrl: string | null;
+  active: boolean;
   category: { name: string } | null;
 }) {
   return {
@@ -297,6 +298,7 @@ function mapItemRecord(i: {
     sale_affectation_igv_type_id: i.saleAffectationTypeId,
     image_url_small: i.imageUrl,
     image_url: i.imageUrl,
+    active: i.active,
   };
 }
 
@@ -1383,7 +1385,7 @@ export async function handleLocalApi(
       return paginateImported(mapped, page, limit);
     }
 
-    const where =
+    const textWhere =
       value && (column === "search" || column === "description" || column === "name")
         ? {
             OR: [
@@ -1395,6 +1397,10 @@ export async function handleLocalApi(
         : value && column === "internal_id"
           ? { internalId: { contains: value, mode: "insensitive" as const } }
           : {};
+    // "search" es el buscador de productos para vender (comprobantes/POS) — un producto
+    // desactivado (ver DELETE items/:id) no debe poder elegirse ahí, aunque sí siga visible en
+    // el listado general de /items para poder reactivarlo.
+    const where = column === "search" ? { ...textWhere, active: true } : textWhere;
     const total = await prisma.item.count({ where });
     const data = await prisma.item.findMany({
       where,
@@ -1505,6 +1511,7 @@ export async function handleLocalApi(
         location: p.location ? String(p.location) : null,
         saleAffectationTypeId: String(p.sale_affectation_type_id || "10"),
         hasIgv: p.has_igv !== undefined ? Boolean(p.has_igv) : true,
+        active: p.active !== undefined ? Boolean(p.active) : undefined,
         categoryId: p.category_id ? Number(p.category_id) : null,
       },
     });
@@ -1512,8 +1519,25 @@ export async function handleLocalApi(
   }
 
   if (method === "DELETE" && path.match(/^items\/\d+$/)) {
-    await prisma.item.delete({ where: { id: Number(path.split("/")[1]) } });
-    return { success: true };
+    const id = Number(path.split("/")[1]);
+    // Un producto con historial (ventas o movimientos de stock) no se puede borrar de verdad sin
+    // perder ese historial — SUNAT/contabilidad necesitan conservarlo. En vez de fallar con un
+    // error de base de datos, se desactiva (deja de aparecer en las búsquedas) y se conserva todo.
+    const [movementCount, documentItemCount] = await Promise.all([
+      prisma.inventoryMovement.count({ where: { itemId: id } }),
+      prisma.documentItem.count({ where: { itemId: id } }),
+    ]);
+    if (movementCount > 0 || documentItemCount > 0) {
+      await prisma.item.update({ where: { id }, data: { active: false } });
+      return {
+        success: true,
+        soft_deleted: true,
+        message:
+          "Este producto ya tiene ventas o movimientos de stock registrados, así que se desactivó en vez de eliminarse (para no perder el historial). Ya no aparecerá en las búsquedas.",
+      };
+    }
+    await prisma.item.delete({ where: { id } });
+    return { success: true, soft_deleted: false };
   }
 
   // ── Categorías ──

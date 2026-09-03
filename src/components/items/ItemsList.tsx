@@ -67,10 +67,23 @@ export function ItemsList() {
   const handleDelete = async (r: Record<string, unknown>) => {
     if (!confirm("¿Eliminar producto?")) return;
     try {
-      await api.items.delete(Number(r.local_id ?? r.id));
+      const res = (await api.items.delete(Number(r.local_id ?? r.id))) as {
+        soft_deleted?: boolean;
+        message?: string;
+      };
+      if (res.soft_deleted) alert(res.message);
       load(search, page);
     } catch (e) {
       alert(e instanceof Error ? e.message : "No se puede eliminar");
+    }
+  };
+
+  const reactivate = async (r: Record<string, unknown>) => {
+    try {
+      await api.items.update(Number(r.local_id ?? r.id), { active: true });
+      load(search, page);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo reactivar");
     }
   };
 
@@ -120,6 +133,11 @@ export function ItemsList() {
                   <img src={String(r.image_url_small)} alt="" className="h-8 w-8 rounded object-cover" />
                 ) : null}
                 <span>{String(r.description || r.name)}</span>
+                {r.active === false && (
+                  <span className="rounded bg-[var(--muted-light)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]" title="Desactivado — ya no aparece al vender">
+                    Inactivo
+                  </span>
+                )}
               </div>
             ),
           },
@@ -164,6 +182,15 @@ export function ItemsList() {
                 >
                   Ajuste
                 </button>
+                {r.active === false && (
+                  <button
+                    type="button"
+                    className="ify-btn-outline px-2 py-1 text-[10px] text-green-700"
+                    onClick={() => reactivate(r)}
+                  >
+                    Reactivar
+                  </button>
+                )}
                 <RowActions onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)} />
               </div>
             ),
