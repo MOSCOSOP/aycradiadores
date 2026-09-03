@@ -49,7 +49,14 @@ export function signSunatXml(xml: string, certPem: string, signatureId = "Signat
 
   sig.addReference({
     xpath: "/*",
-    transforms: ["http://www.w3.org/2000/09/xmldsig#enveloped-signature"],
+    // El comentario de este archivo siempre dijo "C14N-EXC" para la referencia, pero acá
+    // solo se aplicaba el transform enveloped-signature — sin canonicalizar explícitamente
+    // el XML restante antes de calcular el digest, el resultado no es el que espera SUNAT
+    // (confirmado con un envío real a Beta: "Incorrect reference digest value").
+    transforms: [
+      "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+      "http://www.w3.org/2001/10/xml-exc-c14n#",
+    ],
     digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
     isEmptyUri: true,
   });

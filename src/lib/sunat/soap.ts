@@ -141,7 +141,7 @@ export function buildMinimalInvoiceXml(input: {
   <cac:Signature>
     <cbc:ID>SignatureSP</cbc:ID>
     <cac:SignatoryParty>
-      <cac:PartyIdentification><cbc:ID>${input.ruc}</cbc:ID></cac:PartyIdentification>
+      <cac:PartyIdentification><cbc:ID schemeID="6">${input.ruc}</cbc:ID></cac:PartyIdentification>
       <cac:PartyName><cbc:Name>${escapeXml(input.tradeName)}</cbc:Name></cac:PartyName>
     </cac:SignatoryParty>
     <cac:DigitalSignatureAttachment>
@@ -149,10 +149,17 @@ export function buildMinimalInvoiceXml(input: {
     </cac:DigitalSignatureAttachment>
   </cac:Signature>
   <cac:AccountingSupplierParty>
-    <cac:Party><cac:PartyLegalEntity><cbc:RegistrationName>${escapeXml(input.tradeName)}</cbc:RegistrationName><cbc:CompanyID schemeID="6">${input.ruc}</cbc:CompanyID></cac:PartyLegalEntity></cac:Party>
+    <cac:Party>
+      <cac:PartyIdentification><cbc:ID schemeID="6">${input.ruc}</cbc:ID></cac:PartyIdentification>
+      <cac:PartyName><cbc:Name>${escapeXml(input.tradeName)}</cbc:Name></cac:PartyName>
+      <cac:PartyLegalEntity><cbc:RegistrationName>${escapeXml(input.tradeName)}</cbc:RegistrationName><cbc:CompanyID schemeID="6">${input.ruc}</cbc:CompanyID></cac:PartyLegalEntity>
+    </cac:Party>
   </cac:AccountingSupplierParty>
   <cac:AccountingCustomerParty>
-    <cac:Party><cac:PartyLegalEntity><cbc:RegistrationName>${escapeXml(input.customerName)}</cbc:RegistrationName><cbc:CompanyID schemeID="${input.customerDocType}">${input.customerNumber}</cbc:CompanyID></cac:PartyLegalEntity></cac:Party>
+    <cac:Party>
+      <cac:PartyIdentification><cbc:ID schemeID="${input.customerDocType}">${input.customerNumber}</cbc:ID></cac:PartyIdentification>
+      <cac:PartyLegalEntity><cbc:RegistrationName>${escapeXml(input.customerName)}</cbc:RegistrationName><cbc:CompanyID schemeID="${input.customerDocType}">${input.customerNumber}</cbc:CompanyID></cac:PartyLegalEntity>
+    </cac:Party>
   </cac:AccountingCustomerParty>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="${input.currency}">${input.totalIgv.toFixed(2)}</cbc:TaxAmount>${subtotals}
@@ -169,7 +176,10 @@ export function buildMinimalInvoiceXml(input: {
 function zipSingleFile(filename: string, content: Buffer) {
   const nameBuf = Buffer.from(filename, "utf8");
   const crcVal = crc32(content);
-  const localHeader = Buffer.alloc(30 + nameBuf.length);
+  // 30 bytes exactos: solo los campos fijos de la cabecera. El nombre del archivo se
+  // concatena aparte (ver el Buffer.concat al final) — reservar espacio de más aquí
+  // dejaba una cola de bytes en cero que corrompía el zip completo (offsets desalineados).
+  const localHeader = Buffer.alloc(30);
   localHeader.writeUInt32LE(0x04034b50, 0);
   localHeader.writeUInt16LE(20, 4);
   localHeader.writeUInt16LE(0, 6);
@@ -181,7 +191,8 @@ function zipSingleFile(filename: string, content: Buffer) {
   localHeader.writeUInt32LE(content.length, 22);
   localHeader.writeUInt16LE(nameBuf.length, 26);
   localHeader.writeUInt16LE(0, 28);
-  const central = Buffer.alloc(46 + nameBuf.length);
+  // Mismo motivo que localHeader: 46 bytes exactos, el nombre va aparte en el concat.
+  const central = Buffer.alloc(46);
   central.writeUInt32LE(0x02014b50, 0);
   central.writeUInt16LE(20, 4);
   central.writeUInt16LE(20, 6);
@@ -208,12 +219,15 @@ function zipSingleFile(filename: string, content: Buffer) {
   end.writeUInt16LE(1, 10);
   end.writeUInt32LE(46 + nameBuf.length, 12);
   end.writeUInt32LE(30 + nameBuf.length + content.length, 16);
-  end.writeUInt16LE(nameBuf.length, 20);
+  end.writeUInt16LE(0, 20); // longitud del comentario del ZIP — debe ser 0 (sin comentario)
   return Buffer.concat([localHeader, nameBuf, content, central, nameBuf, end]);
 }
 
 /**
- * Lee el primer archivo de un .zip (los CDR de SUNAT vienen siempre con un único XML adentro).
+ * Lee el primer archivo REAL (no carpeta) de un .zip. Los CDR de SUNAT vienen con una entrada
+ * "dummy/" (carpeta vacía) ANTES del XML de respuesta — si solo se lee la primera entrada del
+ * directorio central, se obtiene esa carpeta vacía en vez del XML (confirmado con un envío real
+ * a SUNAT Beta: siempre daba "CDR sin código de respuesta reconocible").
  * Soporta almacenamiento sin comprimir (method 0) y DEFLATE (method 8, lo más común).
  */
 function readFirstZipEntry(zipBuffer: Buffer): { filename: string; content: Buffer } | null {
@@ -228,27 +242,45 @@ function readFirstZipEntry(zipBuffer: Buffer): { filename: string; content: Buff
   if (eocdOffset === -1) return null;
 
   const entryCount = zipBuffer.readUInt16LE(eocdOffset + 10);
-  const centralDirOffset = zipBuffer.readUInt32LE(eocdOffset + 16);
+  let centralDirOffset = zipBuffer.readUInt32LE(eocdOffset + 16);
   if (entryCount === 0) return null;
 
   const CENTRAL_SIG = 0x02014b50;
-  if (zipBuffer.readUInt32LE(centralDirOffset) !== CENTRAL_SIG) return null;
-
-  const compressionMethod = zipBuffer.readUInt16LE(centralDirOffset + 10);
-  const compressedSize = zipBuffer.readUInt32LE(centralDirOffset + 20);
-  const fileNameLength = zipBuffer.readUInt16LE(centralDirOffset + 28);
-  const localHeaderOffset = zipBuffer.readUInt32LE(centralDirOffset + 42);
-  const filename = zipBuffer.subarray(centralDirOffset + 46, centralDirOffset + 46 + fileNameLength).toString("utf8");
-
   const LOCAL_SIG = 0x04034b50;
-  if (zipBuffer.readUInt32LE(localHeaderOffset) !== LOCAL_SIG) return null;
-  const localNameLen = zipBuffer.readUInt16LE(localHeaderOffset + 26);
-  const localExtraLen = zipBuffer.readUInt16LE(localHeaderOffset + 28);
-  const dataStart = localHeaderOffset + 30 + localNameLen + localExtraLen;
-  const compressedData = zipBuffer.subarray(dataStart, dataStart + compressedSize);
 
-  const content = compressionMethod === 0 ? Buffer.from(compressedData) : inflateRawSync(compressedData);
-  return { filename, content };
+  for (let i = 0; i < entryCount; i++) {
+    if (zipBuffer.readUInt32LE(centralDirOffset) !== CENTRAL_SIG) return null;
+
+    const compressionMethod = zipBuffer.readUInt16LE(centralDirOffset + 10);
+    const compressedSize = zipBuffer.readUInt32LE(centralDirOffset + 20);
+    const uncompressedSize = zipBuffer.readUInt32LE(centralDirOffset + 24);
+    const fileNameLength = zipBuffer.readUInt16LE(centralDirOffset + 28);
+    const extraLength = zipBuffer.readUInt16LE(centralDirOffset + 30);
+    const commentLength = zipBuffer.readUInt16LE(centralDirOffset + 32);
+    const localHeaderOffset = zipBuffer.readUInt32LE(centralDirOffset + 42);
+    const filename = zipBuffer
+      .subarray(centralDirOffset + 46, centralDirOffset + 46 + fileNameLength)
+      .toString("utf8");
+
+    const nextCentralDirOffset = centralDirOffset + 46 + fileNameLength + extraLength + commentLength;
+
+    // Carpeta (termina en "/", sin contenido) — no es el archivo que buscamos, sigue con la siguiente entrada.
+    if (filename.endsWith("/") || uncompressedSize === 0) {
+      centralDirOffset = nextCentralDirOffset;
+      continue;
+    }
+
+    if (zipBuffer.readUInt32LE(localHeaderOffset) !== LOCAL_SIG) return null;
+    const localNameLen = zipBuffer.readUInt16LE(localHeaderOffset + 26);
+    const localExtraLen = zipBuffer.readUInt16LE(localHeaderOffset + 28);
+    const dataStart = localHeaderOffset + 30 + localNameLen + localExtraLen;
+    const compressedData = zipBuffer.subarray(dataStart, dataStart + compressedSize);
+
+    const content = compressionMethod === 0 ? Buffer.from(compressedData) : inflateRawSync(compressedData);
+    return { filename, content };
+  }
+
+  return null;
 }
 
 function crc32(buf: Buffer) {
