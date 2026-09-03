@@ -142,6 +142,10 @@ const RESERVED_SINGLE_SEGMENT = new Set([
   "item-lots",
   "price-adjustments",
   "devolutions",
+  "expenses",
+  "payroll",
+  "retentions",
+  "perceptions",
 ]);
 
 const BLOCKED_GENERIC_PATHS = new Set([
@@ -151,6 +155,8 @@ const BLOCKED_GENERIC_PATHS = new Set([
   "documents/not-sent",
   "documents/massive",
   "documents/regularize-shipping",
+  "fixed-asset/items",
+  "fixed-asset/purchases",
 ]);
 
 function parseGenericIdPath(path: string): { modulePath: string; id: number } | null {
@@ -2046,6 +2052,261 @@ export async function handleLocalApi(
   if (method === "DELETE" && path.match(/^devolutions\/\d+$/)) {
     // Elimina el registro de la devolución sin revertir el stock — es un ajuste manual deliberado.
     await prisma.return.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Gastos diversos (reemplaza el catálogo genérico de /expenses) ──
+  if (method === "GET" && path === "expenses/records") {
+    const data = await prisma.expense.findMany({ include: { supplier: true }, orderBy: { date: "desc" } });
+    return {
+      data: data.map((e) => ({
+        id: e.id,
+        description: e.description,
+        category: e.category ?? "",
+        amount: e.amount,
+        date: e.date.toISOString().slice(0, 10),
+        supplier_id: e.supplierId,
+        supplier_name: e.supplier?.name ?? "",
+        note: e.note ?? "",
+      })),
+    };
+  }
+  if (method === "POST" && path === "expenses") {
+    const p = body as Record<string, unknown>;
+    if (!p.description || !p.amount) throw new Error("Descripción y monto son obligatorios");
+    const expense = await prisma.expense.create({
+      data: {
+        description: String(p.description),
+        category: p.category ? String(p.category) : null,
+        amount: Number(p.amount),
+        date: p.date ? new Date(String(p.date)) : new Date(),
+        supplierId: p.supplier_id ? Number(p.supplier_id) : null,
+        note: p.note ? String(p.note) : null,
+      },
+    });
+    return { success: true, data: expense };
+  }
+  if (method === "PUT" && path.match(/^expenses\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const expense = await prisma.expense.update({
+      where: { id: Number(path.split("/")[1]) },
+      data: {
+        description: String(p.description || ""),
+        category: p.category ? String(p.category) : null,
+        amount: Number(p.amount || 0),
+        date: p.date ? new Date(String(p.date)) : undefined,
+        supplierId: p.supplier_id ? Number(p.supplier_id) : null,
+        note: p.note ? String(p.note) : null,
+      },
+    });
+    return { success: true, data: expense };
+  }
+  if (method === "DELETE" && path.match(/^expenses\/\d+$/)) {
+    await prisma.expense.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Activos fijos (une /fixed-asset/items y /fixed-asset/purchases en un solo registro real) ──
+  if (method === "GET" && (path === "fixed-asset/items/records" || path === "fixed-asset/purchases/records")) {
+    const data = await prisma.fixedAsset.findMany({ include: { supplier: true }, orderBy: { id: "desc" } });
+    return {
+      data: data.map((a) => ({
+        id: a.id,
+        name: a.name,
+        category: a.category ?? "",
+        purchase_date: a.purchaseDate ? a.purchaseDate.toISOString().slice(0, 10) : "",
+        purchase_price: a.purchasePrice,
+        supplier_id: a.supplierId,
+        supplier_name: a.supplier?.name ?? "",
+        status: a.status,
+        note: a.note ?? "",
+      })),
+    };
+  }
+  if (method === "POST" && (path === "fixed-asset/items" || path === "fixed-asset/purchases")) {
+    const p = body as Record<string, unknown>;
+    if (!p.name) throw new Error("El nombre del activo es obligatorio");
+    const asset = await prisma.fixedAsset.create({
+      data: {
+        name: String(p.name),
+        category: p.category ? String(p.category) : null,
+        purchaseDate: p.purchase_date ? new Date(String(p.purchase_date)) : null,
+        purchasePrice: Number(p.purchase_price || 0),
+        supplierId: p.supplier_id ? Number(p.supplier_id) : null,
+        status: p.status ? String(p.status) : "Activo",
+        note: p.note ? String(p.note) : null,
+      },
+    });
+    return { success: true, data: asset };
+  }
+  if (method === "PUT" && (path.match(/^fixed-asset\/items\/\d+$/) || path.match(/^fixed-asset\/purchases\/\d+$/))) {
+    const p = body as Record<string, unknown>;
+    const asset = await prisma.fixedAsset.update({
+      where: { id: Number(path.split("/")[2]) },
+      data: {
+        name: String(p.name || ""),
+        category: p.category ? String(p.category) : null,
+        purchaseDate: p.purchase_date ? new Date(String(p.purchase_date)) : null,
+        purchasePrice: Number(p.purchase_price || 0),
+        supplierId: p.supplier_id ? Number(p.supplier_id) : null,
+        status: p.status ? String(p.status) : undefined,
+        note: p.note ? String(p.note) : null,
+      },
+    });
+    return { success: true, data: asset };
+  }
+  if (method === "DELETE" && (path.match(/^fixed-asset\/items\/\d+$/) || path.match(/^fixed-asset\/purchases\/\d+$/))) {
+    await prisma.fixedAsset.delete({ where: { id: Number(path.split("/")[2]) } });
+    return { success: true };
+  }
+
+  // ── Planilla simplificada (empleados + planillas mensuales — reemplaza /payroll) ──
+  if (method === "GET" && path === "payroll/employees") {
+    const data = await prisma.employee.findMany({ orderBy: { name: "asc" } });
+    return {
+      data: data.map((e) => ({
+        id: e.id,
+        name: e.name,
+        document_id: e.documentId ?? "",
+        position: e.position ?? "",
+        monthly_salary: e.monthlySalary,
+        start_date: e.startDate ? e.startDate.toISOString().slice(0, 10) : "",
+        active: e.active,
+      })),
+    };
+  }
+  if (method === "POST" && path === "payroll/employees") {
+    const p = body as Record<string, unknown>;
+    if (!p.name) throw new Error("El nombre del trabajador es obligatorio");
+    const emp = await prisma.employee.create({
+      data: {
+        name: String(p.name),
+        documentId: p.document_id ? String(p.document_id) : null,
+        position: p.position ? String(p.position) : null,
+        monthlySalary: Number(p.monthly_salary || 0),
+        startDate: p.start_date ? new Date(String(p.start_date)) : null,
+      },
+    });
+    return { success: true, data: emp };
+  }
+  if (method === "PUT" && path.match(/^payroll\/employees\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const emp = await prisma.employee.update({
+      where: { id: Number(path.split("/")[2]) },
+      data: {
+        name: String(p.name || ""),
+        documentId: p.document_id ? String(p.document_id) : null,
+        position: p.position ? String(p.position) : null,
+        monthlySalary: Number(p.monthly_salary || 0),
+        active: p.active !== undefined ? Boolean(p.active) : undefined,
+      },
+    });
+    return { success: true, data: emp };
+  }
+  if (method === "DELETE" && path.match(/^payroll\/employees\/\d+$/)) {
+    const id = Number(path.split("/")[2]);
+    const inUse = await prisma.payrollLine.count({ where: { employeeId: id } });
+    if (inUse > 0) {
+      await prisma.employee.update({ where: { id }, data: { active: false } });
+      return { success: true, soft_deleted: true, message: "Este trabajador ya tiene planillas generadas, así que se desactivó en vez de eliminarse." };
+    }
+    await prisma.employee.delete({ where: { id } });
+    return { success: true };
+  }
+
+  if (method === "GET" && path === "payroll/records") {
+    const runs = await prisma.payrollRun.findMany({
+      include: { lines: { include: { employee: true } } },
+      orderBy: { period: "desc" },
+    });
+    return {
+      data: runs.map((r) => ({
+        id: r.id,
+        name: `Planilla ${r.period}`,
+        period: r.period,
+        date: r.createdAt.toISOString().slice(0, 10),
+        employees_count: r.lines.length,
+        total_net: r.lines.reduce((s, l) => s + l.netPay, 0),
+        lines: r.lines.map((l) => ({
+          employee_id: l.employeeId,
+          employee_name: l.employee.name,
+          base_salary: l.baseSalary,
+          bonuses: l.bonuses,
+          deductions: l.deductions,
+          net_pay: l.netPay,
+        })),
+      })),
+    };
+  }
+  if (method === "POST" && path === "payroll") {
+    const p = body as Record<string, unknown>;
+    const period = String(p.period || "").trim();
+    if (!period) throw new Error("El periodo (ej. 2026-09) es obligatorio");
+    const existing = await prisma.payrollRun.findFirst({ where: { period } });
+    if (existing) throw new Error(`Ya existe una planilla para el periodo ${period}`);
+    const employees = await prisma.employee.findMany({ where: { active: true } });
+    const run = await prisma.payrollRun.create({
+      data: {
+        period,
+        lines: {
+          create: employees.map((e) => ({
+            employeeId: e.id,
+            baseSalary: e.monthlySalary,
+            bonuses: 0,
+            deductions: 0,
+            netPay: e.monthlySalary,
+          })),
+        },
+      },
+      include: { lines: true },
+    });
+    return { success: true, data: run };
+  }
+  if (method === "DELETE" && path.match(/^payroll\/\d+$/)) {
+    await prisma.payrollRun.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Retenciones y percepciones (solo aplica si SUNAT te designó agente — registro real) ──
+  if (method === "GET" && (path === "retentions/records" || path === "perceptions/records")) {
+    const type = path === "retentions/records" ? "retention" : "perception";
+    const data = await prisma.taxWithholding.findMany({ where: { type }, orderBy: { date: "desc" } });
+    return {
+      data: data.map((t) => ({
+        id: t.id,
+        name: t.partyName,
+        party_name: t.partyName,
+        party_document: t.partyDocument ?? "",
+        document_ref: t.documentRef ?? "",
+        base_amount: t.baseAmount,
+        percent: t.percent,
+        amount: t.amount,
+        date: t.date.toISOString().slice(0, 10),
+        note: t.note ?? "",
+      })),
+    };
+  }
+  if (method === "POST" && (path === "retentions" || path === "perceptions")) {
+    const p = body as Record<string, unknown>;
+    if (!p.party_name || !p.base_amount || !p.percent) throw new Error("Cliente/proveedor, base y porcentaje son obligatorios");
+    const baseAmount = Number(p.base_amount);
+    const percent = Number(p.percent);
+    const record = await prisma.taxWithholding.create({
+      data: {
+        type: path === "retentions" ? "retention" : "perception",
+        partyName: String(p.party_name),
+        partyDocument: p.party_document ? String(p.party_document) : null,
+        documentRef: p.document_ref ? String(p.document_ref) : null,
+        baseAmount,
+        percent,
+        amount: Math.round(baseAmount * (percent / 100) * 100) / 100,
+        note: p.note ? String(p.note) : null,
+      },
+    });
+    return { success: true, data: record };
+  }
+  if (method === "DELETE" && (path.match(/^retentions\/\d+$/) || path.match(/^perceptions\/\d+$/))) {
+    await prisma.taxWithholding.delete({ where: { id: Number(path.split("/")[1]) } });
     return { success: true };
   }
 

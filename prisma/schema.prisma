@@ -157,6 +157,8 @@ model Supplier {
   barcode                String?
   active                 Boolean    @default(true)
   purchases              Purchase[]
+  expenses               Expense[]
+  fixedAssets            FixedAsset[]
   createdAt              DateTime   @default(now())
 }
 
@@ -532,4 +534,84 @@ model JournalEntry {
   accountName String
   debit       Float    @default(0)
   credit      Float    @default(0)
+}
+
+// ── Contabilidad/RRHH avanzada ──
+
+// Gastos diversos (alquiler, servicios, etc.) — reemplaza el catálogo genérico de /expenses.
+// Ya se sumaban al dashboard desde datos importados; ahora también se pueden registrar en vivo.
+model Expense {
+  id          Int       @id @default(autoincrement())
+  description String
+  category    String?
+  amount      Float
+  date        DateTime  @default(now())
+  supplierId  Int?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  note        String?
+  createdAt   DateTime  @default(now())
+}
+
+// Activos fijos de la empresa (herramientas, equipos, vehículo de reparto) — unifica lo que
+// antes eran dos catálogos genéricos separados (/fixed-asset/items y /fixed-asset/purchases).
+model FixedAsset {
+  id            Int       @id @default(autoincrement())
+  name          String
+  category      String?
+  purchaseDate  DateTime?
+  purchasePrice Float     @default(0)
+  supplierId    Int?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id])
+  status        String    @default("Activo") // Activo | En reparación | De baja
+  note          String?
+  createdAt     DateTime  @default(now())
+}
+
+// Planilla simplificada: trabajadores + planillas mensuales con neto a pagar. No reemplaza un
+// sistema de planilla legal completo (AFP/ONP/essalud/PLAME) — es un registro real de sueldos
+// para control interno, ya que ese nivel de cumplimiento legal excede el alcance de este sistema.
+model Employee {
+  id            Int           @id @default(autoincrement())
+  name          String
+  documentId    String?
+  position      String?
+  monthlySalary Float         @default(0)
+  startDate     DateTime?
+  active        Boolean       @default(true)
+  payrollLines  PayrollLine[]
+  createdAt     DateTime      @default(now())
+}
+
+model PayrollRun {
+  id        Int           @id @default(autoincrement())
+  period    String // "2026-09"
+  lines     PayrollLine[]
+  createdAt DateTime      @default(now())
+}
+
+model PayrollLine {
+  id           Int        @id @default(autoincrement())
+  payrollRunId Int
+  payrollRun   PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employeeId   Int
+  employee     Employee   @relation(fields: [employeeId], references: [id])
+  baseSalary   Float
+  bonuses      Float      @default(0)
+  deductions   Float      @default(0)
+  netPay       Float
+}
+
+// Retenciones y percepciones — solo aplican si SUNAT te designó como agente de retención o
+// percepción (no todos los negocios lo son). Queda como registro real por si se necesita.
+model TaxWithholding {
+  id            Int      @id @default(autoincrement())
+  type          String // "retention" | "perception"
+  partyName     String
+  partyDocument String?
+  documentRef   String?
+  baseAmount    Float
+  percent       Float
+  amount        Float
+  date          DateTime @default(now())
+  note          String?
 }

@@ -52,6 +52,10 @@ import { DiscountTypesPage } from "@/components/modules/DiscountTypesPage";
 import { ItemLotsPage } from "@/components/modules/ItemLotsPage";
 import { PriceAdjustmentsPage } from "@/components/modules/PriceAdjustmentsPage";
 import { DevolutionsPage } from "@/components/modules/DevolutionsPage";
+import { ExpensesPage } from "@/components/modules/ExpensesPage";
+import { FixedAssetsPage } from "@/components/modules/FixedAssetsPage";
+import { PayrollPage } from "@/components/modules/PayrollPage";
+import { TaxWithholdingsPage } from "@/components/modules/TaxWithholdingsPage";
 import { AccountingBooksExcelPage } from "@/components/accounting/AccountingBooksExcelPage";
 import { api } from "@/lib/api/client";
 import { findReportByHref } from "@/lib/reports-catalog";
@@ -65,6 +69,8 @@ const LinesPage = () => (
 const ZonesPage = () => (
   <SimpleNamedCatalogPage title="Zonas" subtitle="Zonas de reparto/ubicación para clasificar clientes" usageLabel="Clientes" api={api.zones} />
 );
+const RetentionsPage = () => <TaxWithholdingsPage type="retention" />;
+const PerceptionsPage = () => <TaxWithholdingsPage type="perception" />;
 const PersonTypesList = () => (
   <CatalogListPage pathname="/person-types" apiPath="person-types/records" title="Tipos de clientes" labelField="description" />
 );
@@ -130,18 +136,18 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/contingencies": catalog("/contingencies", "Comprobantes contingencia"),
   "/technical-services": catalog("/technical-services", "Servicio soporte técnico"),
   "/documents-recurrence": catalog("/documents-recurrence", "Comprobantes recurrentes"),
-  "/expenses": catalog("/expenses", "Gastos diversos"),
+  "/expenses": ExpensesPage,
   "/purchase-orders": catalog("/purchase-orders", "Órdenes de compra"),
   "/purchase-quotations": catalog("/purchase-quotations", "Cotizaciones de compra"),
   "/purchase-settlements": catalog("/purchase-settlements", "Liquidación de compra"),
-  "/payroll": catalog("/payroll", "Planilla"),
-  "/retentions": catalog("/retentions", "Retenciones"),
-  "/perceptions": catalog("/perceptions", "Percepciones"),
+  "/payroll": PayrollPage,
+  "/retentions": RetentionsPage,
+  "/perceptions": PerceptionsPage,
   "/order-forms": catalog("/order-forms", "Órdenes de pedido"),
   "/delivery-orders": catalog("/delivery-orders", "Órdenes de entrega"),
   "/complaints-book": catalog("/complaints-book", "Libro de reclamaciones"),
-  "/fixed-asset/items": catalog("/fixed-asset/items", "Activos fijos — ítems"),
-  "/fixed-asset/purchases": catalog("/fixed-asset/purchases", "Activos fijos — compras"),
+  "/fixed-asset/items": FixedAssetsPage,
+  "/fixed-asset/purchases": FixedAssetsPage,
 };
 
 const DEFAULT_REPORT_COLUMNS = [

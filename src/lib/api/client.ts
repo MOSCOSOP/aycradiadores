@@ -559,6 +559,47 @@ export const api = {
     delete: (id: number) => apiFetch(local(`/devolutions/${id}`), { method: "DELETE" }),
   },
 
+  expenses: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/expenses/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch(local("/expenses"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/expenses/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/expenses/${id}`), { method: "DELETE" }),
+  },
+
+  fixedAssets: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/fixed-asset/items/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch(local("/fixed-asset/items"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/fixed-asset/items/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/fixed-asset/items/${id}`), { method: "DELETE" }),
+  },
+
+  payroll: {
+    employees: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/payroll/employees")),
+    createEmployee: (payload: Record<string, unknown>) =>
+      apiFetch(local("/payroll/employees"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    updateEmployee: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/payroll/employees/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    deleteEmployee: (id: number) =>
+      apiFetch<{ success: boolean; soft_deleted?: boolean; message?: string }>(local(`/payroll/employees/${id}`), { method: "DELETE" }),
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/payroll/records")),
+    createRun: (payload: Record<string, unknown>) =>
+      apiFetch(local("/payroll"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    deleteRun: (id: number) => apiFetch(local(`/payroll/${id}`), { method: "DELETE" }),
+  },
+
+  taxWithholdings: {
+    records: (type: "retention" | "perception") =>
+      apiFetch<{ data: Record<string, unknown>[] }>(local(type === "retention" ? "/retentions/records" : "/perceptions/records")),
+    create: (type: "retention" | "perception", payload: Record<string, unknown>) =>
+      apiFetch(local(type === "retention" ? "/retentions" : "/perceptions"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (type: "retention" | "perception", id: number) =>
+      apiFetch(local(`${type === "retention" ? "/retentions" : "/perceptions"}/${id}`), { method: "DELETE" }),
+  },
+
   series: {
     records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/series/records")),
     create: (payload: Record<string, unknown>) =>
