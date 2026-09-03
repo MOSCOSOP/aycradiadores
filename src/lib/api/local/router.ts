@@ -132,6 +132,7 @@ const RESERVED_SINGLE_SEGMENT = new Set([
   "order-notes",
   "auth",
   "backup",
+  "series",
 ]);
 
 const BLOCKED_GENERIC_PATHS = new Set([
@@ -1108,6 +1109,74 @@ export async function handleLocalApi(
     const { checkDocumentVoidStatus } = await import("@/lib/sunat/void-document");
     const result = await checkDocumentVoidStatus(id);
     return result;
+  }
+
+  // ── Series (numeración real de comprobantes — NO es un catálogo genérico) ──
+  if (method === "GET" && path === "series/records") {
+    const [seriesRows, establishments] = await Promise.all([
+      prisma.series.findMany({ orderBy: [{ documentTypeId: "asc" }, { number: "asc" }] }),
+      prisma.establishment.findMany(),
+    ]);
+    const counts = await prisma.document.groupBy({ by: ["series"], _count: { _all: true } });
+    const countBySeries = new Map(counts.map((c) => [c.series, c._count._all]));
+    const estByid = new Map(establishments.map((e) => [e.id, e.description]));
+    return {
+      data: seriesRows.map((s) => ({
+        id: s.id,
+        number: s.number,
+        document_type_id: s.documentTypeId,
+        document_type_description: getDocTypeDescription(s.documentTypeId),
+        establishment_id: s.establishmentId,
+        establishment_description: estByid.get(s.establishmentId) ?? "",
+        current_number: s.currentNumber,
+        next_number: s.currentNumber + 1,
+        documents_issued: countBySeries.get(s.number) ?? 0,
+      })),
+    };
+  }
+
+  if (method === "POST" && path === "series") {
+    const p = body as Record<string, unknown>;
+    const number = String(p.number || "").trim().toUpperCase();
+    const documentTypeId = String(p.document_type_id || "");
+    const establishmentId = Number(p.establishment_id);
+    if (!number || !documentTypeId || !establishmentId) {
+      throw new Error("Serie, tipo de documento y establecimiento son obligatorios");
+    }
+    const startingNumber = Math.max(0, Number(p.starting_number ?? 0));
+    const created = await prisma.series.create({
+      data: { number, documentTypeId, establishmentId, currentNumber: startingNumber },
+    });
+    return { success: true, data: created };
+  }
+
+  // Solo se permite corregir (subir) el contador — nunca bajarlo, ni cambiar serie/tipo/local
+  // de una serie que ya emitió comprobantes: eso rompería la correlatividad ante SUNAT.
+  if (method === "PUT" && path.match(/^series\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const existing = await prisma.series.findUnique({ where: { id } });
+    if (!existing) throw new Error("Serie no encontrada");
+    const newCurrent = Number(p.current_number);
+    if (!Number.isFinite(newCurrent)) throw new Error("Número de contador inválido");
+    if (newCurrent < existing.currentNumber) {
+      throw new Error(
+        "No se puede bajar el contador de una serie — repetiría un número ya usado y SUNAT lo rechazaría."
+      );
+    }
+    const updated = await prisma.series.update({ where: { id }, data: { currentNumber: newCurrent } });
+    return { success: true, data: updated };
+  }
+
+  if (method === "DELETE" && path.match(/^series\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const existing = await prisma.series.findUnique({ where: { id } });
+    if (!existing) throw new Error("Serie no encontrada");
+    if (existing.currentNumber > 0) {
+      throw new Error("Esta serie ya tiene comprobantes emitidos — no se puede eliminar.");
+    }
+    await prisma.series.delete({ where: { id } });
+    return { success: true };
   }
 
   if (method === "DELETE" && path.match(/^documents\/\d+$/)) {

@@ -481,6 +481,23 @@ export const api = {
       apiFetch<{ data: Record<string, unknown>[] }>(local(`/${path}`)),
   },
 
+  series: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/series/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch(local("/series"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/series/${id}`), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: number) => apiFetch(local(`/series/${id}`), { method: "DELETE" }),
+  },
+
   generic: {
     records: (apiPath: string) =>
       apiFetch<{ data: Record<string, unknown>[]; meta?: { total: number } }>(

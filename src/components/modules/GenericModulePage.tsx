@@ -44,6 +44,7 @@ import {
 } from "@/components/modules/ModuleLists";
 import { DispatchesCarrierList, TransportsList } from "@/components/carriers/TransportsList";
 import { CatalogListPage } from "@/components/modules/CatalogListPage";
+import { SeriesManagementPage } from "@/components/modules/SeriesManagementPage";
 import { AccountingBooksExcelPage } from "@/components/accounting/AccountingBooksExcelPage";
 import { findReportByHref } from "@/lib/reports-catalog";
 
@@ -104,7 +105,7 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/cupones": catalog("/cupones", "Cupones"),
   "/ingredients": catalog("/ingredients", "Ingredientes"),
   "/lines": catalog("/lines", "Líneas"),
-  "/series": catalog("/series", "Series"),
+  "/series": SeriesManagementPage,
   "/item-lots": catalog("/item-lots", "Lotes"),
   "/price-adjustments": catalog("/price-adjustments", "Ajustes de precio"),
   "/discount-types": catalog("/discount-types", "Tipos de descuentos"),
