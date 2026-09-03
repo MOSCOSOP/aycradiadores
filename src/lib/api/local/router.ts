@@ -849,9 +849,18 @@ export async function handleLocalApi(
   // ── Documentos ──
   if (method === "GET" && path.match(/^documents\/\d+$/)) {
     const id = Number(path.split("/")[1]);
-    const imported = await readImportedModule("documents");
-    if (imported?.length) {
-      const found = imported.find((d) => Number(d.id) === id);
+    // La base de datos real es la fuente de verdad y se revisa PRIMERO. El id autoincremental de
+    // Document empieza en 1, igual que los ids originales del historial importado — sin este
+    // orden, un comprobante real nuevo (ej. id=30) podía quedar tapado por un comprobante viejo
+    // importado que por pura coincidencia tenía ese mismo id, mostrando datos de otro cliente.
+    const doc = await prisma.document.findUnique({
+      where: { id },
+      include: { customer: true, seller: true, establishment: true, items: { include: { item: true } } },
+    });
+
+    if (!doc) {
+      const imported = await readImportedModule("documents");
+      const found = imported?.find((d) => Number(d.id) === id);
       if (found) {
         const items = (found.items as Record<string, unknown>[]) || [];
         return {
@@ -870,12 +879,8 @@ export async function handleLocalApi(
           },
         };
       }
+      throw new Error("Comprobante no encontrado");
     }
-    const doc = await prisma.document.findUnique({
-      where: { id },
-      include: { customer: true, seller: true, establishment: true, items: { include: { item: true } } },
-    });
-    if (!doc) throw new Error("Comprobante no encontrado");
     const { ensureDocumentShareToken } = await import("@/lib/comprobante/public-document");
     const shareToken = doc.shareToken ?? (await ensureDocumentShareToken(doc.id));
     return {
@@ -3418,23 +3423,29 @@ export async function handleLocalApi(
 
   if (method === "GET" && path.match(/^dispatches\/\d+$/)) {
     const id = Number(path.split("/")[1]);
-    const imported = await readImportedModule("dispatches");
-    const found = imported?.find((d) => Number(d.id) === id);
-    if (found) {
-      return {
-        data: {
-          ...mapImportedDispatch(found),
-          origin_address: found.origin_address ?? found.address_origin,
-          dest_address: found.delivery_address ?? found.address_destination,
-          items: (found.items as Record<string, unknown>[]) ?? [],
-        },
-      };
-    }
+    // Misma corrección que en documents/:id: la base de datos real se revisa PRIMERO — el id
+    // autoincremental de Dispatch puede coincidir con el id original de una guía importada del
+    // historial, y si se revisaba el historial primero, una guía real nueva podía quedar tapada
+    // mostrando los datos de una guía vieja distinta.
     const d = await prisma.dispatch.findUnique({
       where: { id },
       include: { customer: true, items: true },
     });
-    if (!d) throw new Error("Guía no encontrada");
+    if (!d) {
+      const imported = await readImportedModule("dispatches");
+      const found = imported?.find((x) => Number(x.id) === id);
+      if (found) {
+        return {
+          data: {
+            ...mapImportedDispatch(found),
+            origin_address: found.origin_address ?? found.address_origin,
+            dest_address: found.delivery_address ?? found.address_destination,
+            items: (found.items as Record<string, unknown>[]) ?? [],
+          },
+        };
+      }
+      throw new Error("Guía no encontrada");
+    }
     return {
       data: {
         id: d.id,
