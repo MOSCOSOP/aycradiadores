@@ -47,6 +47,11 @@ import { CatalogListPage } from "@/components/modules/CatalogListPage";
 import { SeriesManagementPage } from "@/components/modules/SeriesManagementPage";
 import { SimpleNamedCatalogPage } from "@/components/modules/SimpleNamedCatalogPage";
 import { ItemSetsPage } from "@/components/modules/ItemSetsPage";
+import { InventoryReferencesPage } from "@/components/modules/InventoryReferencesPage";
+import { DiscountTypesPage } from "@/components/modules/DiscountTypesPage";
+import { ItemLotsPage } from "@/components/modules/ItemLotsPage";
+import { PriceAdjustmentsPage } from "@/components/modules/PriceAdjustmentsPage";
+import { DevolutionsPage } from "@/components/modules/DevolutionsPage";
 import { AccountingBooksExcelPage } from "@/components/accounting/AccountingBooksExcelPage";
 import { api } from "@/lib/api/client";
 import { findReportByHref } from "@/lib/reports-catalog";
@@ -104,17 +109,17 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/accounting/entries": AccountingEntriesList,
   "/accounting/books": AccountingDailyList,
   "/accounting/books-excel": AccountingBooksExcelPage,
-  "/inventory-references": catalog("/inventory-references", "Referencias de inventario"),
+  "/inventory-references": InventoryReferencesPage,
   "/transfers": catalog("/transfers", "Traslados"),
-  "/devolutions": catalog("/devolutions", "Devoluciones"),
+  "/devolutions": DevolutionsPage,
   "/brands": BrandsPage,
   "/cupones": catalog("/cupones", "Cupones"),
   "/ingredients": catalog("/ingredients", "Ingredientes"),
   "/lines": LinesPage,
   "/series": SeriesManagementPage,
-  "/item-lots": catalog("/item-lots", "Lotes"),
-  "/price-adjustments": catalog("/price-adjustments", "Ajustes de precio"),
-  "/discount-types": catalog("/discount-types", "Tipos de descuentos"),
+  "/item-lots": ItemLotsPage,
+  "/price-adjustments": PriceAdjustmentsPage,
+  "/discount-types": DiscountTypesPage,
   "/transports": TransportsList,
   "/drivers": catalog("/drivers", "Conductores"),
   "/vehicles": catalog("/vehicles", "Vehículos"),

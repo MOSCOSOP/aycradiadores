@@ -190,7 +190,66 @@ model Item {
   documentItems      DocumentItem[]
   inventoryMovements InventoryMovement[]
   itemSetLines       ItemSetLine[]
+  references         ItemReference[]
+  lots               ItemLot[]
+  returns            Return[]
   createdAt          DateTime            @default(now())
+}
+
+// Códigos equivalentes/alternos de un repuesto entre marcas o proveedores (ej. un mismo
+// filtro con código OEM distinto al del fabricante) — reemplaza /inventory-references.
+model ItemReference {
+  id     Int     @id @default(autoincrement())
+  itemId Int
+  item   Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  code   String
+  note   String?
+}
+
+// Tipos de descuento aplicables al vender (ej. "Cliente frecuente" 5%) — reemplaza
+// /discount-types. Guarda el % real, no solo un nombre.
+model DiscountType {
+  id      Int    @id @default(autoincrement())
+  name    String @unique
+  percent Float  @default(0)
+}
+
+// Historial de ajustes masivos de precio (ej. +10% a toda una categoría) — reemplaza
+// /price-adjustments. Queda como bitácora de lo que se aplicó y a cuántos productos.
+model PriceAdjustment {
+  id            Int      @id @default(autoincrement())
+  description   String
+  percent       Float
+  filterType    String // "all" | "category" | "brand" | "line"
+  filterId      Int?
+  filterLabel   String?
+  itemsAffected Int      @default(0)
+  createdAt     DateTime @default(now())
+}
+
+// Lotes de compra de un producto (para trazabilidad/garantía) — reemplaza /item-lots.
+model ItemLot {
+  id           Int       @id @default(autoincrement())
+  itemId       Int
+  item         Item      @relation(fields: [itemId], references: [id])
+  code         String
+  quantity     Float     @default(0)
+  purchaseDate DateTime?
+  note         String?
+  createdAt    DateTime  @default(now())
+}
+
+// Devoluciones de productos por parte del cliente — repone stock real y queda registrada.
+// Reemplaza /devolutions.
+model Return {
+  id         Int       @id @default(autoincrement())
+  documentId Int?
+  document   Document? @relation(fields: [documentId], references: [id])
+  itemId     Int
+  item       Item      @relation(fields: [itemId], references: [id])
+  quantity   Float
+  reason     String?
+  createdAt  DateTime  @default(now())
 }
 
 // Catálogo real de marcas de repuestos (ej. Bosch, Denso, Valeo) — reemplaza el catálogo
@@ -271,6 +330,7 @@ model Document {
   voidCdrContent  String?        @db.Text
   shareToken      String?        @unique
   items           DocumentItem[]
+  returns         Return[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }

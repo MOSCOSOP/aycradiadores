@@ -137,6 +137,11 @@ const RESERVED_SINGLE_SEGMENT = new Set([
   "lines",
   "zones",
   "item-sets",
+  "inventory-references",
+  "discount-types",
+  "item-lots",
+  "price-adjustments",
+  "devolutions",
 ]);
 
 const BLOCKED_GENERIC_PATHS = new Set([
@@ -1826,6 +1831,221 @@ export async function handleLocalApi(
   }
   if (method === "DELETE" && path.match(/^item-sets\/\d+$/)) {
     await prisma.itemSet.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Referencias de inventario (códigos equivalentes entre marcas — reemplaza /inventory-references) ──
+  if (method === "GET" && path === "inventory-references/records") {
+    const data = await prisma.itemReference.findMany({ include: { item: true }, orderBy: { id: "desc" } });
+    return {
+      data: data.map((r) => ({
+        id: r.id,
+        item_id: r.itemId,
+        item_description: r.item.description,
+        code: r.code,
+        note: r.note ?? "",
+      })),
+    };
+  }
+  if (method === "POST" && path === "inventory-references") {
+    const p = body as Record<string, unknown>;
+    if (!p.item_id || !p.code) throw new Error("Producto y código son obligatorios");
+    const ref = await prisma.itemReference.create({
+      data: { itemId: Number(p.item_id), code: String(p.code).trim(), note: p.note ? String(p.note) : null },
+    });
+    return { success: true, data: ref };
+  }
+  if (method === "PUT" && path.match(/^inventory-references\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const ref = await prisma.itemReference.update({
+      where: { id: Number(path.split("/")[1]) },
+      data: { code: String(p.code || "").trim(), note: p.note ? String(p.note) : null },
+    });
+    return { success: true, data: ref };
+  }
+  if (method === "DELETE" && path.match(/^inventory-references\/\d+$/)) {
+    await prisma.itemReference.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Tipos de descuento (con % real — reemplaza /discount-types) ──
+  if (method === "GET" && path === "discount-types/records") {
+    const data = await prisma.discountType.findMany({ orderBy: { name: "asc" } });
+    return { data: data.map((d) => ({ id: d.id, name: d.name, description: d.name, percent: d.percent })) };
+  }
+  if (method === "POST" && path === "discount-types") {
+    const p = body as Record<string, unknown>;
+    const name = String(p.name || "").trim();
+    if (!name) throw new Error("El nombre es obligatorio");
+    const d = await prisma.discountType.create({ data: { name, percent: Number(p.percent || 0) } });
+    return { success: true, data: d };
+  }
+  if (method === "PUT" && path.match(/^discount-types\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const d = await prisma.discountType.update({
+      where: { id: Number(path.split("/")[1]) },
+      data: { name: String(p.name || "").trim(), percent: Number(p.percent || 0) },
+    });
+    return { success: true, data: d };
+  }
+  if (method === "DELETE" && path.match(/^discount-types\/\d+$/)) {
+    await prisma.discountType.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Lotes de compra (trazabilidad — reemplaza /item-lots) ──
+  if (method === "GET" && path === "item-lots/records") {
+    const data = await prisma.itemLot.findMany({ include: { item: true }, orderBy: { id: "desc" } });
+    return {
+      data: data.map((l) => ({
+        id: l.id,
+        item_id: l.itemId,
+        item_description: l.item.description,
+        code: l.code,
+        quantity: l.quantity,
+        date: l.purchaseDate ? l.purchaseDate.toISOString().slice(0, 10) : "",
+        note: l.note ?? "",
+      })),
+    };
+  }
+  if (method === "POST" && path === "item-lots") {
+    const p = body as Record<string, unknown>;
+    if (!p.item_id || !p.code) throw new Error("Producto y código de lote son obligatorios");
+    const lot = await prisma.itemLot.create({
+      data: {
+        itemId: Number(p.item_id),
+        code: String(p.code).trim(),
+        quantity: Number(p.quantity || 0),
+        purchaseDate: p.date ? new Date(String(p.date)) : null,
+        note: p.note ? String(p.note) : null,
+      },
+    });
+    return { success: true, data: lot };
+  }
+  if (method === "PUT" && path.match(/^item-lots\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const lot = await prisma.itemLot.update({
+      where: { id: Number(path.split("/")[1]) },
+      data: {
+        code: String(p.code || "").trim(),
+        quantity: Number(p.quantity || 0),
+        purchaseDate: p.date ? new Date(String(p.date)) : null,
+        note: p.note ? String(p.note) : null,
+      },
+    });
+    return { success: true, data: lot };
+  }
+  if (method === "DELETE" && path.match(/^item-lots\/\d+$/)) {
+    await prisma.itemLot.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Ajustes de precio masivos (herramienta real, no solo catálogo — reemplaza /price-adjustments) ──
+  if (method === "GET" && path === "price-adjustments/records") {
+    const data = await prisma.priceAdjustment.findMany({ orderBy: { id: "desc" } });
+    return {
+      data: data.map((a) => ({
+        id: a.id,
+        name: a.description,
+        description: a.description,
+        percent: a.percent,
+        filter_label: a.filterLabel ?? "Todos los productos",
+        items_affected: a.itemsAffected,
+        date: a.createdAt.toISOString().slice(0, 10),
+      })),
+    };
+  }
+  // Previsualiza cuántos productos afectaría un ajuste, sin aplicarlo todavía.
+  if (method === "POST" && path === "price-adjustments/preview") {
+    const p = body as Record<string, unknown>;
+    const where: Record<string, unknown> = { active: true };
+    if (p.filter_type === "category" && p.filter_id) where.categoryId = Number(p.filter_id);
+    if (p.filter_type === "brand" && p.filter_id) where.brandId = Number(p.filter_id);
+    if (p.filter_type === "line" && p.filter_id) where.lineId = Number(p.filter_id);
+    const count = await prisma.item.count({ where });
+    return { count };
+  }
+  if (method === "POST" && path === "price-adjustments") {
+    const p = body as Record<string, unknown>;
+    const percent = Number(p.percent);
+    if (!percent) throw new Error("El porcentaje es obligatorio (usa negativo para rebajar)");
+    const filterType = String(p.filter_type || "all");
+    const where: Record<string, unknown> = { active: true };
+    if (filterType === "category" && p.filter_id) where.categoryId = Number(p.filter_id);
+    if (filterType === "brand" && p.filter_id) where.brandId = Number(p.filter_id);
+    if (filterType === "line" && p.filter_id) where.lineId = Number(p.filter_id);
+
+    const items = await prisma.item.findMany({ where, select: { id: true, saleUnitPrice: true } });
+    await prisma.$transaction(
+      items.map((it) =>
+        prisma.item.update({
+          where: { id: it.id },
+          data: { saleUnitPrice: Math.max(0, Math.round(it.saleUnitPrice * (1 + percent / 100) * 100) / 100) },
+        })
+      )
+    );
+    const record = await prisma.priceAdjustment.create({
+      data: {
+        description: String(p.description || `Ajuste ${percent > 0 ? "+" : ""}${percent}%`),
+        percent,
+        filterType,
+        filterId: p.filter_id ? Number(p.filter_id) : null,
+        filterLabel: p.filter_label ? String(p.filter_label) : null,
+        itemsAffected: items.length,
+      },
+    });
+    return { success: true, data: record, items_affected: items.length };
+  }
+
+  // ── Devoluciones (repone stock real — reemplaza /devolutions) ──
+  if (method === "GET" && path === "devolutions/records") {
+    const data = await prisma.return.findMany({ include: { item: true, document: true }, orderBy: { id: "desc" } });
+    return {
+      data: data.map((r) => ({
+        id: r.id,
+        item_id: r.itemId,
+        item_description: r.item.description,
+        document_id: r.documentId,
+        document_number: r.document?.fullNumber ?? "",
+        quantity: r.quantity,
+        reason: r.reason ?? "",
+        date: r.createdAt.toISOString().slice(0, 10),
+      })),
+    };
+  }
+  if (method === "POST" && path === "devolutions") {
+    const p = body as Record<string, unknown>;
+    const itemId = Number(p.item_id);
+    const quantity = Number(p.quantity || 0);
+    if (!itemId || quantity <= 0) throw new Error("Producto y cantidad son obligatorios");
+    let documentId = p.document_id ? Number(p.document_id) : null;
+    const documentNumber = p.document_number ? String(p.document_number).trim() : "";
+    if (!documentId && documentNumber) {
+      const doc = await prisma.document.findUnique({ where: { fullNumber: documentNumber } });
+      if (!doc) throw new Error(`No se encontró el comprobante ${documentNumber}`);
+      documentId = doc.id;
+    }
+    const created = await prisma.$transaction(async (tx) => {
+      const ret = await tx.return.create({
+        data: { itemId, quantity, documentId, reason: p.reason ? String(p.reason) : null },
+      });
+      await tx.item.update({ where: { id: itemId }, data: { stock: { increment: quantity } } });
+      await tx.inventoryMovement.create({
+        data: {
+          itemId,
+          type: "in",
+          quantity,
+          description: "Devolución de cliente",
+          reference: documentNumber || "Devolución",
+        },
+      });
+      return ret;
+    });
+    return { success: true, data: created };
+  }
+  if (method === "DELETE" && path.match(/^devolutions\/\d+$/)) {
+    // Elimina el registro de la devolución sin revertir el stock — es un ajuste manual deliberado.
+    await prisma.return.delete({ where: { id: Number(path.split("/")[1]) } });
     return { success: true };
   }
 
