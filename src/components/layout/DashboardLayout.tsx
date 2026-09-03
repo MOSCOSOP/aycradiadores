@@ -1,4 +1,5 @@
 import { Sidebar } from "./Sidebar";
+import { Topbar } from "./Topbar";
 import { ThemeProvider } from "./ThemeProvider";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -6,7 +7,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <ThemeProvider>
       <div className="min-h-screen">
         <Sidebar />
-        <main className="ify-main">{children}</main>
+        <main className="ify-main">
+          <Topbar />
+          <div className="ify-main-content">{children}</div>
+        </main>
       </div>
     </ThemeProvider>
   );

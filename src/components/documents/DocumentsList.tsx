@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/ui/DataTable";
 import { RowActions } from "@/components/ui/RowActions";
+import { Badge } from "@/components/ui/Badge";
 import { api } from "@/lib/api/client";
 
 type DocRow = Record<string, unknown>;
@@ -240,17 +241,11 @@ export function DocumentsList() {
               const isVoided = stateId === "11";
               const isAccepted = stateId === "05";
               const isVoidPending = stateId === "12";
-              const cls = isVoided
-                ? "bg-red-50 text-red-700"
-                : isVoidPending
-                ? "bg-amber-50 text-amber-700"
-                : isAccepted
-                ? "bg-green-50 text-green-700"
-                : "bg-amber-50 text-amber-700";
+              const tone = isVoided ? "error" : isVoidPending ? "warning" : isAccepted ? "success" : "warning";
               return (
-                <span className={`rounded px-2 py-0.5 text-[11px] ${cls}`}>
+                <Badge tone={tone}>
                   {isVoided ? "Anulado" : isVoidPending ? "Baja en proceso" : String(r.state_type_description || "Aceptado")}
-                </span>
+                </Badge>
               );
             },
           },

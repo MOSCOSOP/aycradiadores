@@ -244,6 +244,141 @@ h1, h2, h3, h4, h5, h6 {
   margin-left: var(--sidebar-width);
   min-height: 100vh;
   background: var(--background);
+  transition: margin-left var(--transition-base);
+}
+
+.ify-main-content {
+  max-width: 1600px;
+}
+
+/* Menú lateral contraído (solo iconos) — se activa con el botón de "contraer menú" */
+html.ify-nav-collapsed .ify-nav {
+  width: 72px;
+}
+
+html.ify-nav-collapsed .ify-main {
+  margin-left: 72px;
+}
+
+html.ify-nav-collapsed .ify-nav-logo,
+html.ify-nav-collapsed .ify-nav-user-info,
+html.ify-nav-collapsed .ify-menu-label,
+html.ify-nav-collapsed .ify-menu-chevron,
+html.ify-nav-collapsed .ify-submenu,
+html.ify-nav-collapsed .ify-nav-user-btn .bi-chevron-down,
+html.ify-nav-collapsed .ify-nav-user-btn .bi-chevron-up {
+  display: none;
+}
+
+html.ify-nav-collapsed .ify-nav-user-btn {
+  justify-content: center;
+}
+
+html.ify-nav-collapsed .ify-menu-link {
+  justify-content: center;
+}
+
+/* ── Barra superior (breadcrumb + menú móvil) ── */
+.ify-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--card);
+}
+
+.ify-topbar-menu-btn {
+  display: none;
+  border: none;
+  background: none;
+  color: var(--foreground);
+  font-size: 1.25rem;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.ify-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.ify-breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.ify-breadcrumb a:hover {
+  color: var(--primary);
+}
+
+.ify-breadcrumb-sep {
+  color: var(--muted-light);
+}
+
+.ify-breadcrumb-current {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.ify-nav-backdrop {
+  display: none;
+}
+
+/* ── Responsive: sidebar como panel deslizable en pantallas pequeñas ── */
+@media (max-width: 900px) {
+  .ify-nav {
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+    z-index: 300;
+    width: var(--sidebar-width) !important;
+  }
+
+  .ify-nav-mobile-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .ify-main,
+  html.ify-nav-collapsed .ify-main {
+    margin-left: 0;
+  }
+
+  .ify-topbar-menu-btn {
+    display: inline-flex;
+  }
+
+  .ify-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    background: rgba(15, 23, 42, 0.45);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    animation: ify-fade-in 0.18s ease-out;
+  }
+
+  html.ify-nav-collapsed .ify-nav-logo,
+  html.ify-nav-collapsed .ify-nav-user-info,
+  html.ify-nav-collapsed .ify-menu-label,
+  html.ify-nav-collapsed .ify-menu-chevron,
+  html.ify-nav-collapsed .ify-submenu {
+    display: revert;
+  }
+
+  html.ify-nav-collapsed .ify-nav-user-btn,
+  html.ify-nav-collapsed .ify-menu-link {
+    justify-content: flex-start;
+  }
+
+  .ify-nav-collapse-btn {
+    display: none;
+  }
 }
 
 /* ── Form controls ── */
@@ -485,6 +620,63 @@ html.ify-dark .ify-table-sticky-actions td:last-child,
 
 .ify-row-action-delete:hover {
   background: rgba(220, 53, 69, 0.08);
+}
+
+/* ── Badges de estado (colores semánticos consistentes en toda la app) ── */
+.ify-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.ify-badge-success { background: rgba(40, 167, 69, 0.12); color: #1e7e34; }
+.ify-badge-warning { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+.ify-badge-error { background: rgba(220, 53, 69, 0.12); color: #c0242f; }
+.ify-badge-info { background: rgba(36, 147, 216, 0.12); color: var(--primary-darker); }
+.ify-badge-neutral { background: var(--border-light); color: var(--muted); }
+
+html.ify-dark .ify-badge-success { background: rgba(40, 167, 69, 0.18); color: #6bd48a; }
+html.ify-dark .ify-badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf60; }
+html.ify-dark .ify-badge-error { background: rgba(220, 53, 69, 0.2); color: #ff8a94; }
+html.ify-dark .ify-badge-info { background: rgba(36, 147, 216, 0.2); color: #7cc4ec; }
+html.ify-dark .ify-badge-neutral { background: rgba(255, 255, 255, 0.08); color: var(--muted); }
+
+/* ── Estado vacío profesional (listados sin datos) ── */
+.ify-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.ify-empty-state-icon {
+  font-size: 2.25rem;
+  color: var(--muted-light);
+}
+
+.ify-empty-state-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+  max-width: 32rem;
+}
+
+.ify-empty-state-description {
+  font-size: 0.8125rem;
+  color: var(--muted-light);
+  max-width: 28rem;
+}
+
+.ify-empty-state-action {
+  margin-top: 0.25rem;
 }
 
 .ify-link {
@@ -1796,29 +1988,13 @@ html.ify-dark ::-webkit-scrollbar-track {
   top: 0.75rem;
   padding: 0;
   overflow: hidden;
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--card-bg, #fff), var(--card-bg, #fff)) padding-box,
-    linear-gradient(135deg, #6366f1, #a855f7, #3b82f6) border-box;
+  border: 1px solid var(--border-light);
+  background: var(--card);
   max-height: calc(100vh - 1.5rem);
   overflow-y: auto;
 }
 
 .dark .dash-ai-panel,
-[data-theme="dark"] .dash-ai-panel {
-  background:
-    linear-gradient(var(--card-bg, #1a1f2e), var(--card-bg, #1a1f2e)) padding-box,
-    linear-gradient(135deg, #6366f1, #a855f7, #3b82f6) border-box;
-}
-
-.dash-ai-glow {
-  position: absolute;
-  inset: -40% -20% auto -20%;
-  height: 120px;
-  background: radial-gradient(ellipse, rgba(99, 102, 241, 0.18), transparent 70%);
-  pointer-events: none;
-}
-
 .dash-ai-header {
   position: relative;
   padding: 1rem 1rem 0.75rem;
@@ -1845,26 +2021,17 @@ html.ify-dark ::-webkit-scrollbar-track {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 0.625rem;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: var(--primary);
   color: #fff;
   font-size: 1rem;
   flex-shrink: 0;
-  animation: dash-ai-pulse-icon 2.5s ease-in-out infinite;
-}
-
-@keyframes dash-ai-pulse-icon {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
 }
 
 .dash-ai-title {
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 700;
-  background: linear-gradient(90deg, #6366f1, #a855f7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--foreground);
 }
 
 .dash-ai-subtitle {
@@ -1877,11 +2044,9 @@ html.ify-dark ::-webkit-scrollbar-track {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #22c55e;
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -1890,12 +2055,6 @@ html.ify-dark ::-webkit-scrollbar-track {
   height: 6px;
   border-radius: 50%;
   background: #22c55e;
-  animation: dash-ai-blink 1.5s ease-in-out infinite;
-}
-
-@keyframes dash-ai-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
 }
 
 .dash-ai-health-row {

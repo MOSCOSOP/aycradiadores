@@ -88,7 +88,7 @@ function NavLink({
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { dark, locked, toggleDark, toggleLock } = useTheme();
+  const { dark, locked, collapsed, mobileOpen, toggleDark, toggleLock, toggleCollapsed, setMobileOpen } = useTheme();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ Ventas: true });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userName, setUserName] = useState("ADMINISTRADOR");
@@ -99,6 +99,12 @@ export function Sidebar() {
       if (r.user?.name) setUserName(r.user.name.toUpperCase());
     }).catch(() => {});
   }, []);
+
+  // Cierra el panel móvil al navegar a otra pantalla.
+  useEffect(() => {
+    setMobileOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -122,7 +128,9 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="ify-nav">
+    <>
+      {mobileOpen && <button type="button" className="ify-nav-backdrop" aria-label="Cerrar menú" onClick={() => setMobileOpen(false)} />}
+      <aside className={`ify-nav ${mobileOpen ? "ify-nav-mobile-open" : ""}`}>
       <div className="ify-nav-inner">
         <div className="ify-nav-logo">
           <Link href="/dashboard">
@@ -175,6 +183,14 @@ export function Sidebar() {
         <div className="ify-nav-icons">
           <button
             type="button"
+            title={collapsed ? "Expandir menú" : "Contraer menú"}
+            className="ify-nav-icon-btn ify-nav-collapse-btn"
+            onClick={toggleCollapsed}
+          >
+            <i className={`bi ${collapsed ? "bi-layout-sidebar-inset" : "bi-layout-sidebar-inset-reverse"}`} />
+          </button>
+          <button
+            type="button"
             title={locked ? "Desfijar menú" : "Fijar menú (candado)"}
             className={`ify-nav-icon-btn ${locked ? "active" : ""}`}
             onClick={toggleLock}
@@ -206,6 +222,7 @@ export function Sidebar() {
           </ul>
         </nav>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

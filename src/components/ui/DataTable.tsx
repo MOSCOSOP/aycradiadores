@@ -60,8 +60,11 @@ export function DataTable<T extends Record<string, unknown>>({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="py-10 text-center text-[var(--muted-light)]">
-                {emptyMessage}
+              <td colSpan={columns.length} className="border-0 p-0">
+                <div className="ify-empty-state">
+                  <i className="bi bi-inbox ify-empty-state-icon" />
+                  <p className="ify-empty-state-title">{emptyMessage}</p>
+                </div>
               </td>
             </tr>
           ) : (

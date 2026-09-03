@@ -117,22 +117,20 @@ export function AiInsightsPanel({ analysis, loading }: AiInsightsPanelProps) {
 
   return (
     <aside className="dash-ai-panel ify-card">
-      <div className="dash-ai-glow" aria-hidden />
-
       <header className="dash-ai-header">
         <div className="dash-ai-header-top">
           <div className="dash-ai-brand">
             <span className="dash-ai-icon-wrap">
-              <i className="bi bi-stars" />
+              <i className="bi bi-graph-up-arrow" />
             </span>
             <div>
-              <h2 className="dash-ai-title">Análisis Inteligente</h2>
-              <p className="dash-ai-subtitle">Motor IA · Actualizado {updated}</p>
+              <h2 className="dash-ai-title">Resumen ejecutivo</h2>
+              <p className="dash-ai-subtitle">Actualizado {updated}</p>
             </div>
           </div>
           <span className="dash-ai-live">
             <span className="dash-ai-live-dot" />
-            En vivo
+            Al día
           </span>
         </div>
       </header>
