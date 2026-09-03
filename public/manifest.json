@@ -1,0 +1,11 @@
+{
+  "name": "A&C Radiadores - Facturación Electrónica",
+  "short_name": "A&C Radiadores",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f4f4f4",
+  "theme_color": "#2493d8",
+  "icons": [
+    { "src": "/images/logo-client.png", "sizes": "946x811", "type": "image/png", "purpose": "any" }
+  ]
+}

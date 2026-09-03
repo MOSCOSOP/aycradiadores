@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Montserrat, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -17,11 +17,16 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Facturación Electrónica",
   description: "Sistema de facturación electrónica - Inicia Factura Ya",
+  manifest: "/manifest.json",
   icons: {
     icon: [{ url: "/favicon.ico", type: "image/x-icon" }],
     shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
+    apple: "/images/logo-client.png",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2493d8",
 };
 
 export default function RootLayout({
