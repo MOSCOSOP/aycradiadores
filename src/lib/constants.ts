@@ -30,6 +30,7 @@ export type NavItem = {
 /** Menú extraído del HTML autenticado de aycradiadores.iniciafacturaya.com */
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "bi-speedometer2" },
+  { label: "Mensajes", href: "/messages", icon: "bi-chat-dots" },
   {
     label: "Ventas",
     icon: "bi-receipt-cutoff",

@@ -15,6 +15,7 @@ function NavLink({
   toggle,
   depth = 0,
   locked,
+  badge,
 }: {
   item: NavItem | NavChild;
   pathname: string;
@@ -22,6 +23,7 @@ function NavLink({
   toggle: (key: string) => void;
   depth?: number;
   locked: boolean;
+  badge?: number;
 }) {
   const hasChildren = "children" in item && item.children && item.children.length > 0;
   const href = "href" in item ? item.href : undefined;
@@ -80,6 +82,7 @@ function NavLink({
       >
         {icon && depth === 0 && <i className={`bi ${icon}`} />}
         <span className="ify-menu-label">{item.label}</span>
+        {!!badge && <span className="ify-nav-badge">{badge > 9 ? "9+" : badge}</span>}
       </Link>
     </li>
   );
@@ -92,7 +95,15 @@ export function Sidebar() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ Ventas: true });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userName, setUserName] = useState("ADMINISTRADOR");
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadUnread = () => api.messages.unreadCount().then((r) => setUnreadMessages(r.count)).catch(() => {});
+    loadUnread();
+    const interval = setInterval(loadUnread, 20000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     api.auth.me().then((r) => {
@@ -212,6 +223,7 @@ export function Sidebar() {
                 expanded={expanded}
                 toggle={toggle}
                 locked={locked}
+                badge={item.href === "/messages" ? unreadMessages : undefined}
               />
             ))}
           </ul>

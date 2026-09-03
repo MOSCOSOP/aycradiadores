@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PREFIXES = ["/login", "/c/", "/api/auth", "/api/public"];
+const PUBLIC_PREFIXES = ["/login", "/c/", "/chat", "/api/auth", "/api/public"];
 
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/_next")) return true;

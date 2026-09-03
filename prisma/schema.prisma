@@ -333,6 +333,7 @@ model Document {
   shareToken      String?        @unique
   items           DocumentItem[]
   returns         Return[]
+  chatMessages    ChatMessage[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -614,4 +615,29 @@ model TaxWithholding {
   amount        Float
   date          DateTime @default(now())
   note          String?
+}
+
+// Chat en vivo con clientes: el cliente se identifica solo con nombre + DNI
+// (sin contraseña, como WhatsApp), pensado para consultas rápidas de stock/precio
+// y para poder generar y compartir un comprobante sin salir de la conversación.
+model ChatCustomer {
+  id         Int           @id @default(autoincrement())
+  name       String
+  dni        String        @unique
+  createdAt  DateTime      @default(now())
+  lastSeenAt DateTime      @default(now())
+  messages   ChatMessage[]
+}
+
+model ChatMessage {
+  id             Int          @id @default(autoincrement())
+  chatCustomerId Int
+  chatCustomer   ChatCustomer @relation(fields: [chatCustomerId], references: [id], onDelete: Cascade)
+  sender         String // "customer" | "admin"
+  body           String       @db.Text
+  documentId     Int?
+  document       Document?    @relation(fields: [documentId], references: [id])
+  readByAdmin    Boolean      @default(false)
+  readByCustomer Boolean      @default(false)
+  createdAt      DateTime     @default(now())
 }

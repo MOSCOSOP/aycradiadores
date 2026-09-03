@@ -577,6 +577,26 @@ export const api = {
     delete: (id: number) => apiFetch(local(`/fixed-asset/items/${id}`), { method: "DELETE" }),
   },
 
+  messages: {
+    conversations: () =>
+      apiFetch<{ data: Record<string, unknown>[] }>(local("/messages/conversations")),
+    unreadCount: () => apiFetch<{ count: number }>(local("/messages/unread-count")),
+    thread: (id: number) =>
+      apiFetch<{ data: Record<string, unknown>[]; customer: Record<string, unknown> }>(
+        local(`/messages/conversations/${id}`)
+      ),
+    reply: (id: number, body: string, documentId?: number) =>
+      apiFetch<{ success: boolean; data: Record<string, unknown> }>(local(`/messages/conversations/${id}/reply`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body, document_id: documentId }),
+      }),
+    linkCustomer: (id: number) =>
+      apiFetch<{ data: Record<string, unknown> }>(local(`/messages/conversations/${id}/link-customer`), {
+        method: "POST",
+      }),
+  },
+
   payroll: {
     employees: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/payroll/employees")),
     createEmployee: (payload: Record<string, unknown>) =>

@@ -67,6 +67,7 @@ export function CreateDocumentForm() {
   const editId = searchParams.get("edit");
   const duplicateFromId = searchParams.get("from");
   const sourceDocId = editId || duplicateFromId;
+  const customerIdParam = searchParams.get("customer_id");
   const today = new Date().toISOString().split("T")[0];
   const [showAdditional, setShowAdditional] = useState(false);
   const [items, setItems] = useState<LineItem[]>([]);
@@ -120,7 +121,12 @@ export function CreateDocumentForm() {
         if (sel) setSellerId(sel.id);
         if (ser) setSeriesId(ser.id);
         // Al editar/duplicar, el cliente lo trae el comprobante de origen — no pisar con el default.
-        if (!sourceDocId) {
+        if (!sourceDocId && customerIdParam) {
+          // Viene de un enlace directo (p. ej. "Crear comprobante" desde el chat de clientes).
+          api.customers.get(Number(customerIdParam)).then((r) => {
+            if (r.data) setSelectedCustomer(r.data);
+          });
+        } else if (!sourceDocId) {
           api.customers.records({ page: 1, limit: 1 }).then((r) => {
             if (r.data?.[0]) setSelectedCustomer(r.data[0]);
           });
@@ -128,7 +134,7 @@ export function CreateDocumentForm() {
       })
       .catch((e) => setApiError(e instanceof Error ? e.message : "Error API"));
     api.cash.records().then((r) => setCashBoxes(r.data ?? [])).catch(() => {});
-  }, [sourceDocId]);
+  }, [sourceDocId, customerIdParam]);
 
   // Carga los datos de un comprobante existente para editarlo (rectificar) o duplicarlo.
   useEffect(() => {

@@ -61,6 +61,7 @@ export function listPathFromCreate(path: string): string {
 /** Rutas que tienen página dedicada en src/app (no usar catch-all genérico) */
 export const DEDICATED_APP_PATHS = new Set([
   "/dashboard",
+  "/messages",
   "/documents",
   "/documents/create",
   "/items",

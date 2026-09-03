@@ -12,6 +12,7 @@ import { handleReportRequest } from "@/lib/api/local/reports-handler";
 import { localLogin } from "@/lib/auth/admin-user";
 import { ALL_PERMISSION_KEYS } from "@/lib/permissions";
 import { documentsMatch, normalizeDocumentNumber } from "@/lib/customer-duplicate";
+import { buildPublicComprobanteUrl } from "@/lib/comprobante/share-link";
 
 function parseJsonSetting(value: string) {
   try {
@@ -146,6 +147,7 @@ const RESERVED_SINGLE_SEGMENT = new Set([
   "payroll",
   "retentions",
   "perceptions",
+  "messages",
 ]);
 
 const BLOCKED_GENERIC_PATHS = new Set([
@@ -680,6 +682,29 @@ async function createJournalForSale(
       },
     ],
   });
+}
+
+function mapChatMessage(m: {
+  id: number;
+  sender: string;
+  body: string;
+  createdAt: Date;
+  document?: { id: number; fullNumber: string; shareToken: string | null; total: number } | null;
+}) {
+  return {
+    id: m.id,
+    sender: m.sender,
+    body: m.body,
+    created_at: m.createdAt,
+    document: m.document
+      ? {
+          id: m.document.id,
+          full_number: m.document.fullNumber,
+          total: m.document.total,
+          url: m.document.shareToken ? buildPublicComprobanteUrl(m.document.shareToken) : null,
+        }
+      : null,
+  };
 }
 
 export { localLogin } from "@/lib/auth/admin-user";
@@ -3945,6 +3970,94 @@ export async function handleLocalApi(
   if (method === "POST" && path === "pos/sale") {
     const { processPosCheckout } = await import("@/lib/pos-checkout");
     return processPosCheckout((body || {}) as Record<string, unknown>);
+  }
+
+  // ── Chat con clientes (lado administrador) ──
+  if (method === "GET" && path === "messages/conversations") {
+    const customers = await prisma.chatCustomer.findMany({
+      include: {
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
+        _count: { select: { messages: { where: { sender: "customer", readByAdmin: false } } } },
+      },
+      orderBy: { lastSeenAt: "desc" },
+    });
+    return {
+      data: customers.map((c) => ({
+        id: c.id,
+        name: c.name,
+        dni: c.dni,
+        last_message: c.messages[0]?.body ?? "",
+        last_message_at: c.messages[0]?.createdAt ?? c.createdAt,
+        last_message_sender: c.messages[0]?.sender ?? null,
+        unread_count: c._count.messages,
+      })),
+    };
+  }
+
+  if (method === "GET" && path === "messages/unread-count") {
+    const count = await prisma.chatMessage.count({ where: { sender: "customer", readByAdmin: false } });
+    return { count };
+  }
+
+  if (method === "GET" && path.match(/^messages\/conversations\/\d+$/)) {
+    const id = Number(path.split("/")[2]);
+    const customer = await prisma.chatCustomer.findUnique({ where: { id } });
+    if (!customer) throw new Error("Conversación no encontrada");
+    await prisma.chatMessage.updateMany({
+      where: { chatCustomerId: id, sender: "customer", readByAdmin: false },
+      data: { readByAdmin: true },
+    });
+    const messages = await prisma.chatMessage.findMany({
+      where: { chatCustomerId: id },
+      orderBy: { createdAt: "asc" },
+      include: { document: { select: { id: true, fullNumber: true, shareToken: true, total: true } } },
+    });
+    return {
+      data: messages.map(mapChatMessage),
+      customer: { id: customer.id, name: customer.name, dni: customer.dni },
+    };
+  }
+
+  if (method === "POST" && path.match(/^messages\/conversations\/\d+\/reply$/)) {
+    const id = Number(path.split("/")[2]);
+    const p = (body || {}) as Record<string, unknown>;
+    const text = String(p.body || "").trim();
+    const documentId = p.document_id ? Number(p.document_id) : undefined;
+    if (!text && !documentId) throw new Error("Escribe un mensaje o adjunta un comprobante");
+    const customer = await prisma.chatCustomer.findUnique({ where: { id } });
+    if (!customer) throw new Error("Conversación no encontrada");
+    const message = await prisma.chatMessage.create({
+      data: {
+        chatCustomerId: id,
+        sender: "admin",
+        body: text || "Te comparto tu comprobante:",
+        documentId,
+        readByAdmin: true,
+        readByCustomer: false,
+      },
+      include: { document: { select: { id: true, fullNumber: true, shareToken: true, total: true } } },
+    });
+    return { success: true, data: mapChatMessage(message) };
+  }
+
+  // Vincula (o crea) al cliente del chat como Customer real, para poder facturarle
+  // directamente desde la conversación sin volver a escribir sus datos.
+  if (method === "POST" && path.match(/^messages\/conversations\/\d+\/link-customer$/)) {
+    const id = Number(path.split("/")[2]);
+    const chatCustomer = await prisma.chatCustomer.findUnique({ where: { id } });
+    if (!chatCustomer) throw new Error("Conversación no encontrada");
+
+    const existing = await findDuplicateCustomer(chatCustomer.dni);
+    if (existing) return { data: existing };
+
+    const created = await prisma.customer.create({
+      data: {
+        name: chatCustomer.name,
+        number: chatCustomer.dni,
+        identityDocumentTypeId: "1",
+      },
+    });
+    return { data: customerToRecord(created) };
   }
 
   const emptyModules = [
