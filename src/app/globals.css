@@ -251,33 +251,6 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 1600px;
 }
 
-/* Menú lateral contraído (solo iconos) — se activa con el botón de "contraer menú" */
-html.ify-nav-collapsed .ify-nav {
-  width: 72px;
-}
-
-html.ify-nav-collapsed .ify-main {
-  margin-left: 72px;
-}
-
-html.ify-nav-collapsed .ify-nav-logo,
-html.ify-nav-collapsed .ify-nav-user-info,
-html.ify-nav-collapsed .ify-menu-label,
-html.ify-nav-collapsed .ify-menu-chevron,
-html.ify-nav-collapsed .ify-submenu,
-html.ify-nav-collapsed .ify-nav-user-btn .bi-chevron-down,
-html.ify-nav-collapsed .ify-nav-user-btn .bi-chevron-up {
-  display: none;
-}
-
-html.ify-nav-collapsed .ify-nav-user-btn {
-  justify-content: center;
-}
-
-html.ify-nav-collapsed .ify-menu-link {
-  justify-content: center;
-}
-
 /* ── Barra superior (breadcrumb + menú móvil) ── */
 .ify-topbar {
   display: flex;
@@ -342,8 +315,7 @@ html.ify-nav-collapsed .ify-menu-link {
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
   }
 
-  .ify-main,
-  html.ify-nav-collapsed .ify-main {
+  .ify-main {
     margin-left: 0;
   }
 
@@ -363,22 +335,6 @@ html.ify-nav-collapsed .ify-menu-link {
     animation: ify-fade-in 0.18s ease-out;
   }
 
-  html.ify-nav-collapsed .ify-nav-logo,
-  html.ify-nav-collapsed .ify-nav-user-info,
-  html.ify-nav-collapsed .ify-menu-label,
-  html.ify-nav-collapsed .ify-menu-chevron,
-  html.ify-nav-collapsed .ify-submenu {
-    display: revert;
-  }
-
-  html.ify-nav-collapsed .ify-nav-user-btn,
-  html.ify-nav-collapsed .ify-menu-link {
-    justify-content: flex-start;
-  }
-
-  .ify-nav-collapse-btn {
-    display: none;
-  }
 }
 
 /* ── Form controls ── */

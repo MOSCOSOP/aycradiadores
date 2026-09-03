@@ -88,7 +88,7 @@ function NavLink({
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { dark, locked, collapsed, mobileOpen, toggleDark, toggleLock, toggleCollapsed, setMobileOpen } = useTheme();
+  const { dark, locked, mobileOpen, toggleDark, toggleLock, setMobileOpen } = useTheme();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ Ventas: true });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userName, setUserName] = useState("ADMINISTRADOR");
@@ -123,7 +123,10 @@ export function Sidebar() {
     try {
       await api.auth.logout();
     } finally {
-      router.push("/login");
+      // Navegación forzada: evita que el router cache del cliente muestre una
+      // página protegida ya cacheada después de cerrar sesión (mismo motivo
+      // que en el login, ver LoginForm.tsx).
+      window.location.href = "/login";
     }
   };
 
@@ -181,14 +184,6 @@ export function Sidebar() {
         </div>
 
         <div className="ify-nav-icons">
-          <button
-            type="button"
-            title={collapsed ? "Expandir menú" : "Contraer menú"}
-            className="ify-nav-icon-btn ify-nav-collapse-btn"
-            onClick={toggleCollapsed}
-          >
-            <i className={`bi ${collapsed ? "bi-layout-sidebar-inset" : "bi-layout-sidebar-inset-reverse"}`} />
-          </button>
           <button
             type="button"
             title={locked ? "Desfijar menú" : "Fijar menú (candado)"}

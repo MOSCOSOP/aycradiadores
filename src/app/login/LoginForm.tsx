@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { COMPANY } from "@/lib/constants";
 import { api } from "@/lib/api/client";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/documents/create";
   const [email, setEmail] = useState(process.env.NEXT_PUBLIC_DEFAULT_EMAIL ?? "");
@@ -21,7 +20,13 @@ export function LoginForm() {
     setError("");
     try {
       await api.auth.login(email, password);
-      router.push(nextPath.startsWith("/") ? nextPath : "/documents/create");
+      // Navegación forzada (no router.push): tras iniciar sesión, la ruta destino
+      // pudo haber sido visitada/precargada como no autenticada (p. ej. al abrir un
+      // enlace directo desde el celular), y el router cache del cliente podía
+      // reproducir esa respuesta vieja (sin sesión) en vez de pedirla de nuevo al
+      // servidor. window.location fuerza una petición nueva con la cookie recién
+      // creada, evitando que la app "rebote" al login pese a haber ingresado bien.
+      window.location.href = nextPath.startsWith("/") ? nextPath : "/documents/create";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar");
     } finally {
