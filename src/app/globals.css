@@ -1041,16 +1041,17 @@ html.ify-dark .ify-totals-row {
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #fff;
-  background: var(--primary);
-  border: none;
+  color: var(--primary);
+  background: transparent;
+  border: 1px solid var(--primary);
   border-radius: var(--input-radius);
   cursor: pointer;
-  transition: background var(--transition-base);
+  transition: all var(--transition-base);
+  margin-right: auto;
 }
 
 .doc-form-actions .ify-btn-preview:hover {
-  background: var(--primary-darker);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .doc-duplicate-alert {
