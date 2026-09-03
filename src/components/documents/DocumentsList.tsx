@@ -135,7 +135,7 @@ export function DocumentsList() {
         <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           <button
             type="button"
-            className={`ify-card p-3 text-left transition ${typeFilter === "" ? "ring-2 ring-[var(--primary)]" : ""}`}
+            className={`ify-card ify-card-clickable p-3 text-left ${typeFilter === "" ? "ring-2 ring-[var(--primary)]" : ""}`}
             onClick={() => applyTypeFilter("")}
           >
             <p className="text-[11px] text-[var(--muted)]">Todos</p>
@@ -145,7 +145,7 @@ export function DocumentsList() {
             <button
               key={t.document_type_id}
               type="button"
-              className={`ify-card p-3 text-left transition ${typeFilter === t.document_type_id ? "ring-2 ring-[var(--primary)]" : ""}`}
+              className={`ify-card ify-card-clickable p-3 text-left ${typeFilter === t.document_type_id ? "ring-2 ring-[var(--primary)]" : ""}`}
               onClick={() => applyTypeFilter(t.document_type_id)}
               title={`S/ ${t.total.toFixed(2)}`}
             >
