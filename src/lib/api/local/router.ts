@@ -1628,8 +1628,12 @@ export async function handleLocalApi(
         stock: Number(p.stock || 0),
         stockMin: Number(p.stock_min || 0),
         location: p.location ? String(p.location) : null,
+        // hasIgv se DERIVA de la afectación, nunca se guarda por separado: si el frontend
+        // llegara a mandar los dos campos en desacuerdo (pasó con 12 productos reales — el
+        // desplegable decía "Exonerado" pero el checkbox aparte seguía marcado), el producto
+        // terminaba cobrando IGV en ventas/impresión pese a decir "Exonerado" en su ficha.
         saleAffectationTypeId: String(p.sale_affectation_type_id || "10"),
-        hasIgv: p.has_igv !== undefined ? Boolean(p.has_igv) : true,
+        hasIgv: String(p.sale_affectation_type_id || "10") === "10",
         categoryId: p.category_id ? Number(p.category_id) : null,
       },
     });
@@ -1662,8 +1666,12 @@ export async function handleLocalApi(
         stock: Number(p.stock || 0),
         stockMin: Number(p.stock_min || 0),
         location: p.location ? String(p.location) : null,
+        // hasIgv se DERIVA de la afectación, nunca se guarda por separado: si el frontend
+        // llegara a mandar los dos campos en desacuerdo (pasó con 12 productos reales — el
+        // desplegable decía "Exonerado" pero el checkbox aparte seguía marcado), el producto
+        // terminaba cobrando IGV en ventas/impresión pese a decir "Exonerado" en su ficha.
         saleAffectationTypeId: String(p.sale_affectation_type_id || "10"),
-        hasIgv: p.has_igv !== undefined ? Boolean(p.has_igv) : true,
+        hasIgv: String(p.sale_affectation_type_id || "10") === "10",
         active: p.active !== undefined ? Boolean(p.active) : undefined,
         categoryId: p.category_id ? Number(p.category_id) : null,
       },

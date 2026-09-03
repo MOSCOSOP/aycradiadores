@@ -68,6 +68,9 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
         category_id: form.category_id ? Number(form.category_id) : null,
         brand_id: form.brand_id ? Number(form.brand_id) : null,
         line_id: form.line_id ? Number(form.line_id) : null,
+        // "¿Tiene IGV?" ya no es un campo aparte que se pueda desincronizar del tipo de
+        // afectación — se deriva siempre de él (10 = Gravado = con IGV).
+        has_igv: form.sale_affectation_type_id === "10",
       };
       if (editId) {
         await api.items.update(editId, payload);
@@ -82,7 +85,7 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
           unit_type_id: raw.unitTypeId ?? form.unit_type_id,
           sale_unit_price: raw.saleUnitPrice ?? Number(form.sale_unit_price),
           stock: raw.stock ?? Number(form.stock),
-          has_igv: raw.hasIgv ?? form.has_igv,
+          has_igv: raw.hasIgv ?? form.sale_affectation_type_id === "10",
           sale_affectation_igv_type_id: raw.saleAffectationTypeId ?? form.sale_affectation_type_id,
         });
       }
@@ -200,10 +203,6 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
           <Field label="Hipervínculo" className="sm:col-span-2">
             <input className="ify-input" placeholder="https://www.producto.com/" value={form.hyperlink} onChange={(e) => setForm({ ...form, hyperlink: e.target.value })} />
           </Field>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" checked={form.has_igv} onChange={(e) => setForm({ ...form, has_igv: e.target.checked })} />
-            ¿Tiene IGV en venta?
-          </label>
         </div>
       )}
 
