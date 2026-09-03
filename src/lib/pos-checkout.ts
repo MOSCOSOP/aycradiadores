@@ -3,6 +3,7 @@ import { IGV_FACTOR } from "@/lib/tax";
 import { formatReceiptNumber } from "@/lib/receipt-format";
 import { generateShareToken } from "@/lib/comprobante/share-link";
 import { resolvePosCustomerId, resolvePosItemId, ensurePosInfrastructure } from "@/lib/pos-infrastructure";
+import { nextCounter } from "@/lib/counters";
 
 function round2(n: number) {
   return Math.round(n * 100) / 100;
@@ -314,12 +315,17 @@ function buildResult(
   };
 }
 
+// Usa el mismo contador compartido (AppSetting) que el formulario manual de notas de
+// venta/cotizaciones — antes cada camino contaba sus propias filas por separado
+// (prisma.saleNote.count()+1), lo que podía generar el mismo número por dos caminos
+// distintos (uno desde el POS, otro desde el formulario) si se creaban casi al mismo tiempo
+// o si alguna nota se había eliminado.
 async function nextNoteNumber() {
-  const count = await prisma.saleNote.count();
-  return `NV01-${String(count + 1).padStart(4, "0")}`;
+  const num = await nextCounter("sale_note_counter");
+  return `NV01-${String(num).padStart(8, "0")}`;
 }
 
 async function nextQuotationNumber() {
-  const count = await prisma.quotation.count();
-  return `COT-${String(count + 1).padStart(4, "0")}`;
+  const num = await nextCounter("quotation_counter");
+  return `COT-${String(num).padStart(4, "0")}`;
 }

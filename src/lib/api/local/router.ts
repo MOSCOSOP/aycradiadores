@@ -13,6 +13,7 @@ import { localLogin } from "@/lib/auth/admin-user";
 import { ALL_PERMISSION_KEYS } from "@/lib/permissions";
 import { documentsMatch, normalizeDocumentNumber } from "@/lib/customer-duplicate";
 import { buildPublicComprobanteUrl } from "@/lib/comprobante/share-link";
+import { nextCounter } from "@/lib/counters";
 
 function parseJsonSetting(value: string) {
   try {
@@ -257,16 +258,6 @@ function paginate<T>(items: T[], page: number, limit: number) {
   return { data: items.slice(start, start + limit), meta: { total, page, limit } };
 }
 
-async function nextCounter(key: string): Promise<number> {
-  const row = await prisma.appSetting.findUnique({ where: { key } });
-  const n = Number(row?.value || 0) + 1;
-  await prisma.appSetting.upsert({
-    where: { key },
-    create: { key, value: String(n) },
-    update: { value: String(n) },
-  });
-  return n;
-}
 
 function mapItemRecord(i: {
   id: number;
@@ -2490,7 +2481,7 @@ export async function handleLocalApi(
     const p = body as Record<string, unknown>;
     const items = (p.items as Record<string, unknown>[]) || [];
     const num = await nextCounter("sale_note_counter");
-    const number = `NV01-${num}`;
+    const number = `NV01-${String(num).padStart(8, "0")}`;
     let total = 0;
     const lineItems = items.map((it) => {
       const qty = Number(it.quantity || 1);
