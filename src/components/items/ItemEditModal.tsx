@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Modal, Field } from "@/components/ui/Modal";
+import { SelectWithAdd } from "@/components/ui/SelectWithAdd";
 import { api } from "@/lib/api/client";
 import { mergeCategoriesList } from "@/lib/default-categories";
 import {
@@ -25,6 +26,8 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<ItemFormData>({ ...emptyItemForm, ...initial });
   const [categories, setCategories] = useState<Record<string, unknown>[]>([]);
+  const [brands, setBrands] = useState<{ id: number; name: string }[]>([]);
+  const [lines, setLines] = useState<{ id: number; name: string }[]>([]);
   const [establishments, setEstablishments] = useState<Record<string, unknown>[]>([]);
   const [personTypes, setPersonTypes] = useState<Record<string, unknown>[]>([]);
   const [personTypeSearch, setPersonTypeSearch] = useState("");
@@ -36,6 +39,8 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
     setTab(0);
     api.categories.records().then((r) => setCategories(mergeCategoriesList((r.data ?? []) as { id: number; name: string }[])));
     api.establishments.records().then((r) => setEstablishments(r.data ?? []));
+    api.brands.records().then((r) => setBrands((r.data ?? []) as { id: number; name: string }[]));
+    api.lines.records().then((r) => setLines((r.data ?? []) as { id: number; name: string }[]));
     fetch("/api/local/person-types/records")
       .then((r) => r.json())
       .then((d) => setPersonTypes(d.data ?? []))
@@ -61,6 +66,8 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
         stock: Number(form.stock || 0),
         stock_min: Number(form.stock_min || 0),
         category_id: form.category_id ? Number(form.category_id) : null,
+        brand_id: form.brand_id ? Number(form.brand_id) : null,
+        line_id: form.line_id ? Number(form.line_id) : null,
       };
       if (editId) {
         await api.items.update(editId, payload);
@@ -161,7 +168,25 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
             <input className="ify-input" value={form.internal_id} onChange={(e) => setForm({ ...form, internal_id: e.target.value })} />
           </Field>
           <Field label="Marca">
-            <input className="ify-input" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
+            <SelectWithAdd
+              value={form.brand_id}
+              options={brands}
+              placeholder="Marca"
+              onChange={(id, name) => setForm({ ...form, brand_id: id, brand: name })}
+              onCreate={async (name) => {
+                try {
+                  const res = (await api.brands.create({ name })) as { data?: { id: number; name: string } };
+                  if (res.data) {
+                    setBrands((prev) => [...prev, res.data as { id: number; name: string }]);
+                    return res.data;
+                  }
+                  return null;
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : "No se pudo crear la marca");
+                  return null;
+                }
+              }}
+            />
           </Field>
           <Field label="Categoría">
             <select className="ify-select" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
@@ -208,7 +233,27 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
 
       {tab === 3 && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Línea de producto"><input className="ify-input" placeholder="Línea" /></Field>
+          <Field label="Línea de producto">
+            <SelectWithAdd
+              value={form.line_id}
+              options={lines}
+              placeholder="Línea"
+              onChange={(id) => setForm({ ...form, line_id: id })}
+              onCreate={async (name) => {
+                try {
+                  const res = (await api.lines.create({ name })) as { data?: { id: number; name: string } };
+                  if (res.data) {
+                    setLines((prev) => [...prev, res.data as { id: number; name: string }]);
+                    return res.data;
+                  }
+                  return null;
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : "No se pudo crear la línea");
+                  return null;
+                }
+              }}
+            />
+          </Field>
           <Field label="Especificaciones"><input className="ify-input" placeholder="Especificaciones" /></Field>
           <Field label="Código Sunat"><input className="ify-input" placeholder="Código Sunat" /></Field>
           <Field label="Género"><input className="ify-input" placeholder="Género" /></Field>

@@ -179,13 +179,62 @@ model Item {
   imageUrl              String?
   barcode               String?
   brand                 String?
+  brandId               Int?
+  brandRef              Brand?              @relation(fields: [brandId], references: [id])
+  lineId                Int?
+  lineRef               Line?               @relation(fields: [lineId], references: [id])
   hasIgv                Boolean             @default(true)
   saleAffectationTypeId String              @default("10")
   categoryId            Int?
   category           Category?           @relation(fields: [categoryId], references: [id])
   documentItems      DocumentItem[]
   inventoryMovements InventoryMovement[]
+  itemSetLines       ItemSetLine[]
   createdAt          DateTime            @default(now())
+}
+
+// Catálogo real de marcas de repuestos (ej. Bosch, Denso, Valeo) — reemplaza el catálogo
+// genérico desconectado que existía en /brands.
+model Brand {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  items Item[]
+}
+
+// Línea de negocio/producto (ej. Enfriamiento, Aire Acondicionado, Frenos) — clasificación
+// complementaria a Category, reemplaza el catálogo genérico de /lines.
+model Line {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  items Item[]
+}
+
+// Zonas geográficas/de reparto para clientes — reemplaza el catálogo genérico de /zones.
+// Customer.zone sigue siendo texto libre, pero el formulario elige de esta lista real.
+model Zone {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
+// Packs y promociones — un combo de ítems a un precio fijo, vendible como una sola línea
+// en un comprobante. Reemplaza el catálogo genérico de /item-sets.
+model ItemSet {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float         @default(0)
+  active      Boolean       @default(true)
+  lines       ItemSetLine[]
+  createdAt   DateTime      @default(now())
+}
+
+model ItemSetLine {
+  id        Int     @id @default(autoincrement())
+  itemSetId Int
+  itemSet   ItemSet @relation(fields: [itemSetId], references: [id], onDelete: Cascade)
+  itemId    Int
+  item      Item    @relation(fields: [itemId], references: [id])
+  quantity  Float   @default(1)
 }
 
 model Document {

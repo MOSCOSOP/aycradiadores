@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
+import { SelectWithAdd } from "@/components/ui/SelectWithAdd";
 import { api } from "@/lib/api/client";
 import {
   CustomerFormFields,
@@ -43,11 +44,13 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<CustomerRecord | null>(null);
+  const [zones, setZones] = useState<{ id: number; name: string }[]>([]);
 
   useEffect(() => {
     if (!open) return;
     setTab(0);
     setDuplicateWarning(null);
+    api.zones.records().then((r) => setZones((r.data ?? []) as { id: number; name: string }[]));
     if (editId) {
       setLoading(true);
       api.customers
@@ -187,7 +190,30 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
               <label className="ify-label">Código interno<input className="ify-input mt-1" value={extra.internal_code} onChange={(e) => setExtra({ ...extra, internal_code: e.target.value })} /></label>
               <label className="ify-label">Código de barra<input className="ify-input mt-1" value={extra.barcode} onChange={(e) => setExtra({ ...extra, barcode: e.target.value })} /></label>
               <label className="ify-label">Nacionalidad<input className="ify-input mt-1" value={extra.nationality} onChange={(e) => setExtra({ ...extra, nationality: e.target.value })} /></label>
-              <label className="ify-label">Zona<input className="ify-input mt-1" value={extra.zone} onChange={(e) => setExtra({ ...extra, zone: e.target.value })} placeholder="Seleccionar" /></label>
+              <label className="ify-label">
+                Zona
+                <div className="mt-1">
+                  <SelectWithAdd
+                    value={String(zones.find((z) => z.name === extra.zone)?.id ?? "")}
+                    options={zones}
+                    placeholder="Zona"
+                    onChange={(_id, name) => setExtra({ ...extra, zone: name })}
+                    onCreate={async (name) => {
+                      try {
+                        const res = (await api.zones.create({ name })) as { data?: { id: number; name: string } };
+                        if (res.data) {
+                          setZones((prev) => [...prev, res.data as { id: number; name: string }]);
+                          return res.data;
+                        }
+                        return null;
+                      } catch (e) {
+                        alert(e instanceof Error ? e.message : "No se pudo crear la zona");
+                        return null;
+                      }
+                    }}
+                  />
+                </div>
+              </label>
               <label className="ify-label sm:col-span-2">Ubicación Google Maps<input className="ify-input mt-1" value={extra.google_maps} onChange={(e) => setExtra({ ...extra, google_maps: e.target.value })} /></label>
               <label className="ify-label sm:col-span-2">Observaciones<textarea className="ify-input mt-1 min-h-[60px]" value={extra.observations} onChange={(e) => setExtra({ ...extra, observations: e.target.value })} /></label>
               <label className="flex items-center gap-2 text-sm sm:col-span-2">

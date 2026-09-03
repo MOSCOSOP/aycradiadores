@@ -13,6 +13,8 @@ export type ItemFormData = {
   barcode: string;
   internal_id: string;
   brand: string;
+  brand_id: string;
+  line_id: string;
   location: string;
   purchase_price: string;
   stock: string;
@@ -34,6 +36,8 @@ export const emptyItemForm: ItemFormData = {
   barcode: "",
   internal_id: "",
   brand: "",
+  brand_id: "",
+  line_id: "",
   location: "",
   purchase_price: "",
   stock: "",
@@ -71,6 +75,8 @@ export function rowToItemForm(r: Record<string, unknown>): ItemFormData {
     barcode: String(r.barcode || r.internal_id || ""),
     internal_id: String(r.internal_id || ""),
     brand: String(r.brand || ""),
+    brand_id: String(r.brand_id || ""),
+    line_id: String(r.line_id || ""),
     location: String(r.location || ""),
     purchase_price: String(r.purchase_price ?? "").replace(/[^\d.]/g, "") || String(Number(r.purchase_price ?? 0) || ""),
     stock: String(r.stock ?? "0"),

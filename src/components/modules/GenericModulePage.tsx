@@ -45,17 +45,23 @@ import {
 import { DispatchesCarrierList, TransportsList } from "@/components/carriers/TransportsList";
 import { CatalogListPage } from "@/components/modules/CatalogListPage";
 import { SeriesManagementPage } from "@/components/modules/SeriesManagementPage";
+import { SimpleNamedCatalogPage } from "@/components/modules/SimpleNamedCatalogPage";
+import { ItemSetsPage } from "@/components/modules/ItemSetsPage";
 import { AccountingBooksExcelPage } from "@/components/accounting/AccountingBooksExcelPage";
+import { api } from "@/lib/api/client";
 import { findReportByHref } from "@/lib/reports-catalog";
 
-const ItemSetsList = () => (
-  <CatalogListPage pathname="/item-sets" apiPath="item-sets/records" title="Packs y promociones" />
+const BrandsPage = () => (
+  <SimpleNamedCatalogPage title="Marcas" subtitle="Marcas de repuestos — Bosch, Denso, Valeo, etc." usageLabel="Productos" api={api.brands} />
+);
+const LinesPage = () => (
+  <SimpleNamedCatalogPage title="Líneas" subtitle="Líneas de negocio/producto, complementa la Categoría" usageLabel="Productos" api={api.lines} />
+);
+const ZonesPage = () => (
+  <SimpleNamedCatalogPage title="Zonas" subtitle="Zonas de reparto/ubicación para clasificar clientes" usageLabel="Clientes" api={api.zones} />
 );
 const PersonTypesList = () => (
   <CatalogListPage pathname="/person-types" apiPath="person-types/records" title="Tipos de clientes" labelField="description" />
-);
-const ZonesList = () => (
-  <CatalogListPage pathname="/zones" apiPath="zones/records" title="Lista de zonas" />
 );
 
 const catalog = (pathname: string, title: string, labelField?: "name" | "description") => () => (
@@ -73,9 +79,9 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/sale-notes": SaleNotesList,
   "/quotations": QuotationsList,
   "/categories": CategoriesList,
-  "/item-sets": ItemSetsList,
+  "/item-sets": ItemSetsPage,
   "/person-types": PersonTypesList,
-  "/zones": ZonesList,
+  "/zones": ZonesPage,
   "/inventory": InventoryList,
   "/inventory/validate": InventoryValidateList,
   "/cash": CashList,
@@ -101,10 +107,10 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/inventory-references": catalog("/inventory-references", "Referencias de inventario"),
   "/transfers": catalog("/transfers", "Traslados"),
   "/devolutions": catalog("/devolutions", "Devoluciones"),
-  "/brands": catalog("/brands", "Marcas"),
+  "/brands": BrandsPage,
   "/cupones": catalog("/cupones", "Cupones"),
   "/ingredients": catalog("/ingredients", "Ingredientes"),
-  "/lines": catalog("/lines", "Líneas"),
+  "/lines": LinesPage,
   "/series": SeriesManagementPage,
   "/item-lots": catalog("/item-lots", "Lotes"),
   "/price-adjustments": catalog("/price-adjustments", "Ajustes de precio"),

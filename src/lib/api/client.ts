@@ -481,6 +481,42 @@ export const api = {
       apiFetch<{ data: Record<string, unknown>[] }>(local(`/${path}`)),
   },
 
+  brands: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/brands/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch<{ data: Record<string, unknown> }>(local("/brands"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/brands/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/brands/${id}`), { method: "DELETE" }),
+  },
+
+  lines: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/lines/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch<{ data: Record<string, unknown> }>(local("/lines"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/lines/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/lines/${id}`), { method: "DELETE" }),
+  },
+
+  zones: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/zones/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch<{ data: Record<string, unknown> }>(local("/zones"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/zones/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/zones/${id}`), { method: "DELETE" }),
+  },
+
+  itemSets: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/item-sets/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch<{ data: Record<string, unknown> }>(local("/item-sets"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/item-sets/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/item-sets/${id}`), { method: "DELETE" }),
+  },
+
   series: {
     records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/series/records")),
     create: (payload: Record<string, unknown>) =>

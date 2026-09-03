@@ -133,6 +133,10 @@ const RESERVED_SINGLE_SEGMENT = new Set([
   "auth",
   "backup",
   "series",
+  "brands",
+  "lines",
+  "zones",
+  "item-sets",
 ]);
 
 const BLOCKED_GENERIC_PATHS = new Set([
@@ -269,6 +273,8 @@ function mapItemRecord(i: {
   saleAffectationTypeId: string;
   barcode: string | null;
   brand: string | null;
+  brandId?: number | null;
+  lineId?: number | null;
   imageUrl: string | null;
   active: boolean;
   category: { name: string } | null;
@@ -300,6 +306,8 @@ function mapItemRecord(i: {
     image_url_small: i.imageUrl,
     image_url: i.imageUrl,
     active: i.active,
+    brand_id: i.brandId ?? null,
+    line_id: i.lineId ?? null,
   };
 }
 
@@ -1578,6 +1586,8 @@ export async function handleLocalApi(
         internalId: p.internal_id ? String(p.internal_id) : null,
         barcode: p.barcode ? String(p.barcode) : null,
         brand: p.brand ? String(p.brand) : null,
+        brandId: p.brand_id ? Number(p.brand_id) : null,
+        lineId: p.line_id ? Number(p.line_id) : null,
         unitTypeId: String(p.unit_type_id || "NIU"),
         saleUnitPrice: Number(p.sale_unit_price || 0),
         purchasePrice: Number(p.purchase_price || 0),
@@ -1610,6 +1620,8 @@ export async function handleLocalApi(
         internalId: p.internal_id ? String(p.internal_id) : null,
         barcode: p.barcode ? String(p.barcode) : null,
         brand: p.brand ? String(p.brand) : null,
+        brandId: p.brand_id ? Number(p.brand_id) : null,
+        lineId: p.line_id ? Number(p.line_id) : null,
         unitTypeId: String(p.unit_type_id || "NIU"),
         saleUnitPrice: Number(p.sale_unit_price || 0),
         purchasePrice: Number(p.purchase_price || 0),
@@ -1684,6 +1696,136 @@ export async function handleLocalApi(
 
   if (method === "DELETE" && path.match(/^categories\/\d+$/)) {
     await prisma.category.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Marcas (catálogo real de repuestos — reemplaza el catálogo genérico de /brands) ──
+  if (method === "GET" && path === "brands/records") {
+    const data = await prisma.brand.findMany({ include: { _count: { select: { items: true } } }, orderBy: { name: "asc" } });
+    return { data: data.map((b) => ({ id: b.id, name: b.name, description: b.name, items_count: b._count.items })) };
+  }
+  if (method === "POST" && path === "brands") {
+    const p = body as Record<string, unknown>;
+    const name = String(p.name || "").trim();
+    if (!name) throw new Error("El nombre de la marca es obligatorio");
+    const brand = await prisma.brand.create({ data: { name } });
+    return { success: true, data: brand };
+  }
+  if (method === "PUT" && path.match(/^brands\/\d+$/)) {
+    const brand = await prisma.brand.update({ where: { id: Number(path.split("/")[1]) }, data: { name: String((body as Record<string, unknown>).name || "").trim() } });
+    return { success: true, data: brand };
+  }
+  if (method === "DELETE" && path.match(/^brands\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const inUse = await prisma.item.count({ where: { brandId: id } });
+    if (inUse > 0) throw new Error("Esta marca está asignada a productos — quítala de esos productos antes de eliminarla.");
+    await prisma.brand.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ── Líneas (clasificación complementaria a Categoría — reemplaza el catálogo genérico de /lines) ──
+  if (method === "GET" && path === "lines/records") {
+    const data = await prisma.line.findMany({ include: { _count: { select: { items: true } } }, orderBy: { name: "asc" } });
+    return { data: data.map((l) => ({ id: l.id, name: l.name, description: l.name, items_count: l._count.items })) };
+  }
+  if (method === "POST" && path === "lines") {
+    const p = body as Record<string, unknown>;
+    const name = String(p.name || "").trim();
+    if (!name) throw new Error("El nombre de la línea es obligatorio");
+    const line = await prisma.line.create({ data: { name } });
+    return { success: true, data: line };
+  }
+  if (method === "PUT" && path.match(/^lines\/\d+$/)) {
+    const line = await prisma.line.update({ where: { id: Number(path.split("/")[1]) }, data: { name: String((body as Record<string, unknown>).name || "").trim() } });
+    return { success: true, data: line };
+  }
+  if (method === "DELETE" && path.match(/^lines\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const inUse = await prisma.item.count({ where: { lineId: id } });
+    if (inUse > 0) throw new Error("Esta línea está asignada a productos — quítala de esos productos antes de eliminarla.");
+    await prisma.line.delete({ where: { id } });
+    return { success: true };
+  }
+
+  // ── Zonas (catálogo real que alimenta el campo Zona del cliente — reemplaza /zones) ──
+  if (method === "GET" && path === "zones/records") {
+    const data = await prisma.zone.findMany({ orderBy: { name: "asc" } });
+    const counts = await prisma.customer.groupBy({ by: ["zone"], _count: { _all: true } });
+    const countByZone = new Map(counts.map((c) => [c.zone, c._count._all]));
+    return { data: data.map((z) => ({ id: z.id, name: z.name, description: z.name, customers_count: countByZone.get(z.name) ?? 0 })) };
+  }
+  if (method === "POST" && path === "zones") {
+    const p = body as Record<string, unknown>;
+    const name = String(p.name || "").trim();
+    if (!name) throw new Error("El nombre de la zona es obligatorio");
+    const zone = await prisma.zone.create({ data: { name } });
+    return { success: true, data: zone };
+  }
+  if (method === "PUT" && path.match(/^zones\/\d+$/)) {
+    const zone = await prisma.zone.update({ where: { id: Number(path.split("/")[1]) }, data: { name: String((body as Record<string, unknown>).name || "").trim() } });
+    return { success: true, data: zone };
+  }
+  if (method === "DELETE" && path.match(/^zones\/\d+$/)) {
+    await prisma.zone.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Packs y promociones (combo de ítems a precio fijo — reemplaza /item-sets) ──
+  if (method === "GET" && path === "item-sets/records") {
+    const data = await prisma.itemSet.findMany({
+      include: { lines: { include: { item: true } } },
+      orderBy: { name: "asc" },
+    });
+    return {
+      data: data.map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description ?? "",
+        price: s.price,
+        active: s.active,
+        items_count: s.lines.length,
+        items: s.lines.map((l) => ({ item_id: l.itemId, description: l.item.description, quantity: l.quantity })),
+      })),
+    };
+  }
+  if (method === "POST" && path === "item-sets") {
+    const p = body as Record<string, unknown>;
+    const name = String(p.name || "").trim();
+    if (!name) throw new Error("El nombre del pack es obligatorio");
+    const lines = ((p.items as Record<string, unknown>[]) || [])
+      .filter((l) => l.item_id)
+      .map((l) => ({ itemId: Number(l.item_id), quantity: Number(l.quantity || 1) }));
+    const set = await prisma.itemSet.create({
+      data: {
+        name,
+        description: p.description ? String(p.description) : null,
+        price: Number(p.price || 0),
+        lines: { create: lines },
+      },
+    });
+    return { success: true, data: set };
+  }
+  if (method === "PUT" && path.match(/^item-sets\/\d+$/)) {
+    const id = Number(path.split("/")[1]);
+    const p = body as Record<string, unknown>;
+    const lines = ((p.items as Record<string, unknown>[]) || [])
+      .filter((l) => l.item_id)
+      .map((l) => ({ itemId: Number(l.item_id), quantity: Number(l.quantity || 1) }));
+    await prisma.itemSetLine.deleteMany({ where: { itemSetId: id } });
+    const set = await prisma.itemSet.update({
+      where: { id },
+      data: {
+        name: String(p.name || ""),
+        description: p.description ? String(p.description) : null,
+        price: Number(p.price || 0),
+        active: p.active !== undefined ? Boolean(p.active) : undefined,
+        lines: { create: lines },
+      },
+    });
+    return { success: true, data: set };
+  }
+  if (method === "DELETE" && path.match(/^item-sets\/\d+$/)) {
+    await prisma.itemSet.delete({ where: { id: Number(path.split("/")[1]) } });
     return { success: true };
   }
 
