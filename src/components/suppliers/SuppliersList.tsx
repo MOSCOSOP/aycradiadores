@@ -66,7 +66,13 @@ export function SuppliersList() {
 
   const remove = async (id: number) => {
     if (!confirm("¿Eliminar proveedor?")) return;
-    await api.suppliers.delete(id);
+    const res = (await api.suppliers.delete(id)) as { soft_deleted?: boolean; message?: string };
+    if (res.soft_deleted) alert(res.message);
+    load(search);
+  };
+
+  const reactivate = async (id: number) => {
+    await api.suppliers.update(id, { active: true });
     load(search);
   };
 
@@ -100,13 +106,35 @@ export function SuppliersList() {
         columns={[
           { key: "idx", label: "#", render: (_r, i) => i + 1 },
           { key: "number", label: "RUC/DNI" },
-          { key: "name", label: "Nombre / Razón social" },
+          {
+            key: "name",
+            label: "Nombre / Razón social",
+            render: (r) => (
+              <span className="flex items-center gap-2">
+                {String(r.name ?? "")}
+                {r.active === false && (
+                  <span className="rounded bg-[var(--muted-light)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
+                    Inactivo
+                  </span>
+                )}
+              </span>
+            ),
+          },
           { key: "telephone", label: "Teléfono" },
           { key: "email", label: "Email" },
           {
             key: "id",
             label: "Acciones",
-            render: (r) => <RowActions onEdit={() => openEdit(r)} onDelete={() => remove(Number(r.id))} />,
+            render: (r) => (
+              <div className="flex items-center gap-1">
+                {r.active === false && (
+                  <button type="button" className="ify-btn-outline px-2 py-1 text-[10px] text-green-700" onClick={() => reactivate(Number(r.id))}>
+                    Reactivar
+                  </button>
+                )}
+                <RowActions onEdit={() => openEdit(r)} onDelete={() => remove(Number(r.id))} />
+              </div>
+            ),
           },
         ]}
       />

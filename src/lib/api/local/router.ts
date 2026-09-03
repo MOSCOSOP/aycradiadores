@@ -316,6 +316,7 @@ function supplierPayload(p: Record<string, unknown>) {
     observations: p.observations ? String(p.observations) : null,
     internalCode: p.internal_code ? String(p.internal_code) : null,
     barcode: p.barcode ? String(p.barcode) : null,
+    active: p.active !== undefined ? Boolean(p.active) : undefined,
   };
 }
 
@@ -355,6 +356,7 @@ function customerPayload(p: Record<string, unknown>) {
     vehicles: p.vehicles
       ? JSON.stringify(Array.isArray(p.vehicles) ? p.vehicles : [])
       : null,
+    active: p.active !== undefined ? Boolean(p.active) : undefined,
   };
 }
 
@@ -410,6 +412,7 @@ function customerToRecord(c: {
   guarantorAddress?: string | null;
   hasVehicle?: boolean;
   vehicles?: string | null;
+  active?: boolean;
 }) {
   return {
     id: c.id,
@@ -452,6 +455,7 @@ function customerToRecord(c: {
         return [];
       }
     })(),
+    active: c.active ?? true,
   };
 }
 
@@ -1248,10 +1252,12 @@ export async function handleLocalApi(
             String(c.number ?? "").toLowerCase().includes(q)
         );
       }
+      // "search" es el buscador para elegir cliente al vender — uno desactivado no debe salir ahí.
+      if (column === "search") merged = merged.filter((c) => c.active !== false);
       return paginateImported(merged, page, limit);
     }
 
-    const where =
+    const textWhere =
       value && (column === "search" || column === "name")
         ? {
             OR: [
@@ -1262,6 +1268,7 @@ export async function handleLocalApi(
         : value && column === "number"
           ? { number: { contains: value } }
           : {};
+    const where = column === "search" ? { ...textWhere, active: true } : textWhere;
     const [data, total] = await Promise.all([
       prisma.customer.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { name: "asc" } }),
       prisma.customer.count({ where }),
@@ -1310,8 +1317,27 @@ export async function handleLocalApi(
   }
 
   if (method === "DELETE" && path.match(/^persons\/customers\/\d+$/)) {
-    await prisma.customer.delete({ where: { id: Number(path.split("/")[2]) } });
-    return { success: true };
+    const id = Number(path.split("/")[2]);
+    // Un cliente con comprobantes, notas de venta, guías, cotizaciones o pedidos no se puede
+    // borrar de verdad sin romper ese historial — se desactiva en su lugar (igual que /items).
+    const [documents, dispatches, saleNotes, quotations, orderNotes] = await Promise.all([
+      prisma.document.count({ where: { customerId: id } }),
+      prisma.dispatch.count({ where: { customerId: id } }),
+      prisma.saleNote.count({ where: { customerId: id } }),
+      prisma.quotation.count({ where: { customerId: id } }),
+      prisma.orderNote.count({ where: { customerId: id } }),
+    ]);
+    if (documents || dispatches || saleNotes || quotations || orderNotes) {
+      await prisma.customer.update({ where: { id }, data: { active: false } });
+      return {
+        success: true,
+        soft_deleted: true,
+        message:
+          "Este cliente ya tiene comprobantes u otros registros asociados, así que se desactivó en vez de eliminarse (para no perder el historial). Ya no aparecerá al buscar para vender.",
+      };
+    }
+    await prisma.customer.delete({ where: { id } });
+    return { success: true, soft_deleted: false };
   }
 
   // ── Proveedores ──
@@ -1334,6 +1360,7 @@ export async function handleLocalApi(
           observations: row.observations ?? null,
           internal_code: row.internalCode ?? null,
           barcode: row.barcode ?? null,
+          active: row.active ?? true,
         };
       }),
       meta: { total: data.length },
@@ -1357,8 +1384,19 @@ export async function handleLocalApi(
   }
 
   if (method === "DELETE" && path.match(/^persons\/suppliers\/\d+$/)) {
-    await prisma.supplier.delete({ where: { id: Number(path.split("/")[2]) } });
-    return { success: true };
+    const id = Number(path.split("/")[2]);
+    const purchaseCount = await prisma.purchase.count({ where: { supplierId: id } });
+    if (purchaseCount > 0) {
+      await prisma.supplier.update({ where: { id }, data: { active: false } });
+      return {
+        success: true,
+        soft_deleted: true,
+        message:
+          "Este proveedor ya tiene compras registradas, así que se desactivó en vez de eliminarse (para no perder el historial).",
+      };
+    }
+    await prisma.supplier.delete({ where: { id } });
+    return { success: true, soft_deleted: false };
   }
 
   // ── Productos ──

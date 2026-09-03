@@ -132,6 +132,7 @@ model Customer {
   guarantorAddress         String?
   hasVehicle               Boolean      @default(false)
   vehicles                 String?
+  active                   Boolean      @default(true)
   documents                Document[]
   dispatches               Dispatch[]
   saleNotes                SaleNote[]
@@ -154,6 +155,7 @@ model Supplier {
   observations           String?
   internalCode           String?
   barcode                String?
+  active                 Boolean    @default(true)
   purchases              Purchase[]
   createdAt              DateTime   @default(now())
 }
