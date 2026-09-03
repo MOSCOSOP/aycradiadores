@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { APP_COMMIT, APP_VERSION, COMPANY } from "@/lib/constants";
+import { COMPANY } from "@/lib/constants";
 import { api } from "@/lib/api/client";
 
 export function LoginForm() {
@@ -14,20 +14,6 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [now, setNow] = useState("");
-
-  useEffect(() => {
-    setNow(
-      new Date().toLocaleString("es-PE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      })
-    );
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,14 +35,16 @@ export function LoginForm() {
       <div className="relative flex h-full items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="mb-6 flex justify-center">
-            <Image
-              src="/images/logo-client.png"
-              alt={COMPANY.tradeName}
-              width={70}
-              height={70}
-              className="h-[70px] w-auto object-contain"
-              priority
-            />
+            <span className="auth-logo-badge">
+              <Image
+                src="/images/logo-client.png"
+                alt={COMPANY.tradeName}
+                width={64}
+                height={64}
+                className="h-16 w-16 object-contain"
+                priority
+              />
+            </span>
           </div>
 
           <div className="text-center">
@@ -105,12 +93,6 @@ export function LoginForm() {
             </form>
           </div>
         </div>
-      </div>
-
-      <div className="absolute bottom-3 right-3 text-end">
-        <p className="text-xs text-[var(--muted-light)]">v {APP_VERSION}</p>
-        <p className="text-xs text-[var(--muted-light)]">{APP_COMMIT}</p>
-        <p className="text-xs text-[var(--muted-light)]">{now}</p>
       </div>
     </div>
   );

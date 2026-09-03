@@ -510,16 +510,45 @@ html.ify-dark .ify-alert-error {
 
 /* Login */
 .auth-bg {
-  background: url("/images/fondo-6.png") no-repeat center center fixed;
-  background-size: cover;
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(73, 192, 221, 0.28), transparent 60%),
+    radial-gradient(900px 700px at 108% 112%, rgba(29, 116, 170, 0.30), transparent 55%),
+    linear-gradient(160deg, #f6fafd 0%, #eaf3f9 45%, #dbeaf3 100%);
+}
+
+html.ify-dark .auth-bg {
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(73, 192, 221, 0.16), transparent 60%),
+    radial-gradient(900px 700px at 108% 112%, rgba(36, 147, 216, 0.18), transparent 55%),
+    linear-gradient(160deg, #10161c 0%, #141b22 55%, #101820 100%);
 }
 
 .bg-card-login {
+  position: relative;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: var(--radius-lg);
   padding: 1.75rem 1.5rem;
+  box-shadow: var(--shadow-card-hover);
+  overflow: hidden;
+}
+
+.bg-card-login::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--secondary), var(--primary));
+}
+
+.auth-logo-badge {
+  display: inline-flex;
+  padding: 0.625rem;
+  background: #fff;
+  border-radius: 50%;
   box-shadow: var(--shadow-card-hover);
 }
 
@@ -527,14 +556,6 @@ html.ify-dark .bg-card-login {
   background: rgba(30, 36, 44, 0.92);
   border-color: var(--border);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-}
-
-html.ify-dark .auth-bg::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  pointer-events: none;
 }
 
 .filled-input {
