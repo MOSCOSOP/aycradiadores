@@ -3948,6 +3948,8 @@ export async function handleLocalApi(
           barcode: i.barcode,
           image_url_small: i.image_url_small,
           image_url: i.image_url,
+          has_igv: i.has_igv,
+          sale_affectation_type_id: i.sale_affectation_igv_type_id,
         })),
       };
     }
@@ -3962,6 +3964,11 @@ export async function handleLocalApi(
     return {
       categories,
       series: seriesRows.map((s) => ({ id: s.id, number: s.number, document_type_id: s.documentTypeId })),
+      // has_igv/sale_affectation_type_id son obligatorios acá: el carrito del POS los usa para
+      // mostrar el desglose OP. GRAVADAS/EXONERADAS + IGV mientras se vende. Faltaban por
+      // completo, así que el carrito asumía "con IGV" para TODO producto — el cobro final no se
+      // veía afectado (processPosCheckout vuelve a consultar la BD al confirmar la venta), pero
+      // el desglose en pantalla era engañoso y parecía un cobro de IGV donde no correspondía.
       items: items.map((i) => ({
         id: i.id,
         description: i.description,
@@ -3975,6 +3982,8 @@ export async function handleLocalApi(
         barcode: i.barcode,
         image_url_small: i.imageUrl,
         image_url: i.imageUrl,
+        has_igv: i.hasIgv,
+        sale_affectation_type_id: i.saleAffectationTypeId,
       })),
     };
   }
