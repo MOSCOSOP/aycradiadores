@@ -688,6 +688,7 @@ function mapChatMessage(m: {
   id: number;
   sender: string;
   body: string;
+  imageUrl?: string | null;
   createdAt: Date;
   document?: { id: number; fullNumber: string; shareToken: string | null; total: number } | null;
 }) {
@@ -695,6 +696,7 @@ function mapChatMessage(m: {
     id: m.id,
     sender: m.sender,
     body: m.body,
+    image_url: m.imageUrl ?? null,
     created_at: m.createdAt,
     document: m.document
       ? {
@@ -4038,6 +4040,22 @@ export async function handleLocalApi(
       include: { document: { select: { id: true, fullNumber: true, shareToken: true, total: true } } },
     });
     return { success: true, data: mapChatMessage(message) };
+  }
+
+  // Vacía los mensajes de una conversación, pero conserva la cuenta del cliente (su PIN sigue
+  // funcionando y puede seguir escribiendo).
+  if (method === "POST" && path.match(/^messages\/conversations\/\d+\/clear$/)) {
+    const id = Number(path.split("/")[2]);
+    await prisma.chatMessage.deleteMany({ where: { chatCustomerId: id } });
+    return { success: true };
+  }
+
+  // Elimina la conversación por completo, incluida la cuenta del cliente (tendría que
+  // registrarse de nuevo con un PIN nuevo si vuelve a escribir).
+  if (method === "DELETE" && path.match(/^messages\/conversations\/\d+$/)) {
+    const id = Number(path.split("/")[2]);
+    await prisma.chatCustomer.delete({ where: { id } });
+    return { success: true };
   }
 
   // Vincula (o crea) al cliente del chat como Customer real, para poder facturarle

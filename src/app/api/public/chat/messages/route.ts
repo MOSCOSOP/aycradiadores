@@ -6,6 +6,7 @@ type ChatMessageWithDoc = {
   id: number;
   sender: string;
   body: string;
+  imageUrl?: string | null;
   createdAt: Date;
   document?: { id: number; fullNumber: string; shareToken: string | null; total: number } | null;
 };
@@ -15,6 +16,7 @@ function mapMessage(m: ChatMessageWithDoc) {
     id: m.id,
     sender: m.sender,
     body: m.body,
+    image_url: m.imageUrl ?? null,
     created_at: m.createdAt,
     document: m.document
       ? {
@@ -49,7 +51,8 @@ export async function POST(req: NextRequest) {
     const message = await postCustomerMessage(
       Number(body.customer_id),
       String(body.dni || ""),
-      String(body.body || "")
+      String(body.body || ""),
+      body.image ? String(body.image) : undefined
     );
     return NextResponse.json({ data: mapMessage({ ...message, document: null }) });
   } catch (e) {

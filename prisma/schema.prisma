@@ -624,6 +624,7 @@ model ChatCustomer {
   id         Int           @id @default(autoincrement())
   name       String
   dni        String        @unique
+  pinHash    String? // null = cuenta creada antes del PIN; se le pide crear uno en su próximo ingreso
   createdAt  DateTime      @default(now())
   lastSeenAt DateTime      @default(now())
   messages   ChatMessage[]
@@ -635,6 +636,7 @@ model ChatMessage {
   chatCustomer   ChatCustomer @relation(fields: [chatCustomerId], references: [id], onDelete: Cascade)
   sender         String // "customer" | "admin"
   body           String       @db.Text
+  imageUrl       String?      @db.Text // foto enviada por el cliente, como data URL (sin bucket externo)
   documentId     Int?
   document       Document?    @relation(fields: [documentId], references: [id])
   readByAdmin    Boolean      @default(false)

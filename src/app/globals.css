@@ -3182,6 +3182,15 @@ body > .chat-screen {
   text-align: right;
 }
 
+.chat-bubble-img {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 0.625rem;
+  margin-bottom: 0.375rem;
+  object-fit: cover;
+}
+
 .chat-doc-card {
   display: flex;
   align-items: center;

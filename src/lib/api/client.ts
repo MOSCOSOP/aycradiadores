@@ -595,6 +595,9 @@ export const api = {
       apiFetch<{ data: Record<string, unknown> }>(local(`/messages/conversations/${id}/link-customer`), {
         method: "POST",
       }),
+    clear: (id: number) => apiFetch<{ success: boolean }>(local(`/messages/conversations/${id}/clear`), { method: "POST" }),
+    deleteConversation: (id: number) =>
+      apiFetch<{ success: boolean }>(local(`/messages/conversations/${id}`), { method: "DELETE" }),
   },
 
   payroll: {

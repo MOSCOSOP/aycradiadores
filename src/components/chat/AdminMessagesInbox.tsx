@@ -20,6 +20,7 @@ type ChatMessage = {
   id: number;
   sender: "customer" | "admin";
   body: string;
+  image_url: string | null;
   created_at: string;
   document: { id: number; full_number: string; total: number; url: string | null } | null;
 };
@@ -184,7 +185,7 @@ function ConversationList({
   );
 }
 
-function Thread({ conversationId }: { conversationId: number }) {
+function Thread({ conversationId, onClosed }: { conversationId: number; onClosed: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [customer, setCustomer] = useState<{ id: number; name: string; dni: string } | null>(null);
   const [text, setText] = useState("");
@@ -247,6 +248,26 @@ function Thread({ conversationId }: { conversationId: number }) {
     }
   };
 
+  const clearChat = async () => {
+    if (!confirm("¿Vaciar esta conversación? Se borrarán todos los mensajes, pero el cliente conserva su cuenta y puede seguir escribiendo.")) return;
+    try {
+      await api.messages.clear(conversationId);
+      setMessages([]);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo vaciar la conversación");
+    }
+  };
+
+  const deleteChat = async () => {
+    if (!confirm("¿Eliminar esta conversación por completo? El cliente tendría que registrarse de nuevo si vuelve a escribir. Esta acción no se puede deshacer.")) return;
+    try {
+      await api.messages.deleteConversation(conversationId);
+      onClosed();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo eliminar la conversación");
+    }
+  };
+
   return (
     <div className="chat-screen">
       <header className="chat-header">
@@ -257,15 +278,28 @@ function Thread({ conversationId }: { conversationId: number }) {
             <span>DNI {customer?.dni ?? "—"}</span>
           </div>
         </div>
-        <button type="button" className="ify-btn-outline text-xs" onClick={createComprobante} disabled={linking}>
-          <i className="bi bi-receipt" /> {linking ? "Preparando..." : "Crear comprobante"}
-        </button>
+        <div className="flex items-center gap-1">
+          <button type="button" className="ify-btn-outline text-xs" onClick={createComprobante} disabled={linking}>
+            <i className="bi bi-receipt" /> {linking ? "Preparando..." : "Crear comprobante"}
+          </button>
+          <button type="button" className="ify-btn-ghost px-2" title="Vaciar chat" onClick={clearChat}>
+            <i className="bi bi-eraser" />
+          </button>
+          <button type="button" className="ify-btn-ghost px-2 text-red-600" title="Eliminar conversación" onClick={deleteChat}>
+            <i className="bi bi-trash" />
+          </button>
+        </div>
       </header>
 
       <div className="chat-body">
         {messages.map((m) => (
           <div key={m.id} className={`chat-bubble-row ${m.sender === "admin" ? "me" : "them"}`}>
             <div className="chat-bubble">
+              {m.image_url && (
+                <a href={m.image_url} target="_blank" rel="noreferrer">
+                  <img src={m.image_url} alt="Foto enviada por el cliente" className="chat-bubble-img" />
+                </a>
+              )}
               {m.body && <p>{m.body}</p>}
               {m.document && (
                 <a href={m.document.url ?? "#"} target="_blank" rel="noreferrer" className="chat-doc-card">
@@ -378,7 +412,13 @@ export function AdminMessagesInbox() {
               <button type="button" className="chat-back-btn" onClick={() => setSelectedId(null)}>
                 <i className="bi bi-arrow-left" /> Conversaciones
               </button>
-              <Thread conversationId={selectedId} />
+              <Thread
+                conversationId={selectedId}
+                onClosed={() => {
+                  setSelectedId(null);
+                  loadList();
+                }}
+              />
             </>
           ) : (
             <div className="ify-empty-state">
