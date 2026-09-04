@@ -1558,6 +1558,34 @@ html.ify-dark .pos-checkout-summary .font-semibold {
   background: var(--nav-active-bg);
 }
 
+/* Precio editable por línea en el carrito del POS — para cobrar un monto distinto al del
+   catálogo en una venta puntual, sin tocar el precio real guardado del producto. */
+.pos-cart-price-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.125rem 0.25rem;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--primary);
+  background: var(--card);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  -moz-appearance: textfield;
+}
+
+.pos-cart-price-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--nav-active-bg);
+}
+
+.pos-cart-price-input::-webkit-outer-spin-button,
+.pos-cart-price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Comprobante impreso siempre fondo blanco */
 .doc-print-sheet {
   background: #fff !important;

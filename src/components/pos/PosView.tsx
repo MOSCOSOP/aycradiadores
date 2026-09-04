@@ -413,7 +413,19 @@ export function PosView() {
                       <span className="min-w-[1.25rem] text-center font-bold">{c.quantity}</span>
                       <button type="button" className="pos-cart-qty-btn" onClick={() => setCart((p) => p.map((x) => (x.id === c.id ? { ...x, quantity: x.quantity + 1 } : x)))}>+</button>
                     </div>
-                    <span className="text-right text-[var(--primary)]">{c.sale_unit_price.toFixed(2)}</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      title="Editar precio de venta (solo para esta venta, no cambia el precio del producto)"
+                      className="pos-cart-price-input text-right text-[var(--primary)]"
+                      value={c.sale_unit_price}
+                      onChange={(e) =>
+                        setCart((p) =>
+                          p.map((x) => (x.id === c.id ? { ...x, sale_unit_price: Math.max(0, Number(e.target.value) || 0) } : x))
+                        )
+                      }
+                    />
                     <span className="text-right font-bold text-[var(--primary)]">{(c.quantity * c.sale_unit_price).toFixed(2)}</span>
                   </div>
                 </div>
