@@ -214,10 +214,27 @@ export function SaleNotesList() {
             key: "actions",
             label: "Acciones",
             render: (r) => (
-              <RowActions
-                onEdit={() => openEdit(Number(r.id))}
-                onDelete={() => remove(Number(r.id), String(r.number ?? ""))}
-              />
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="ify-btn-ghost px-2"
+                  title="Imprimir / Ver"
+                  onClick={async () => {
+                    try {
+                      const res = await api.saleNotes.shareLink(Number(r.id));
+                      window.open(res.public_url, "_blank");
+                    } catch (e) {
+                      alert(e instanceof Error ? e.message : "No se pudo generar el enlace");
+                    }
+                  }}
+                >
+                  <i className="bi bi-printer" />
+                </button>
+                <RowActions
+                  onEdit={() => openEdit(Number(r.id))}
+                  onDelete={() => remove(Number(r.id), String(r.number ?? ""))}
+                />
+              </div>
             ),
           },
         ]}
@@ -403,10 +420,27 @@ export function QuotationsList() {
           key: "actions",
           label: "Acciones",
           render: (r) => (
-            <RowActions
-              onEdit={() => openEdit(Number(r.id))}
-              onDelete={() => remove(Number(r.id), String(r.number ?? ""))}
-            />
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="ify-btn-ghost px-2"
+                title="Imprimir / Ver"
+                onClick={async () => {
+                  try {
+                    const res = await api.quotations.shareLink(Number(r.id));
+                    window.open(res.public_url, "_blank");
+                  } catch (e) {
+                    alert(e instanceof Error ? e.message : "No se pudo generar el enlace");
+                  }
+                }}
+              >
+                <i className="bi bi-printer" />
+              </button>
+              <RowActions
+                onEdit={() => openEdit(Number(r.id))}
+                onDelete={() => remove(Number(r.id), String(r.number ?? ""))}
+              />
+            </div>
           ),
         },
       ]} emptyMessage="Sin cotizaciones" />
