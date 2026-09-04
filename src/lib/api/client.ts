@@ -514,6 +514,33 @@ export const api = {
     delete: (id: number) => apiFetch(local(`/zones/${id}`), { method: "DELETE" }),
   },
 
+  drivers: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/drivers/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch<{ data: Record<string, unknown> }>(local("/drivers"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/drivers/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/drivers/${id}`), { method: "DELETE" }),
+  },
+
+  vehicles: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/vehicles/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch<{ data: Record<string, unknown> }>(local("/vehicles"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/vehicles/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/vehicles/${id}`), { method: "DELETE" }),
+  },
+
+  originAddresses: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/origin-addresses/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch<{ data: Record<string, unknown> }>(local("/origin-addresses"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/origin-addresses/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/origin-addresses/${id}`), { method: "DELETE" }),
+  },
+
   itemSets: {
     records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/item-sets/records")),
     create: (payload: Record<string, unknown>) =>

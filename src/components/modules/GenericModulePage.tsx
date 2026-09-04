@@ -46,6 +46,7 @@ import { DispatchesCarrierList, TransportsList } from "@/components/carriers/Tra
 import { CatalogListPage } from "@/components/modules/CatalogListPage";
 import { SeriesManagementPage } from "@/components/modules/SeriesManagementPage";
 import { SimpleNamedCatalogPage } from "@/components/modules/SimpleNamedCatalogPage";
+import { MultiFieldCatalogPage } from "@/components/modules/MultiFieldCatalogPage";
 import { ItemSetsPage } from "@/components/modules/ItemSetsPage";
 import { InventoryReferencesPage } from "@/components/modules/InventoryReferencesPage";
 import { DiscountTypesPage } from "@/components/modules/DiscountTypesPage";
@@ -68,6 +69,45 @@ const LinesPage = () => (
 );
 const ZonesPage = () => (
   <SimpleNamedCatalogPage title="Zonas" subtitle="Zonas de reparto/ubicación para clasificar clientes" usageLabel="Clientes" api={api.zones} />
+);
+const DriversPage = () => (
+  <MultiFieldCatalogPage
+    title="Conductores"
+    subtitle="Conductores para guías de remisión"
+    api={api.drivers}
+    fields={[
+      { key: "name", label: "Nombre completo", required: true },
+      { key: "document_number", label: "DNI" },
+      { key: "license", label: "N° licencia" },
+      { key: "telephone", label: "Teléfono" },
+    ]}
+  />
+);
+const VehiclesPage = () => (
+  <MultiFieldCatalogPage
+    title="Vehículos"
+    subtitle="Vehículos propios para guías de remisión"
+    api={api.vehicles}
+    fields={[
+      { key: "plate", label: "Placa", required: true },
+      { key: "brand", label: "Marca" },
+      { key: "model", label: "Modelo" },
+      { key: "capacity", label: "Capacidad (kg)", type: "number" },
+    ]}
+  />
+);
+const OriginAddressesPage = () => (
+  <MultiFieldCatalogPage
+    title="Direcciones de partida"
+    subtitle="Puntos de partida frecuentes para guías de remisión"
+    api={api.originAddresses}
+    fields={[
+      { key: "name", label: "Nombre del punto", required: true },
+      { key: "address", label: "Dirección", required: true },
+      { key: "ubigeo", label: "Ubigeo" },
+      { key: "reference", label: "Referencia" },
+    ]}
+  />
 );
 const RetentionsPage = () => <TaxWithholdingsPage type="retention" />;
 const PerceptionsPage = () => <TaxWithholdingsPage type="perception" />;
@@ -127,9 +167,9 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/price-adjustments": PriceAdjustmentsPage,
   "/discount-types": DiscountTypesPage,
   "/transports": TransportsList,
-  "/drivers": catalog("/drivers", "Conductores"),
-  "/vehicles": catalog("/vehicles", "Vehículos"),
-  "/origin-addresses": catalog("/origin-addresses", "Direcciones de partida"),
+  "/drivers": DriversPage,
+  "/vehicles": VehiclesPage,
+  "/origin-addresses": OriginAddressesPage,
   "/dispatches-carrier": DispatchesCarrierList,
   "/voided": catalog("/voided", "Anulaciones"),
   "/summaries": catalog("/summaries", "Resúmenes"),

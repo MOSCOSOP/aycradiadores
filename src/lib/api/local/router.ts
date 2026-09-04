@@ -138,6 +138,9 @@ const RESERVED_SINGLE_SEGMENT = new Set([
   "brands",
   "lines",
   "zones",
+  "drivers",
+  "vehicles",
+  "origin-addresses",
   "item-sets",
   "inventory-references",
   "discount-types",
@@ -1809,6 +1812,146 @@ export async function handleLocalApi(
   }
   if (method === "DELETE" && path.match(/^zones\/\d+$/)) {
     await prisma.zone.delete({ where: { id: Number(path.split("/")[1]) } });
+    return { success: true };
+  }
+
+  // ── Conductores (catálogo real para guías de remisión — reemplaza /drivers genérico) ──
+  if (method === "GET" && path === "drivers/records") {
+    const data = await prisma.driver.findMany({ where: { active: true }, orderBy: { name: "asc" } });
+    return {
+      data: data.map((d) => ({
+        id: d.id,
+        name: d.name,
+        description: d.name,
+        document_number: d.documentNumber ?? "",
+        license: d.license ?? "",
+        telephone: d.telephone ?? "",
+      })),
+    };
+  }
+  if (method === "POST" && path === "drivers") {
+    const p = body as Record<string, unknown>;
+    const name = String(p.name || "").trim();
+    if (!name) throw new Error("El nombre del conductor es obligatorio");
+    const driver = await prisma.driver.create({
+      data: {
+        name,
+        documentNumber: p.document_number ? String(p.document_number) : null,
+        license: p.license ? String(p.license) : null,
+        telephone: p.telephone ? String(p.telephone) : null,
+      },
+    });
+    return { success: true, data: driver };
+  }
+  if (method === "PUT" && path.match(/^drivers\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const driver = await prisma.driver.update({
+      where: { id: Number(path.split("/")[1]) },
+      data: {
+        name: String(p.name || "").trim(),
+        documentNumber: p.document_number ? String(p.document_number) : null,
+        license: p.license ? String(p.license) : null,
+        telephone: p.telephone ? String(p.telephone) : null,
+      },
+    });
+    return { success: true, data: driver };
+  }
+  if (method === "DELETE" && path.match(/^drivers\/\d+$/)) {
+    await prisma.driver.update({ where: { id: Number(path.split("/")[1]) }, data: { active: false } });
+    return { success: true };
+  }
+
+  // ── Vehículos (catálogo real para guías de remisión — reemplaza /vehicles genérico) ──
+  if (method === "GET" && path === "vehicles/records") {
+    const data = await prisma.vehicle.findMany({ where: { active: true }, orderBy: { plate: "asc" } });
+    return {
+      data: data.map((v) => ({
+        id: v.id,
+        name: v.plate,
+        description: v.plate,
+        plate: v.plate,
+        brand: v.brand ?? "",
+        model: v.model ?? "",
+        capacity: v.capacity ?? "",
+      })),
+    };
+  }
+  if (method === "POST" && path === "vehicles") {
+    const p = body as Record<string, unknown>;
+    const plate = String(p.plate || "").trim().toUpperCase();
+    if (!plate) throw new Error("La placa es obligatoria");
+    const vehicle = await prisma.vehicle.create({
+      data: {
+        plate,
+        brand: p.brand ? String(p.brand) : null,
+        model: p.model ? String(p.model) : null,
+        capacity: p.capacity ? Number(p.capacity) : null,
+      },
+    });
+    return { success: true, data: vehicle };
+  }
+  if (method === "PUT" && path.match(/^vehicles\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const vehicle = await prisma.vehicle.update({
+      where: { id: Number(path.split("/")[1]) },
+      data: {
+        plate: String(p.plate || "").trim().toUpperCase(),
+        brand: p.brand ? String(p.brand) : null,
+        model: p.model ? String(p.model) : null,
+        capacity: p.capacity ? Number(p.capacity) : null,
+      },
+    });
+    return { success: true, data: vehicle };
+  }
+  if (method === "DELETE" && path.match(/^vehicles\/\d+$/)) {
+    await prisma.vehicle.update({ where: { id: Number(path.split("/")[1]) }, data: { active: false } });
+    return { success: true };
+  }
+
+  // ── Direcciones de partida (catálogo real — reemplaza /origin-addresses genérico) ──
+  if (method === "GET" && path === "origin-addresses/records") {
+    const data = await prisma.originAddress.findMany({ where: { active: true }, orderBy: { name: "asc" } });
+    return {
+      data: data.map((a) => ({
+        id: a.id,
+        name: a.name,
+        description: a.address,
+        address: a.address,
+        ubigeo: a.ubigeo ?? "",
+        reference: a.reference ?? "",
+      })),
+    };
+  }
+  if (method === "POST" && path === "origin-addresses") {
+    const p = body as Record<string, unknown>;
+    const name = String(p.name || "").trim();
+    const address = String(p.address || "").trim();
+    if (!name || !address) throw new Error("Nombre y dirección son obligatorios");
+    const row = await prisma.originAddress.create({
+      data: {
+        name,
+        address,
+        ubigeo: p.ubigeo ? String(p.ubigeo) : null,
+        reference: p.reference ? String(p.reference) : null,
+      },
+    });
+    return { success: true, data: row };
+  }
+  if (method === "PUT" && path.match(/^origin-addresses\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const row = await prisma.originAddress.update({
+      where: { id: Number(path.split("/")[1]) },
+      data: {
+        name: String(p.name || "").trim(),
+        address: String(p.address || "").trim(),
+        ubigeo: p.ubigeo ? String(p.ubigeo) : null,
+        reference: p.reference ? String(p.reference) : null,
+      },
+    });
+    return { success: true, data: row };
+  }
+  if (method === "DELETE" && path.match(/^origin-addresses\/\d+$/)) {
+    await prisma.originAddress.update({ where: { id: Number(path.split("/")[1]) }, data: { active: false } });
     return { success: true };
   }
 

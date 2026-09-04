@@ -645,3 +645,36 @@ model ChatMessage {
   readByCustomer Boolean      @default(false)
   createdAt      DateTime     @default(now())
 }
+
+// Catálogos reales para guías de remisión (antes eran módulos genéricos con etiquetas en
+// inglés y sin lógica real). Un conductor/vehículo/punto de partida real permite que la guía
+// de remisión tenga sentido para SUNAT y para la empresa.
+model Driver {
+  id             Int      @id @default(autoincrement())
+  name           String
+  documentNumber String?
+  license        String?
+  telephone      String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model Vehicle {
+  id        Int      @id @default(autoincrement())
+  plate     String   @unique
+  brand     String?
+  model     String?
+  capacity  Float?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model OriginAddress {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  ubigeo    String?
+  reference String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
