@@ -6,6 +6,8 @@ export type CustomerVehicle = {
   model: string;
   year: string;
   color: string;
+  /** Foto referencial (no es la foto real del auto del cliente) traída al buscar la placa. */
+  image_url?: string;
 };
 
 export type CustomerExtraData = {
@@ -113,6 +115,7 @@ function parseVehicles(raw: unknown): CustomerVehicle[] {
       model: String((v as CustomerVehicle).model || ""),
       year: String((v as CustomerVehicle).year || ""),
       color: String((v as CustomerVehicle).color || ""),
+      image_url: (v as CustomerVehicle).image_url ? String((v as CustomerVehicle).image_url) : undefined,
     }));
   }
   if (typeof raw === "string" && raw.trim()) {

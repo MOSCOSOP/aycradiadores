@@ -45,6 +45,45 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
   const [loading, setLoading] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<CustomerRecord | null>(null);
   const [zones, setZones] = useState<{ id: number; name: string }[]>([]);
+  const [vehicleLookup, setVehicleLookup] = useState<Record<number, { loading: boolean; message: string }>>({});
+
+  const lookupVehicle = async (idx: number, plate: string) => {
+    const clean = plate.trim().replace(/[^A-Za-z0-9]/g, "");
+    if (!clean) {
+      setVehicleLookup((prev) => ({ ...prev, [idx]: { loading: false, message: "Escribe la placa primero" } }));
+      return;
+    }
+    setVehicleLookup((prev) => ({ ...prev, [idx]: { loading: true, message: "" } }));
+    try {
+      const res = await fetch(`/api/lookup/vehicle/${clean}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo consultar");
+      if (!data.exists) {
+        setVehicleLookup((prev) => ({
+          ...prev,
+          [idx]: { loading: false, message: "No se encontró esa placa — completa los datos a mano" },
+        }));
+        return;
+      }
+      setExtra((prevExtra) => {
+        const vehicles = [...prevExtra.vehicles];
+        vehicles[idx] = {
+          ...vehicles[idx],
+          brand: data.brand || vehicles[idx].brand,
+          model: data.model || vehicles[idx].model,
+          color: data.color || vehicles[idx].color,
+          image_url: data.image_url || vehicles[idx].image_url,
+        };
+        return { ...prevExtra, vehicles };
+      });
+      setVehicleLookup((prev) => ({ ...prev, [idx]: { loading: false, message: "Datos encontrados" } }));
+    } catch (e) {
+      setVehicleLookup((prev) => ({
+        ...prev,
+        [idx]: { loading: false, message: e instanceof Error ? e.message : "No se pudo consultar la placa" },
+      }));
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -270,11 +309,34 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
                         )}
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <label className="ify-label">Placa<input className="ify-input mt-1 uppercase" value={v.plate} onChange={(e) => {
-                          const vehicles = [...extra.vehicles];
-                          vehicles[idx] = { ...v, plate: e.target.value.toUpperCase() };
-                          setExtra({ ...extra, vehicles });
-                        }} placeholder="ABC-123" /></label>
+                        <label className="ify-label sm:col-span-2">
+                          Placa
+                          <div className="mt-1 flex gap-2">
+                            <input
+                              className="ify-input flex-1 uppercase"
+                              value={v.plate}
+                              onChange={(e) => {
+                                const vehicles = [...extra.vehicles];
+                                vehicles[idx] = { ...v, plate: e.target.value.toUpperCase() };
+                                setExtra({ ...extra, vehicles });
+                              }}
+                              placeholder="ABC-123"
+                            />
+                            <button
+                              type="button"
+                              className="ify-btn-outline whitespace-nowrap px-3 text-xs"
+                              onClick={() => lookupVehicle(idx, v.plate)}
+                              disabled={vehicleLookup[idx]?.loading}
+                            >
+                              {vehicleLookup[idx]?.loading ? "Buscando..." : "Buscar"}
+                            </button>
+                          </div>
+                          {vehicleLookup[idx]?.message ? (
+                            <span className="mt-1 block text-xs font-normal normal-case text-[var(--muted)]">
+                              {vehicleLookup[idx].message}
+                            </span>
+                          ) : null}
+                        </label>
                         <label className="ify-label">Marca<input className="ify-input mt-1" value={v.brand} onChange={(e) => {
                           const vehicles = [...extra.vehicles];
                           vehicles[idx] = { ...v, brand: e.target.value };
@@ -290,12 +352,19 @@ export function CustomerModal({ open, onClose, onSaved, editId, initial }: Custo
                           vehicles[idx] = { ...v, year: e.target.value };
                           setExtra({ ...extra, vehicles });
                         }} placeholder="2020" /></label>
-                        <label className="ify-label sm:col-span-2">Color<input className="ify-input mt-1" value={v.color} onChange={(e) => {
+                        <label className="ify-label">Color<input className="ify-input mt-1" value={v.color} onChange={(e) => {
                           const vehicles = [...extra.vehicles];
                           vehicles[idx] = { ...v, color: e.target.value };
                           setExtra({ ...extra, vehicles });
                         }} placeholder="Blanco" /></label>
                       </div>
+                      {v.image_url ? (
+                        <div className="mt-3 flex items-center gap-3 rounded border border-[var(--border-light)] bg-[var(--background)] p-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={v.image_url} alt={`${v.brand} ${v.model}`.trim()} className="h-16 w-16 object-contain" />
+                          <span className="text-xs text-[var(--muted)]">Imagen referencial — no es la foto real del vehículo del cliente.</span>
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                   <button
