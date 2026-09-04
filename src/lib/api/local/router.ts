@@ -2463,31 +2463,49 @@ export async function handleLocalApi(
 
   // ── Notas de venta ──
   if (method === "GET" && path === "sale-notes/records") {
+    // El historial importado del sistema anterior NO debe tapar las notas de venta reales
+    // creadas en este sistema — antes, si existía cualquier historial importado, la lista
+    // devolvía SOLO esas notas viejas y las nuevas (reales) nunca aparecían, aunque sí se
+    // habían creado correctamente (mismo problema ya corregido para documentos/guías: los
+    // datos reales son la fuente de verdad, el historial importado es solo un complemento).
     const imported = await readImportedModule("sale_notes");
-    if (imported?.length) {
-      const limit = Number(searchParams.get("limit") || 20);
-      const page = Number(searchParams.get("page") || 1);
-      return paginate(imported.map(mapImportedSaleNote), page, limit);
-    }
+    const importedRows = imported?.length ? imported.map(mapImportedSaleNote) : [];
+
     const data = await prisma.saleNote.findMany({ include: { customer: true }, orderBy: { id: "desc" } });
-    return {
-      data: data.map((n) => ({
-        id: n.id,
-        number: n.number,
-        customer_name: n.customer.name,
-        customer_number: n.customer.number,
-        date_of_issue: formatDate(n.date),
-        date: formatDate(n.date),
-        total: n.total,
-        state: n.state,
-        state_type_description: n.state,
-        currency_type_id: n.currencyTypeId,
-        modified_price: n.modifiedPrice,
-        payment_status: n.paymentStatus ?? "Pagado",
-        purchase_order: n.purchaseOrder ?? "",
-        plate: n.plate ?? "",
-      })),
-    };
+    const realRows = data.map((n) => ({
+      id: n.id,
+      number: n.number,
+      customer_name: n.customer.name,
+      customer_number: n.customer.number,
+      date_of_issue: formatDate(n.date),
+      date: formatDate(n.date),
+      total: n.total,
+      state: n.state,
+      state_type_description: n.state,
+      currency_type_id: n.currencyTypeId,
+      modified_price: n.modifiedPrice,
+      payment_status: n.paymentStatus ?? "Pagado",
+      purchase_order: n.purchaseOrder ?? "",
+      plate: n.plate ?? "",
+    }));
+
+    const byNumber = new Map<string, Record<string, unknown>>();
+    for (const row of importedRows) {
+      const key = String((row as Record<string, unknown>).number ?? "");
+      if (key) byNumber.set(key, row as Record<string, unknown>);
+    }
+    for (const row of realRows) {
+      if (row.number) byNumber.set(row.number, row);
+    }
+    const merged = [...byNumber.values()].sort((a, b) =>
+      String((b as Record<string, unknown>).date_of_issue ?? "").localeCompare(
+        String((a as Record<string, unknown>).date_of_issue ?? "")
+      )
+    );
+
+    const limit = Number(searchParams.get("limit") || 20);
+    const page = Number(searchParams.get("page") || 1);
+    return paginate(merged, page, limit);
   }
 
   if (method === "POST" && path === "sale-notes") {
