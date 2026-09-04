@@ -22,13 +22,27 @@ function escapeXml(v: string) {
   return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// Catálogo SUNAT 05 (código de tributo) por afectación — cada tipo de afectación va con su
+// PROPIO cac:TaxScheme, no todos "1000/IGV/VAT". Usar siempre el esquema IGV con monto 0.00
+// para líneas exoneradas/inafectas es lo que causaba el rechazo real de SUNAT "el monto de
+// afectación de IGV por línea debe ser diferente a 0.00" (código 3111) — confirmado con un
+// envío real rechazado en Producción antes de este fix. Tabla verificada contra una librería
+// de facturación electrónica peruana real y ampliamente usada en producción (greenter).
+const TRIBUTO_BY_AFECTACION: Record<string, { id: string; name: string; typeCode: string }> = {
+  "10": { id: "1000", name: "IGV", typeCode: "VAT" }, // Gravado
+  "20": { id: "9997", name: "EXO", typeCode: "VAT" }, // Exonerado
+  "30": { id: "9998", name: "INA", typeCode: "FRE" }, // Inafecto
+  "40": { id: "9995", name: "EXP", typeCode: "FRE" }, // Exportación
+};
+
 /** Catálogo SUNAT 07 (afectación IGV) -> catálogo 05 (código de tributo) + % + motivo de exoneración. */
 function igvCategoryFor(saleAffectationTypeId: string | undefined, hasIgvHint: boolean) {
   // "10" Gravado - Operación Onerosa (18%). Cualquier otro código (20 Exonerado, 30 Inafecto,
   // 40 Exportación, ...) se trata como sin IGV, usando el propio código como motivo (catálogo 07).
   const code = saleAffectationTypeId || (hasIgvHint ? "10" : "20");
   const gravado = code === "10";
-  return { code, percent: gravado ? 18 : 0, gravado };
+  const tributo = TRIBUTO_BY_AFECTACION[code] ?? TRIBUTO_BY_AFECTACION["20"];
+  return { code, percent: gravado ? 18 : 0, gravado, tributo };
 }
 
 export function buildMinimalInvoiceXml(input: {
@@ -58,7 +72,7 @@ export function buildMinimalInvoiceXml(input: {
 
   const lines = input.lines
     .map((l, i) => {
-      const { code, percent, gravado } = igvCategoryFor(l.saleAffectationTypeId, l.unitPrice > l.unitValue);
+      const { code, percent, gravado, tributo } = igvCategoryFor(l.saleAffectationTypeId, l.unitPrice > l.unitValue);
       const lineExtension = l.quantity * l.unitValue;
       const lineIgv = gravado ? l.quantity * (l.unitPrice - l.unitValue) : 0;
       return `
@@ -81,9 +95,9 @@ export function buildMinimalInvoiceXml(input: {
             <cbc:Percent>${percent}</cbc:Percent>
             <cbc:TaxExemptionReasonCode>${code}</cbc:TaxExemptionReasonCode>
             <cac:TaxScheme>
-              <cbc:ID>1000</cbc:ID>
-              <cbc:Name>IGV</cbc:Name>
-              <cbc:TaxTypeCode>VAT</cbc:TaxTypeCode>
+              <cbc:ID>${tributo.id}</cbc:ID>
+              <cbc:Name>${tributo.name}</cbc:Name>
+              <cbc:TaxTypeCode>${tributo.typeCode}</cbc:TaxTypeCode>
             </cac:TaxScheme>
           </cac:TaxCategory>
         </cac:TaxSubtotal>
@@ -101,8 +115,6 @@ export function buildMinimalInvoiceXml(input: {
       <cbc:TaxableAmount currencyID="${input.currency}">${input.totalTaxed.toFixed(2)}</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="${input.currency}">${input.totalIgv.toFixed(2)}</cbc:TaxAmount>
       <cac:TaxCategory>
-        <cbc:Percent>18</cbc:Percent>
-        <cbc:TaxExemptionReasonCode>10</cbc:TaxExemptionReasonCode>
         <cac:TaxScheme><cbc:ID>1000</cbc:ID><cbc:Name>IGV</cbc:Name><cbc:TaxTypeCode>VAT</cbc:TaxTypeCode></cac:TaxScheme>
       </cac:TaxCategory>
     </cac:TaxSubtotal>`
@@ -113,9 +125,7 @@ export function buildMinimalInvoiceXml(input: {
       <cbc:TaxableAmount currencyID="${input.currency}">${totalExonerated.toFixed(2)}</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="${input.currency}">0.00</cbc:TaxAmount>
       <cac:TaxCategory>
-        <cbc:Percent>0</cbc:Percent>
-        <cbc:TaxExemptionReasonCode>20</cbc:TaxExemptionReasonCode>
-        <cac:TaxScheme><cbc:ID>1000</cbc:ID><cbc:Name>IGV</cbc:Name><cbc:TaxTypeCode>VAT</cbc:TaxTypeCode></cac:TaxScheme>
+        <cac:TaxScheme><cbc:ID>9997</cbc:ID><cbc:Name>EXO</cbc:Name><cbc:TaxTypeCode>VAT</cbc:TaxTypeCode></cac:TaxScheme>
       </cac:TaxCategory>
     </cac:TaxSubtotal>`
       : "",
@@ -152,7 +162,13 @@ export function buildMinimalInvoiceXml(input: {
     <cac:Party>
       <cac:PartyIdentification><cbc:ID schemeID="6">${input.ruc}</cbc:ID></cac:PartyIdentification>
       <cac:PartyName><cbc:Name>${escapeXml(input.tradeName)}</cbc:Name></cac:PartyName>
-      <cac:PartyLegalEntity><cbc:RegistrationName>${escapeXml(input.tradeName)}</cbc:RegistrationName><cbc:CompanyID schemeID="6">${input.ruc}</cbc:CompanyID></cac:PartyLegalEntity>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>${escapeXml(input.tradeName)}</cbc:RegistrationName>
+        <cbc:CompanyID schemeID="6">${input.ruc}</cbc:CompanyID>
+        <cac:RegistrationAddress>
+          <cbc:AddressTypeCode>0000</cbc:AddressTypeCode>
+        </cac:RegistrationAddress>
+      </cac:PartyLegalEntity>
     </cac:Party>
   </cac:AccountingSupplierParty>
   <cac:AccountingCustomerParty>
@@ -161,6 +177,10 @@ export function buildMinimalInvoiceXml(input: {
       <cac:PartyLegalEntity><cbc:RegistrationName>${escapeXml(input.customerName)}</cbc:RegistrationName><cbc:CompanyID schemeID="${input.customerDocType}">${input.customerNumber}</cbc:CompanyID></cac:PartyLegalEntity>
     </cac:Party>
   </cac:AccountingCustomerParty>
+  <cac:PaymentTerms>
+    <cbc:ID>FormaPago</cbc:ID>
+    <cbc:PaymentMeansID>Contado</cbc:PaymentMeansID>
+  </cac:PaymentTerms>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="${input.currency}">${input.totalIgv.toFixed(2)}</cbc:TaxAmount>${subtotals}
   </cac:TaxTotal>
