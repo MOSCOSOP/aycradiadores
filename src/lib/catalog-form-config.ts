@@ -269,6 +269,61 @@ export function getCatalogFields(pathname: string): CatalogField[] {
   return merged;
 }
 
+// Traducciones para campos que aparecen en respuestas genéricas (a veces del historial
+// importado) pero que ningún CatalogField de este módulo declara explícitamente. Sin esto, el
+// encabezado de la columna caía al nombre técnico del campo tal cual (en inglés) — ej.
+// "customer_name" se mostraba literal como "Customer Name" en vez de "Cliente".
+const COMMON_COLUMN_LABELS: Record<string, string> = {
+  name: "Nombre",
+  description: "Descripción",
+  number: "Número",
+  code: "Código",
+  reference: "Referencia",
+  state: "Estado",
+  date: "Fecha",
+  warehouse_description: "Almacén",
+  plate: "Placa",
+  total: "Total",
+  customer_name: "Cliente",
+  customer_number: "RUC/DNI",
+  supplier_name: "Proveedor",
+  carrier_name: "Transportista",
+  document_type: "Tipo de documento",
+  document_type_description: "Tipo de documento",
+  state_type_description: "Estado",
+  total_pending: "Pendiente",
+  balance: "Saldo",
+  email: "Correo",
+  phone: "Teléfono",
+  telephone: "Teléfono",
+  address: "Dirección",
+  category: "Categoría",
+  unit: "Unidad",
+  unit_type_id: "Unidad",
+  quantity: "Cantidad",
+  price: "Precio",
+  amount: "Monto",
+  percentage: "Porcentaje",
+  active: "Activo",
+  observations: "Observaciones",
+  observation: "Observación",
+  frequency: "Frecuencia",
+  document_number: "N° documento",
+  license: "N° licencia",
+  brand: "Marca",
+  model: "Modelo",
+  capacity: "Capacidad (kg)",
+  ubigeo: "Ubigeo",
+  driver_name: "Conductor",
+  vehicle_plate: "Placa",
+  due_date: "Vencimiento",
+  document: "Documento",
+  type: "Tipo",
+  currency: "Moneda",
+  item_description: "Producto",
+  employee_name: "Empleado",
+};
+
 export function getCatalogDisplayColumns(pathname: string, sample?: Record<string, unknown>) {
   const preferred = [
     "name",
@@ -296,10 +351,16 @@ export function getCatalogDisplayColumns(pathname: string, sample?: Record<strin
       if (!keys.includes(k)) keys.push(k);
     }
   }
-  return keys.slice(0, 8).map((key) => ({
-    key,
-    label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-  }));
+  // Prioriza la etiqueta en español ya configurada para este módulo (CatalogField.label), luego
+  // el diccionario común, y solo al final el nombre técnico del campo como último recurso.
+  const configuredFields = getCatalogFields(pathname);
+  const labelFor = (key: string): string => {
+    const configured = configuredFields.find((f) => f.key === key);
+    if (configured) return configured.label;
+    if (COMMON_COLUMN_LABELS[key]) return COMMON_COLUMN_LABELS[key];
+    return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+  return keys.slice(0, 8).map((key) => ({ key, label: labelFor(key) }));
 }
 
 export function emptyCatalogForm(fields: CatalogField[]): Record<string, string> {

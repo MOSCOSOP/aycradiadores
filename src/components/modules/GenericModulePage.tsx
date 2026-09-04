@@ -58,6 +58,7 @@ import { FixedAssetsPage } from "@/components/modules/FixedAssetsPage";
 import { PayrollPage } from "@/components/modules/PayrollPage";
 import { TaxWithholdingsPage } from "@/components/modules/TaxWithholdingsPage";
 import { AccountingBooksExcelPage } from "@/components/accounting/AccountingBooksExcelPage";
+import { VoidedDocumentsPage } from "@/components/modules/VoidedDocumentsPage";
 import { api } from "@/lib/api/client";
 import { findReportByHref } from "@/lib/reports-catalog";
 
@@ -93,6 +94,52 @@ const VehiclesPage = () => (
       { key: "brand", label: "Marca" },
       { key: "model", label: "Modelo" },
       { key: "capacity", label: "Capacidad (kg)", type: "number" },
+    ]}
+  />
+);
+const ComplaintsBookPage = () => (
+  <MultiFieldCatalogPage
+    title="Libro de Reclamaciones"
+    subtitle="Obligatorio por ley (D.S. 011-2011-PCM) para todo negocio con local físico"
+    api={api.complaintsBook}
+    fields={[
+      {
+        key: "type",
+        label: "Tipo",
+        type: "select",
+        required: true,
+        options: [
+          { value: "Reclamo", label: "Reclamo (disconformidad con el producto/servicio)" },
+          { value: "Queja", label: "Queja (disconformidad con la atención)" },
+        ],
+      },
+      {
+        key: "item_type",
+        label: "Bien contratado",
+        type: "select",
+        options: [
+          { value: "Producto", label: "Producto" },
+          { value: "Servicio", label: "Servicio" },
+        ],
+      },
+      { key: "customer_name", label: "Nombre del consumidor", required: true },
+      { key: "customer_document", label: "DNI / CE" },
+      { key: "customer_phone", label: "Teléfono" },
+      { key: "customer_email", label: "Correo" },
+      { key: "customer_address", label: "Domicilio", span2: true },
+      { key: "claimed_amount", label: "Monto reclamado (S/)", type: "number" },
+      { key: "description", label: "Detalle del reclamo", type: "textarea", required: true, span2: true },
+      { key: "request", label: "Pedido del consumidor", type: "textarea", span2: true },
+      { key: "resolution", label: "Acciones adoptadas / respuesta", type: "textarea", span2: true },
+      {
+        key: "state",
+        label: "Estado",
+        type: "select",
+        options: [
+          { value: "Pendiente", label: "Pendiente" },
+          { value: "Resuelto", label: "Resuelto" },
+        ],
+      },
     ]}
   />
 );
@@ -171,7 +218,7 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/vehicles": VehiclesPage,
   "/origin-addresses": OriginAddressesPage,
   "/dispatches-carrier": DispatchesCarrierList,
-  "/voided": catalog("/voided", "Anulaciones"),
+  "/voided": VoidedDocumentsPage,
   "/summaries": catalog("/summaries", "Resúmenes"),
   "/contingencies": catalog("/contingencies", "Comprobantes contingencia"),
   "/technical-services": catalog("/technical-services", "Servicio soporte técnico"),
@@ -185,7 +232,7 @@ const MODULE_ROUTES: Record<string, React.ComponentType> = {
   "/perceptions": PerceptionsPage,
   "/order-forms": catalog("/order-forms", "Órdenes de pedido"),
   "/delivery-orders": catalog("/delivery-orders", "Órdenes de entrega"),
-  "/complaints-book": catalog("/complaints-book", "Libro de reclamaciones"),
+  "/complaints-book": ComplaintsBookPage,
   "/fixed-asset/items": FixedAssetsPage,
   "/fixed-asset/purchases": FixedAssetsPage,
 };

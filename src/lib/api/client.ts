@@ -541,6 +541,15 @@ export const api = {
     delete: (id: number) => apiFetch(local(`/origin-addresses/${id}`), { method: "DELETE" }),
   },
 
+  complaintsBook: {
+    records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/complaints-book/records")),
+    create: (payload: Record<string, unknown>) =>
+      apiFetch<{ data: Record<string, unknown> }>(local("/complaints-book"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    update: (id: number, payload: Record<string, unknown>) =>
+      apiFetch(local(`/complaints-book/${id}`), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+    delete: (id: number) => apiFetch(local(`/complaints-book/${id}`), { method: "DELETE" }),
+  },
+
   itemSets: {
     records: () => apiFetch<{ data: Record<string, unknown>[] }>(local("/item-sets/records")),
     create: (payload: Record<string, unknown>) =>

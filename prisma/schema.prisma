@@ -678,3 +678,24 @@ model OriginAddress {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 }
+
+// Libro de Reclamaciones — obligatorio por ley para cualquier negocio con local físico en Perú
+// (D.S. 011-2011-PCM). Antes era un catálogo genérico sin ninguna lógica real.
+model ComplaintBookEntry {
+  id               Int      @id @default(autoincrement())
+  number           String   @unique
+  date             DateTime @default(now())
+  type             String // "Reclamo" | "Queja"
+  customerName     String
+  customerDocument String?
+  customerPhone    String?
+  customerEmail    String?
+  customerAddress  String?
+  itemType         String // "Producto" | "Servicio"
+  claimedAmount    Float?
+  description      String   @db.Text
+  request          String?  @db.Text // pedido del consumidor
+  resolution       String?  @db.Text // acciones adoptadas por la empresa
+  state            String   @default("Pendiente") // "Pendiente" | "Resuelto"
+  createdAt        DateTime @default(now())
+}

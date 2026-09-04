@@ -141,6 +141,7 @@ const RESERVED_SINGLE_SEGMENT = new Set([
   "drivers",
   "vehicles",
   "origin-addresses",
+  "complaints-book",
   "item-sets",
   "inventory-references",
   "discount-types",
@@ -1952,6 +1953,79 @@ export async function handleLocalApi(
   }
   if (method === "DELETE" && path.match(/^origin-addresses\/\d+$/)) {
     await prisma.originAddress.update({ where: { id: Number(path.split("/")[1]) }, data: { active: false } });
+    return { success: true };
+  }
+
+  // ── Libro de Reclamaciones (obligatorio por ley — reemplaza /complaints-book genérico) ──
+  if (method === "GET" && path === "complaints-book/records") {
+    const data = await prisma.complaintBookEntry.findMany({ orderBy: { id: "desc" } });
+    return {
+      data: data.map((c) => ({
+        id: c.id,
+        number: c.number,
+        date: formatDate(c.date),
+        type: c.type,
+        customer_name: c.customerName,
+        customer_document: c.customerDocument ?? "",
+        customer_phone: c.customerPhone ?? "",
+        customer_email: c.customerEmail ?? "",
+        customer_address: c.customerAddress ?? "",
+        item_type: c.itemType,
+        claimed_amount: c.claimedAmount ?? "",
+        description: c.description,
+        request: c.request ?? "",
+        resolution: c.resolution ?? "",
+        state: c.state,
+      })),
+    };
+  }
+  if (method === "POST" && path === "complaints-book") {
+    const p = body as Record<string, unknown>;
+    if (!String(p.customer_name || "").trim()) throw new Error("El nombre del consumidor es obligatorio");
+    if (!String(p.description || "").trim()) throw new Error("La descripción del reclamo es obligatoria");
+    const num = await nextCounter("complaint_book_counter");
+    const entry = await prisma.complaintBookEntry.create({
+      data: {
+        number: `RC-${String(num).padStart(4, "0")}`,
+        type: String(p.type || "Reclamo"),
+        customerName: String(p.customer_name || "").trim(),
+        customerDocument: p.customer_document ? String(p.customer_document) : null,
+        customerPhone: p.customer_phone ? String(p.customer_phone) : null,
+        customerEmail: p.customer_email ? String(p.customer_email) : null,
+        customerAddress: p.customer_address ? String(p.customer_address) : null,
+        itemType: String(p.item_type || "Producto"),
+        claimedAmount: p.claimed_amount ? Number(p.claimed_amount) : null,
+        description: String(p.description || "").trim(),
+        request: p.request ? String(p.request) : null,
+        resolution: p.resolution ? String(p.resolution) : null,
+        state: String(p.state || "Pendiente"),
+      },
+    });
+    return { success: true, data: entry };
+  }
+  if (method === "PUT" && path.match(/^complaints-book\/\d+$/)) {
+    const p = body as Record<string, unknown>;
+    const entry = await prisma.complaintBookEntry.update({
+      where: { id: Number(path.split("/")[1]) },
+      data: {
+        type: String(p.type || "Reclamo"),
+        customerName: String(p.customer_name || "").trim(),
+        customerDocument: p.customer_document ? String(p.customer_document) : null,
+        customerPhone: p.customer_phone ? String(p.customer_phone) : null,
+        customerEmail: p.customer_email ? String(p.customer_email) : null,
+        customerAddress: p.customer_address ? String(p.customer_address) : null,
+        itemType: String(p.item_type || "Producto"),
+        claimedAmount: p.claimed_amount ? Number(p.claimed_amount) : null,
+        description: String(p.description || "").trim(),
+        request: p.request ? String(p.request) : null,
+        resolution: p.resolution ? String(p.resolution) : null,
+        state: String(p.state || "Pendiente"),
+      },
+    });
+    return { success: true, data: entry };
+  }
+  if (method === "DELETE" && path.match(/^complaints-book\/\d+$/)) {
+    await prisma.complaintBookEntry.delete({ where: { id: Number(path.split("/")[1]) } });
     return { success: true };
   }
 
@@ -4225,6 +4299,27 @@ export async function handleLocalApi(
     return processPosCheckout((body || {}) as Record<string, unknown>);
   }
 
+  // ── Anulaciones (comprobantes realmente anulados o con baja en proceso — reemplaza el
+  // catálogo genérico de /voided, que nunca mostraba nada real) ──
+  if (method === "GET" && path === "voided/records") {
+    const docs = await prisma.document.findMany({
+      where: { stateTypeId: { in: ["11", "12"] } },
+      include: { customer: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    return {
+      data: docs.map((d) => ({
+        id: d.id,
+        number: d.fullNumber,
+        customer_name: d.customer.name,
+        date: formatDate(d.updatedAt),
+        state: d.stateTypeId === "12" ? "Baja en proceso" : "Anulado",
+        reference: d.voidReason ?? "",
+        total: d.total,
+      })),
+    };
+  }
+
   // ── Chat con clientes (lado administrador) ──
   if (method === "GET" && path === "messages/conversations") {
     const customers = await prisma.chatCustomer.findMany({
@@ -4330,14 +4425,9 @@ export async function handleLocalApi(
   }
 
   const emptyModules = [
-    "inventory-references/records",
     "transfers/records",
-    "voided/records",
     "summaries/records",
     "dispatches-carrier/records",
-    "transports/records",
-    "drivers/records",
-    "vehicles/records",
   ];
 
   if (method === "GET" && path.startsWith("reports/")) {

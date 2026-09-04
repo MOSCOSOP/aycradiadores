@@ -5,7 +5,14 @@ import { PageHeader, Modal, Field } from "@/components/ui/Modal";
 import { DataTable } from "@/components/ui/DataTable";
 import { RowActions } from "@/components/ui/RowActions";
 
-type FieldConfig = { key: string; label: string; type?: "text" | "number"; required?: boolean };
+type FieldConfig = {
+  key: string;
+  label: string;
+  type?: "text" | "number" | "date" | "textarea" | "select";
+  required?: boolean;
+  options?: { value: string; label: string }[];
+  span2?: boolean;
+};
 
 type Api = {
   records: () => Promise<{ data: Record<string, unknown>[] }>;
@@ -103,7 +110,17 @@ export function MultiFieldCatalogPage({
         rows={rows}
         emptyMessage="Sin registros — usa «Nuevo» para agregar el primero"
         columns={[
-          ...fields.map((f) => ({ key: f.key, label: f.label })),
+          ...fields.map((f) => ({
+            key: f.key,
+            label: f.label,
+            render:
+              f.type === "textarea"
+                ? (r: Record<string, unknown>) => {
+                    const text = String(r[f.key] ?? "");
+                    return text.length > 60 ? `${text.slice(0, 60)}…` : text;
+                  }
+                : undefined,
+          })),
           {
             key: "actions",
             label: "Acciones",
@@ -126,14 +143,40 @@ export function MultiFieldCatalogPage({
       >
         <div className="grid gap-3 sm:grid-cols-2">
           {fields.map((f, idx) => (
-            <Field key={f.key} label={`${f.label}${f.required ? " *" : ""}`}>
-              <input
-                className="ify-input"
-                type={f.type === "number" ? "number" : "text"}
-                value={form[f.key] ?? ""}
-                onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                autoFocus={idx === 0}
-              />
+            <Field
+              key={f.key}
+              label={`${f.label}${f.required ? " *" : ""}`}
+              className={f.span2 ? "sm:col-span-2" : undefined}
+            >
+              {f.type === "textarea" ? (
+                <textarea
+                  className="ify-input min-h-[72px]"
+                  value={form[f.key] ?? ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                  autoFocus={idx === 0}
+                />
+              ) : f.type === "select" ? (
+                <select
+                  className="ify-select"
+                  value={form[f.key] ?? ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                >
+                  <option value="">Seleccionar</option>
+                  {f.options?.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="ify-input"
+                  type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
+                  value={form[f.key] ?? ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                  autoFocus={idx === 0}
+                />
+              )}
             </Field>
           ))}
         </div>
