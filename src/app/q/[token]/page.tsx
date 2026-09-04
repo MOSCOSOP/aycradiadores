@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getQuotationByShareToken } from "@/lib/comprobante/public-note";
-import { SimpleDocPublicView } from "@/components/shared/SimpleDocPublicView";
+import { PublicSimpleDocView } from "@/components/documents/PublicSimpleDocView";
 
 export default async function PublicQuotationPage({
   params,
@@ -8,7 +8,7 @@ export default async function PublicQuotationPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const doc = await getQuotationByShareToken(token);
-  if (!doc) notFound();
-  return <SimpleDocPublicView doc={doc} />;
+  const receipt = await getQuotationByShareToken(token);
+  if (!receipt) notFound();
+  return <PublicSimpleDocView receipt={receipt} />;
 }

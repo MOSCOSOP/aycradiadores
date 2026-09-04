@@ -1,16 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { generateShareToken, getPublicAppUrl } from "@/lib/comprobante/share-link";
-
-export type SimpleDocData = {
-  kind: "sale-note" | "quotation";
-  number: string;
-  date: string;
-  customerName: string;
-  customerNumber: string;
-  total: number;
-  state: string;
-  items: { description: string; quantity: number; unitPrice: number; total: number }[];
-};
+import { buildReceiptFromApiDoc } from "@/lib/comprobante/build-receipt-data";
+import type { ReceiptData } from "@/lib/comprobante/types";
 
 export function buildPublicNoteUrl(token: string): string {
   return `${getPublicAppUrl()}/n/${token}`;
@@ -52,38 +43,66 @@ export async function ensureQuotationShareToken(id: number): Promise<string> {
   throw new Error("No se pudo generar enlace seguro");
 }
 
-export async function getSaleNoteByShareToken(token: string): Promise<SimpleDocData | null> {
+/** Usa la MISMA plantilla de impresión que los comprobantes (DocumentPrintTemplate) — se arma
+ * un ReceiptData a partir de la nota/cotización, tratando el total como no gravado (estos
+ * documentos no calculan IGV real, no son comprobantes electrónicos). */
+export async function getSaleNoteByShareToken(token: string): Promise<ReceiptData | null> {
   const n = await prisma.saleNote.findUnique({
     where: { shareToken: token },
     include: { customer: true, items: true },
   });
   if (!n) return null;
-  return {
-    kind: "sale-note",
+  return buildReceiptFromApiDoc({
+    document_type_id: "NV",
+    document_type_description: "NOTA DE VENTA",
     number: n.number,
-    date: n.date.toISOString().slice(0, 10),
-    customerName: n.customer.name,
-    customerNumber: n.customer.number,
+    customer_name: n.customer.name,
+    customer_number: n.customer.number,
+    customer_address: n.customer.address,
+    currency_type_id: n.currencyTypeId,
+    date_of_issue: n.date.toISOString().slice(0, 10),
+    plate: n.plate,
+    purchase_order: n.purchaseOrder,
     total: n.total,
-    state: n.state,
-    items: n.items.map((i) => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, total: i.total })),
-  };
+    total_taxed: 0,
+    total_igv: 0,
+    total_exonerated: n.total,
+    share_token: token,
+    items: n.items.map((i) => ({
+      description: i.description,
+      quantity: i.quantity,
+      unit_type_id: "NIU",
+      unit_price: i.unitPrice,
+      total: i.total,
+    })),
+  });
 }
 
-export async function getQuotationByShareToken(token: string): Promise<SimpleDocData | null> {
+export async function getQuotationByShareToken(token: string): Promise<ReceiptData | null> {
   const q = await prisma.quotation.findUnique({
     where: { shareToken: token },
     include: { customer: true, items: true },
   });
   if (!q) return null;
-  return {
-    kind: "quotation",
+  return buildReceiptFromApiDoc({
+    document_type_id: "COT",
+    document_type_description: "COTIZACIÓN",
     number: q.number,
-    date: q.date.toISOString().slice(0, 10),
-    customerName: q.customer.name,
-    customerNumber: q.customer.number,
+    customer_name: q.customer.name,
+    customer_number: q.customer.number,
+    customer_address: q.customer.address,
+    date_of_issue: q.date.toISOString().slice(0, 10),
     total: q.total,
-    state: q.state,
-    items: q.items.map((i) => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, total: i.total })),
-  };
+    total_taxed: 0,
+    total_igv: 0,
+    total_exonerated: q.total,
+    share_token: token,
+    items: q.items.map((i) => ({
+      description: i.description,
+      quantity: i.quantity,
+      unit_type_id: "NIU",
+      unit_price: i.unitPrice,
+      total: i.total,
+    })),
+  });
 }
