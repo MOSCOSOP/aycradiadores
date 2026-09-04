@@ -2610,6 +2610,19 @@ export async function handleLocalApi(
     return { success: true };
   }
 
+  if (method === "GET" && path.match(/^sale-notes\/\d+\/share-link$/)) {
+    const id = Number(path.split("/")[1]);
+    const { ensureSaleNoteShareToken, buildPublicNoteUrl } = await import("@/lib/comprobante/public-note");
+    const token = await ensureSaleNoteShareToken(id);
+    return { share_token: token, public_url: buildPublicNoteUrl(token) };
+  }
+
+  if (method === "POST" && path.match(/^sale-notes\/\d+\/void$/)) {
+    const id = Number(path.split("/")[1]);
+    const note = await prisma.saleNote.update({ where: { id }, data: { state: "Anulado" } });
+    return { success: true, data: note };
+  }
+
   if (method === "DELETE" && path.match(/^sale-notes\/\d+$/)) {
     const id = Number(path.split("/")[1]);
     try {
@@ -2740,6 +2753,19 @@ export async function handleLocalApi(
     });
     if (Array.isArray(p.items)) await syncLineItems("quotation", id, p.items as Record<string, unknown>[]);
     return { success: true };
+  }
+
+  if (method === "GET" && path.match(/^quotations\/\d+\/share-link$/)) {
+    const id = Number(path.split("/")[1]);
+    const { ensureQuotationShareToken, buildPublicQuotationUrl } = await import("@/lib/comprobante/public-note");
+    const token = await ensureQuotationShareToken(id);
+    return { share_token: token, public_url: buildPublicQuotationUrl(token) };
+  }
+
+  if (method === "POST" && path.match(/^quotations\/\d+\/void$/)) {
+    const id = Number(path.split("/")[1]);
+    const q = await prisma.quotation.update({ where: { id }, data: { state: "Anulado" } });
+    return { success: true, data: q };
   }
 
   if (method === "DELETE" && path.match(/^quotations\/\d+$/)) {

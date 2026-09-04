@@ -367,6 +367,7 @@ model SaleNote {
   paymentStatus  String?
   purchaseOrder  String?
   modifiedPrice  String         @default("NO")
+  shareToken     String?        @unique
   items          SaleNoteItem[]
   createdAt      DateTime       @default(now())
 }
@@ -389,6 +390,7 @@ model Quotation {
   date       DateTime         @default(now())
   total      Float            @default(0)
   state      String           @default("Pendiente")
+  shareToken String?          @unique
   items      QuotationItem[]
   createdAt  DateTime         @default(now())
 }

@@ -9,6 +9,7 @@ export default function SaleNoteDetailPage() {
       title="Nota de venta"
       listPath="/sale-notes"
       fetchFn={(id) => api.saleNotes.get(id)}
+      shareKind="sale-notes"
     />
   );
 }

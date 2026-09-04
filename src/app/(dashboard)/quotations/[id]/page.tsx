@@ -9,6 +9,7 @@ export default function QuotationDetailPage() {
       title="Cotización"
       listPath="/quotations"
       fetchFn={(id) => api.quotations.get(id)}
+      shareKind="quotations"
     />
   );
 }

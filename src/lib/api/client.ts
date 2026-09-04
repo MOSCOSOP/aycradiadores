@@ -239,6 +239,9 @@ export const api = {
         body: JSON.stringify(payload),
       }),
     delete: (id: number) => apiFetch(local(`/sale-notes/${id}`), { method: "DELETE" }),
+    shareLink: (id: number | string) =>
+      apiFetch<{ share_token: string; public_url: string }>(local(`/sale-notes/${id}/share-link`)),
+    void: (id: number) => apiFetch(local(`/sale-notes/${id}/void`), { method: "POST" }),
   },
 
   quotations: {
@@ -257,6 +260,9 @@ export const api = {
         body: JSON.stringify(payload),
       }),
     delete: (id: number) => apiFetch(local(`/quotations/${id}`), { method: "DELETE" }),
+    shareLink: (id: number | string) =>
+      apiFetch<{ share_token: string; public_url: string }>(local(`/quotations/${id}/share-link`)),
+    void: (id: number) => apiFetch(local(`/quotations/${id}/void`), { method: "POST" }),
   },
 
   inventory: {

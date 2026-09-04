@@ -3496,3 +3496,157 @@ body > .chat-screen {
     display: flex;
   }
 }
+
+/* ══════════════ Vista pública simple (notas de venta / cotizaciones) ══════════════ */
+.simple-doc-page {
+  min-height: 100vh;
+  background: var(--background);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.simple-doc-card {
+  width: 100%;
+  max-width: 720px;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1.75rem;
+}
+
+.simple-doc-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--primary);
+  margin-bottom: 1rem;
+}
+
+.simple-doc-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.simple-doc-brand img {
+  border-radius: 8px;
+}
+
+.simple-doc-brand strong {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+}
+
+.simple-doc-brand span {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  max-width: 240px;
+}
+
+.simple-doc-title {
+  text-align: right;
+}
+
+.simple-doc-title span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.simple-doc-title strong {
+  display: block;
+  font-size: 1.25rem;
+  color: var(--primary);
+}
+
+.simple-doc-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.simple-doc-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.simple-doc-meta p {
+  margin: 0.125rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+}
+
+.simple-doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  margin-bottom: 1rem;
+}
+
+.simple-doc-table th {
+  text-align: left;
+  padding: 0.5rem;
+  background: var(--border-light);
+  color: var(--muted);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+}
+
+.simple-doc-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.simple-doc-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid var(--primary);
+}
+
+.simple-doc-total span {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.simple-doc-total strong {
+  font-size: 1.375rem;
+  color: var(--primary);
+}
+
+.simple-doc-footer {
+  margin-top: 1.5rem;
+  font-size: 0.6875rem;
+  color: var(--muted-light);
+  text-align: center;
+}
+
+@media print {
+  .simple-doc-print-btn {
+    display: none;
+  }
+  .simple-doc-page {
+    padding: 0;
+  }
+  .simple-doc-card {
+    box-shadow: none;
+    max-width: 100%;
+  }
+}
