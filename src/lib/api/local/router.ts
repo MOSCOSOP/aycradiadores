@@ -2623,24 +2623,45 @@ export async function handleLocalApi(
 
   // ── Cotizaciones ──
   if (method === "GET" && path === "quotations/records") {
+    // Igual que en notas de venta: el historial importado no debe tapar las cotizaciones
+    // reales nuevas.
+    const imported = await readImportedModule("quotations");
+    const importedRows = (imported ?? []).map((q) => ({
+      id: q.id,
+      number: String(q.number_full ?? q.identifier ?? ""),
+      customer_name: q.customer_name,
+      date: q.date_of_issue,
+      total: Number(q.total ?? 0),
+      state: q.state_type_description ?? "Registrado",
+    }));
+
     const data = await prisma.quotation.findMany({ include: { customer: true }, orderBy: { id: "desc" } });
-    return {
-      data: data.map((q) => ({
-        id: q.id,
-        number: q.number,
-        customer_name: q.customer.name,
-        date: formatDate(q.date),
-        total: q.total,
-        state: q.state,
-      })),
-    };
+    const realRows = data.map((q) => ({
+      id: q.id,
+      number: q.number,
+      customer_name: q.customer.name,
+      date: formatDate(q.date),
+      total: q.total,
+      state: q.state,
+    }));
+
+    const byNumber = new Map<string, Record<string, unknown>>();
+    for (const row of importedRows) if (row.number) byNumber.set(row.number, row);
+    for (const row of realRows) if (row.number) byNumber.set(row.number, row);
+    const merged = [...byNumber.values()].sort((a, b) =>
+      String((b as Record<string, unknown>).date ?? "").localeCompare(String((a as Record<string, unknown>).date ?? ""))
+    );
+
+    return { data: merged };
   }
 
   if (method === "POST" && path === "quotations") {
     const p = body as Record<string, unknown>;
     const items = (p.items as Record<string, unknown>[]) || [];
     const num = await nextCounter("quotation_counter");
-    const number = `COT-${String(num).padStart(4, "0")}`;
+    // El sistema anterior pasó de "COT-" a "C001-" (su última cotización real es C001-2,
+    // seguimos esa misma convención para no generar números en un formato distinto).
+    const number = `C001-${num}`;
     let total = 0;
     const lineItems = items.map((it) => {
       const qty = Number(it.quantity || 1);
@@ -2661,7 +2682,31 @@ export async function handleLocalApi(
       where: { id },
       include: { customer: true, items: true },
     });
-    if (!q) throw new Error("Cotización no encontrada");
+    if (!q) {
+      const imported = await readImportedModule("quotations");
+      const found = imported?.find((x) => Number(x.id) === id);
+      if (found) {
+        const items = (found.items as Record<string, unknown>[]) || [];
+        return {
+          data: {
+            id: found.id,
+            number: String(found.number_full ?? found.identifier ?? ""),
+            customer_name: found.customer_name,
+            customer_id: found.customer_id,
+            date: found.date_of_issue,
+            total: Number(found.total ?? 0),
+            state: found.state_type_description ?? "Registrado",
+            items: items.map((i) => ({
+              description: i.description ?? i.name ?? "",
+              quantity: i.quantity ?? 1,
+              unit_price: i.unit_price ?? 0,
+              total: i.total ?? 0,
+            })),
+          },
+        };
+      }
+      throw new Error("Cotización no encontrada");
+    }
     return {
       data: {
         id: q.id,
