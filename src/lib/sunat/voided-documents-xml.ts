@@ -66,6 +66,7 @@ export function buildVoidedDocumentsXml(input: {
   </cac:Signature>
   <cac:AccountingSupplierParty>
     <cbc:CustomerAssignedAccountID>${input.ruc}</cbc:CustomerAssignedAccountID>
+    <cbc:AdditionalAccountID>6</cbc:AdditionalAccountID>
     <cac:Party><cac:PartyLegalEntity><cbc:RegistrationName>${escapeXml(input.tradeName)}</cbc:RegistrationName></cac:PartyLegalEntity></cac:Party>
   </cac:AccountingSupplierParty>${lines}
 </VoidedDocuments>`;
