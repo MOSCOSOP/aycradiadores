@@ -27,8 +27,10 @@ export function getDocTypeDescription(id: string): string {
 
 export function getStateDescription(id: string): string {
   const map: Record<string, string> = {
+    // "05" solo se asigna cuando SUNAT devolvió el CDR con código de respuesta "0" (ver
+    // send-document.ts) — o sea, ya está aceptado de verdad, no solo "enviado".
     "01": "Registrado",
-    "05": "Enviado",
+    "05": "Aceptado por SUNAT",
     "09": "Rechazado",
     "11": "Anulado",
     "12": "Baja en proceso (SUNAT)",

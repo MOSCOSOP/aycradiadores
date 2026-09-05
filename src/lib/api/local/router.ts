@@ -3661,7 +3661,7 @@ export async function handleLocalApi(
       if (!imported?.length) continue;
       const idx = imported.findIndex((d) => Number(d.id) === id);
       if (idx >= 0) {
-        imported[idx] = { ...imported[idx], has_xml: true, has_cdr: true, state_type_description: "Enviado" };
+        imported[idx] = { ...imported[idx], has_xml: true, has_cdr: true, state_type_description: "Aceptado por SUNAT" };
         await prisma.appSetting.upsert({
           where: { key: settingKey },
           create: { key: settingKey, value: JSON.stringify(imported) },
