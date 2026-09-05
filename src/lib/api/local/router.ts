@@ -1003,6 +1003,13 @@ export async function handleLocalApi(
     const items = (payload.items as Record<string, unknown>[]) || [];
     const seriesRow = await prisma.series.findUnique({ where: { id: Number(payload.series_id) } });
     if (!seriesRow) throw new Error("Serie no encontrada");
+    const requestedDocType = String(payload.document_type_id || "01");
+    if (seriesRow.documentTypeId !== requestedDocType) {
+      throw new Error(
+        `La serie ${seriesRow.number} pertenece a otro tipo de comprobante y no puede usarse aquí. ` +
+          `SUNAT rechazaría el envío con "0151 - El nombre del archivo ZIP es incorrecto". Elige la serie correspondiente al tipo de comprobante seleccionado.`
+      );
+    }
 
     const nextNum = seriesRow.currentNumber + 1;
     await assertNoNumberCollision(seriesRow.number, nextNum);

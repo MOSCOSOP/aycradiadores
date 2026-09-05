@@ -116,7 +116,10 @@ export function CreateDocumentForm() {
         if (rate) setExchangeRate(rate);
         const est = (data.all_establishments as { id: number }[])?.[0];
         const sel = (data.sellers as { id: number }[])?.[0];
-        const ser = (data.series as { id: number }[])?.[0];
+        const seriesList = (data.series as { id: number; document_type_id: string }[]) ?? [];
+        // Debe coincidir con el tipo de comprobante por defecto ("01" Factura) — tomar la primera
+        // serie de la lista sin filtrar podía traer una serie de otro tipo (ej. "T001" de Guía).
+        const ser = seriesList.find((s) => String(s.document_type_id) === docTypeId) ?? seriesList[0];
         if (est) setEstablishmentId(est.id);
         if (sel) setSellerId(sel.id);
         if (ser) setSeriesId(ser.id);
@@ -264,6 +267,10 @@ export function CreateDocumentForm() {
 
   const documentTypes = (tables?.document_types as { id: string; description: string }[]) ?? [];
   const series = (tables?.series as { id: number; number: string; document_type_id: string }[]) ?? [];
+  // Solo se pueden elegir series del mismo tipo de comprobante seleccionado — mezclar series
+  // (ej. usar una serie de Guía "T001" en una Factura) hace que SUNAT rechace el ZIP con
+  // "0151 - El nombre del archivo ZIP es incorrecto".
+  const filteredSeries = series.filter((s) => String(s.document_type_id) === String(docTypeId));
   const sellers = (tables?.sellers as { id: number; name: string }[]) ?? [];
   const establishments =
     (tables?.all_establishments as { id: number; description: string }[]) ?? [];
@@ -536,6 +543,7 @@ export function CreateDocumentForm() {
                 setDocTypeId(e.target.value);
                 const match = series.find((s) => s.document_type_id === e.target.value);
                 if (match) setSeriesId(match.id);
+                else setSeriesId(0);
               }}
             >
               {documentTypes.map((t) => (
@@ -582,7 +590,8 @@ export function CreateDocumentForm() {
               disabled={Boolean(editId)}
               onChange={(e) => setSeriesId(Number(e.target.value))}
             >
-              {series.map((s) => (
+              {filteredSeries.length === 0 && <option value={0}>Sin series para este tipo</option>}
+              {filteredSeries.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.number}
                 </option>

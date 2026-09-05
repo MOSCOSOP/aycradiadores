@@ -8,7 +8,10 @@ async function nextVoidCommId(): Promise<string> {
   const row = await prisma.appSetting.findUnique({ where: { key } });
   const n = Number(row?.value || 0) + 1;
   await prisma.appSetting.upsert({ where: { key }, create: { key, value: String(n) }, update: { value: String(n) } });
-  return `RC-${ymd}-${n}`;
+  // El identificador de una Comunicación de Baja va prefijado "RA" (no "RC", que es para Resúmenes
+  // Diarios) — con "RC" SUNAT arma el nombre de archivo esperando el schema SummaryDocuments y
+  // rechaza el XML VoidedDocuments real con "unrecognized element ... VoidedDocuments".
+  return `RA-${ymd}-${n}`;
 }
 
 /**
