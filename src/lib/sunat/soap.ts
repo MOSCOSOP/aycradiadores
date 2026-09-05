@@ -2,6 +2,8 @@ import { inflateRawSync } from "zlib";
 import type { CompanySunatConfig, SunatSendResult } from "./types";
 import { signSunatXml } from "./xml-signer";
 import { buildVoidedDocumentsXml } from "./voided-documents-xml";
+import { buildResumenBajaXml } from "./resumen-baja-xml";
+import { TRIBUTO_BY_AFECTACION } from "./tributo-catalog";
 
 const SOAP_BETA = "https://e-beta.sunat.gob.pe/ol-ti-itcpfegem-beta/billService";
 const SOAP_PROD = "https://e-factura.sunat.gob.pe/ol-ti-itcpfegem/billService";
@@ -22,18 +24,6 @@ function escapeXml(v: string) {
   return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// Catálogo SUNAT 05 (código de tributo) por afectación — cada tipo de afectación va con su
-// PROPIO cac:TaxScheme, no todos "1000/IGV/VAT". Usar siempre el esquema IGV con monto 0.00
-// para líneas exoneradas/inafectas es lo que causaba el rechazo real de SUNAT "el monto de
-// afectación de IGV por línea debe ser diferente a 0.00" (código 3111) — confirmado con un
-// envío real rechazado en Producción antes de este fix. Tabla verificada contra una librería
-// de facturación electrónica peruana real y ampliamente usada en producción (greenter).
-const TRIBUTO_BY_AFECTACION: Record<string, { id: string; name: string; typeCode: string }> = {
-  "10": { id: "1000", name: "IGV", typeCode: "VAT" }, // Gravado
-  "20": { id: "9997", name: "EXO", typeCode: "VAT" }, // Exonerado
-  "30": { id: "9998", name: "INA", typeCode: "FRE" }, // Inafecto
-  "40": { id: "9995", name: "EXP", typeCode: "FRE" }, // Exportación
-};
 
 /** Catálogo SUNAT 07 (afectación IGV) -> catálogo 05 (código de tributo) + % + motivo de exoneración. */
 function igvCategoryFor(saleAffectationTypeId: string | undefined, hasIgvHint: boolean) {
@@ -631,6 +621,89 @@ export async function sendVoidedDocumentsToSunat(
     };
   } catch (e) {
     return { success: false, message: e instanceof Error ? e.message : "Error al enviar la Comunicación de Baja", xml };
+  }
+}
+
+/**
+ * Anula una Boleta mediante un Resumen (RC) con la línea en estado "3" (Anulado) — SUNAT rechaza
+ * con código 2308 si se intenta anular una boleta con la Comunicación de Baja normal (esa solo
+ * acepta Factura/N.Crédito/N.Débito). Devuelve un `ticket`, igual que la Comunicación de Baja.
+ */
+export async function sendResumenBajaToSunat(
+  config: CompanySunatConfig,
+  input: {
+    id: string;
+    referenceDate: string;
+    issueDate: string;
+    lines: {
+      series: string;
+      number: number;
+      customerDocType: string;
+      customerNumber: string;
+      currency: string;
+      totalTaxed: number;
+      totalIgv: number;
+      totalExonerated: number;
+      total: number;
+      saleAffectationTypeId?: string;
+    }[];
+  }
+): Promise<VoidedDocumentsSendResult> {
+  if (!config.certificate_pem) {
+    return {
+      success: false,
+      message: "No hay certificado digital configurado. Sube el .p12/.pfx en Configuración > Empresa.",
+    };
+  }
+
+  const unsignedXml = buildResumenBajaXml({
+    ruc: config.number,
+    tradeName: config.trade_name,
+    referenceDate: input.referenceDate,
+    issueDate: input.issueDate,
+    id: input.id,
+    lines: input.lines,
+  });
+
+  let xml: string;
+  try {
+    xml = signSunatXml(unsignedXml, config.certificate_pem);
+  } catch (e) {
+    return {
+      success: false,
+      message: `No se pudo firmar el Resumen de Baja: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  const baseName = `${config.number}-${input.id}`;
+  const xmlBuffer = Buffer.from(xml, "utf8");
+  const zip = zipSingleFile(`${baseName}.xml`, xmlBuffer);
+
+  try {
+    const result = await soapSendSummary(config, `${baseName}.zip`, zip);
+
+    if (result.text.includes("faultstring")) {
+      const match = result.text.match(/<faultstring[^>]*>([^<]+)/i);
+      return { success: false, message: match?.[1] || `SUNAT rechazó el envío (${result.status})`, xml };
+    }
+
+    const ticketMatch = result.text.match(/<ticket>([^<]+)<\/ticket>/i);
+    if (!ticketMatch) {
+      return {
+        success: false,
+        message: `SUNAT no devolvió un ticket reconocible (HTTP ${result.status}): ${result.text.slice(0, 300)}`,
+        xml,
+      };
+    }
+
+    return {
+      success: true,
+      message: `Resumen de Baja enviado a SUNAT. Ticket: ${ticketMatch[1]} — consulta el estado en unos minutos.`,
+      ticket: ticketMatch[1],
+      xml,
+    };
+  } catch (e) {
+    return { success: false, message: e instanceof Error ? e.message : "Error al enviar el Resumen de Baja", xml };
   }
 }
 
