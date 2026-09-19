@@ -187,6 +187,12 @@ model Item {
   lineRef               Line?               @relation(fields: [lineId], references: [id])
   hasIgv                Boolean             @default(true)
   saleAffectationTypeId String              @default("10")
+  hyperlink             String?
+  observations          String?
+  sunatCode             String?
+  specifications        String?
+  productLine           String?
+  weightKg              Float?
   categoryId            Int?
   category           Category?           @relation(fields: [categoryId], references: [id])
   documentItems      DocumentItem[]

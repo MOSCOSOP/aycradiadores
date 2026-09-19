@@ -24,15 +24,15 @@ export function Modal({ open, title, onClose, children, footer, size = "md" }: M
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <button type="button" className="ify-modal-overlay absolute inset-0 bg-black/40" onClick={onClose} aria-label="Cerrar" />
-      <div className={`relative z-10 w-full rounded-xl ify-modal-panel shadow-xl ${size === "xl" ? "max-w-4xl" : size === "lg" ? "max-w-2xl" : "max-w-lg"}`}>
-        <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
+      <div className={`relative z-10 flex max-h-[92vh] w-full flex-col rounded-xl ify-modal-panel shadow-xl ${size === "xl" ? "max-w-4xl" : size === "lg" ? "max-w-2xl" : "max-w-lg"}`}>
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
           <h2 className="text-base font-bold text-[var(--foreground)]">{title}</h2>
           <button type="button" onClick={onClose} className="text-[var(--muted)] hover:text-[var(--foreground)]">
             <i className="bi bi-x-lg" />
           </button>
         </div>
-        <div className="p-5">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-[var(--border-light)] px-5 py-4">{footer}</div>}
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
+        {footer && <div className="flex shrink-0 justify-end gap-2 border-t border-[var(--border-light)] px-5 py-4">{footer}</div>}
       </div>
     </div>
   );

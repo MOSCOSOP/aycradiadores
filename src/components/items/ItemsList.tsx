@@ -128,10 +128,14 @@ export function ItemsList() {
             label: "Nombre",
             render: (r) => (
               <div className="flex items-center gap-2">
-                {r.image_url_small ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={String(r.image_url_small)} alt="" className="h-8 w-8 rounded object-cover" />
-                ) : null}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--border)] bg-white">
+                  {r.image_url_small || r.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={String(r.image_url_small || r.image_url)} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <i className="bi bi-image text-[var(--muted)]" />
+                  )}
+                </div>
                 <span>{String(r.description || r.name)}</span>
                 {r.active === false && (
                   <span className="rounded bg-[var(--muted-light)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]" title="Desactivado — ya no aparece al vender">
@@ -151,6 +155,16 @@ export function ItemsList() {
             key: "purchase_price",
             label: "P.Unitario (Compra)",
             render: (r) => `S/ ${Number(r.purchase_price ?? 0).toFixed(2)}`,
+          },
+          {
+            key: "profit_percent",
+            label: "% Ganancia",
+            render: (r) => {
+              const purchase = Number(r.purchase_price ?? 0);
+              const sale = Number(r.sale_unit_price ?? 0);
+              if (purchase <= 0) return "—";
+              return `${(((sale - purchase) / purchase) * 100).toFixed(1)}%`;
+            },
           },
           {
             key: "has_igv_description",

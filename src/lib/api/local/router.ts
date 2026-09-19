@@ -285,8 +285,16 @@ function mapItemRecord(i: {
   lineId?: number | null;
   imageUrl: string | null;
   active: boolean;
+  hyperlink?: string | null;
+  observations?: string | null;
+  sunatCode?: string | null;
+  specifications?: string | null;
+  productLine?: string | null;
+  weightKg?: number | null;
+  categoryId?: number | null;
   category: { name: string } | null;
 }) {
+  const profit = i.purchasePrice > 0 ? Number((((i.saleUnitPrice - i.purchasePrice) / i.purchasePrice) * 100).toFixed(2)) : 0;
   return {
     id: i.sourceRemoteId ?? i.id,
     local_id: i.id,
@@ -294,6 +302,7 @@ function mapItemRecord(i: {
     description: i.description,
     name: i.description,
     second_name: i.secondaryName,
+    secondary_name: i.secondaryName,
     description_detail: i.descriptionDetail,
     model: i.model,
     unit_type_id: i.unitTypeId,
@@ -301,9 +310,11 @@ function mapItemRecord(i: {
     sale_unit_price_with_igv: `S/ ${i.saleUnitPrice.toFixed(2)}`,
     purchase_unit_price: `S/ ${i.purchasePrice.toFixed(2)}`,
     purchase_price: i.purchasePrice,
+    profit_percent: profit,
     stock: i.stock,
     stock_min: i.stockMin,
     location: i.location,
+    category_id: i.categoryId ?? "",
     category: i.category?.name ?? "",
     category_description: i.category?.name ?? "",
     has_igv_description: i.hasIgv ? "Si" : "No",
@@ -316,6 +327,70 @@ function mapItemRecord(i: {
     active: i.active,
     brand_id: i.brandId ?? null,
     line_id: i.lineId ?? null,
+    hyperlink: i.hyperlink ?? "",
+    observations: i.observations ?? "",
+    sunat_code: i.sunatCode ?? "",
+    specifications: i.specifications ?? "",
+    product_line: i.productLine ?? "",
+    weight_kg: i.weightKg ?? "",
+  };
+}
+
+async function resolveItemImageUrl(p: Record<string, unknown>, previousUrl?: string | null) {
+  const { uploadProductImage, deleteProductImage } = await import("@/lib/storage/product-images");
+  if (p.image_base64) {
+    const url = await uploadProductImage({
+      filename: String(p.image_filename || "producto.jpg"),
+      base64: String(p.image_base64),
+    });
+    if (previousUrl && previousUrl !== url) await deleteProductImage(previousUrl);
+    return url;
+  }
+  if (p.image_url === "" || p.image_url === null) {
+    if (previousUrl) await deleteProductImage(previousUrl);
+    return null;
+  }
+  if (typeof p.image_url === "string" && p.image_url.startsWith("data:image/")) {
+    const url = await uploadProductImage({
+      filename: String(p.image_filename || "producto.jpg"),
+      base64: p.image_url,
+    });
+    if (previousUrl && previousUrl !== url) await deleteProductImage(previousUrl);
+    return url;
+  }
+  if (typeof p.image_url === "string" && p.image_url) return p.image_url;
+  return previousUrl ?? null;
+}
+
+function itemWriteFields(p: Record<string, unknown>, imageUrl: string | null) {
+  const affectation = String(p.sale_affectation_type_id || "10");
+  return {
+    description: String(p.description || ""),
+    secondaryName: p.secondary_name ? String(p.secondary_name) : null,
+    descriptionDetail: p.description_detail ? String(p.description_detail) : null,
+    model: p.model ? String(p.model) : null,
+    internalId: p.internal_id ? String(p.internal_id) : null,
+    barcode: p.barcode ? String(p.barcode) : null,
+    brand: p.brand ? String(p.brand) : null,
+    brandId: p.brand_id ? Number(p.brand_id) : null,
+    lineId: p.line_id ? Number(p.line_id) : null,
+    unitTypeId: String(p.unit_type_id || "NIU"),
+    saleUnitPrice: Number(p.sale_unit_price || 0),
+    purchasePrice: Number(p.purchase_price || 0),
+    stock: Number(p.stock || 0),
+    stockMin: Number(p.stock_min || 0),
+    location: p.location ? String(p.location) : null,
+    saleAffectationTypeId: affectation,
+    hasIgv: affectation === "10",
+    categoryId: p.category_id ? Number(p.category_id) : null,
+    imageUrl,
+    hyperlink: p.hyperlink ? String(p.hyperlink) : null,
+    observations: p.observations ? String(p.observations) : null,
+    sunatCode: p.sunat_code ? String(p.sunat_code) : null,
+    specifications: p.specifications ? String(p.specifications) : null,
+    productLine: p.product_line ? String(p.product_line) : null,
+    weightKg: p.weight_kg ? Number(p.weight_kg) : null,
+    ...(p.active !== undefined ? { active: Boolean(p.active) } : {}),
   };
 }
 
@@ -1622,31 +1697,9 @@ export async function handleLocalApi(
 
   if (method === "POST" && path === "items") {
     const p = body as Record<string, unknown>;
+    const imageUrl = await resolveItemImageUrl(p);
     const item = await prisma.item.create({
-      data: {
-        description: String(p.description || ""),
-        secondaryName: p.secondary_name ? String(p.secondary_name) : null,
-        descriptionDetail: p.description_detail ? String(p.description_detail) : null,
-        model: p.model ? String(p.model) : null,
-        internalId: p.internal_id ? String(p.internal_id) : null,
-        barcode: p.barcode ? String(p.barcode) : null,
-        brand: p.brand ? String(p.brand) : null,
-        brandId: p.brand_id ? Number(p.brand_id) : null,
-        lineId: p.line_id ? Number(p.line_id) : null,
-        unitTypeId: String(p.unit_type_id || "NIU"),
-        saleUnitPrice: Number(p.sale_unit_price || 0),
-        purchasePrice: Number(p.purchase_price || 0),
-        stock: Number(p.stock || 0),
-        stockMin: Number(p.stock_min || 0),
-        location: p.location ? String(p.location) : null,
-        // hasIgv se DERIVA de la afectación, nunca se guarda por separado: si el frontend
-        // llegara a mandar los dos campos en desacuerdo (pasó con 12 productos reales — el
-        // desplegable decía "Exonerado" pero el checkbox aparte seguía marcado), el producto
-        // terminaba cobrando IGV en ventas/impresión pese a decir "Exonerado" en su ficha.
-        saleAffectationTypeId: String(p.sale_affectation_type_id || "10"),
-        hasIgv: String(p.sale_affectation_type_id || "10") === "10",
-        categoryId: p.category_id ? Number(p.category_id) : null,
-      },
+      data: itemWriteFields(p, imageUrl),
     });
     if (Number(p.stock || 0) > 0) {
       await prisma.inventoryMovement.create({
@@ -1659,42 +1712,19 @@ export async function handleLocalApi(
   if (method === "PUT" && path.match(/^items\/\d+$/)) {
     const id = Number(path.split("/")[1]);
     const p = body as Record<string, unknown>;
+    const current = await prisma.item.findUnique({ where: { id } });
+    if (!current) throw new Error("Producto no encontrado");
+    const imageUrl = await resolveItemImageUrl(p, current.imageUrl);
     const item = await prisma.item.update({
       where: { id },
-      data: {
-        description: String(p.description || ""),
-        secondaryName: p.secondary_name ? String(p.secondary_name) : null,
-        descriptionDetail: p.description_detail ? String(p.description_detail) : null,
-        model: p.model ? String(p.model) : null,
-        internalId: p.internal_id ? String(p.internal_id) : null,
-        barcode: p.barcode ? String(p.barcode) : null,
-        brand: p.brand ? String(p.brand) : null,
-        brandId: p.brand_id ? Number(p.brand_id) : null,
-        lineId: p.line_id ? Number(p.line_id) : null,
-        unitTypeId: String(p.unit_type_id || "NIU"),
-        saleUnitPrice: Number(p.sale_unit_price || 0),
-        purchasePrice: Number(p.purchase_price || 0),
-        stock: Number(p.stock || 0),
-        stockMin: Number(p.stock_min || 0),
-        location: p.location ? String(p.location) : null,
-        // hasIgv se DERIVA de la afectación, nunca se guarda por separado: si el frontend
-        // llegara a mandar los dos campos en desacuerdo (pasó con 12 productos reales — el
-        // desplegable decía "Exonerado" pero el checkbox aparte seguía marcado), el producto
-        // terminaba cobrando IGV en ventas/impresión pese a decir "Exonerado" en su ficha.
-        saleAffectationTypeId: String(p.sale_affectation_type_id || "10"),
-        hasIgv: String(p.sale_affectation_type_id || "10") === "10",
-        active: p.active !== undefined ? Boolean(p.active) : undefined,
-        categoryId: p.category_id ? Number(p.category_id) : null,
-      },
+      data: itemWriteFields(p, imageUrl),
     });
     return { success: true, data: item };
   }
 
   if (method === "DELETE" && path.match(/^items\/\d+$/)) {
     const id = Number(path.split("/")[1]);
-    // Un producto con historial (ventas o movimientos de stock) no se puede borrar de verdad sin
-    // perder ese historial — SUNAT/contabilidad necesitan conservarlo. En vez de fallar con un
-    // error de base de datos, se desactiva (deja de aparecer en las búsquedas) y se conserva todo.
+    const current = await prisma.item.findUnique({ where: { id } });
     const [movementCount, documentItemCount] = await Promise.all([
       prisma.inventoryMovement.count({ where: { itemId: id } }),
       prisma.documentItem.count({ where: { itemId: id } }),
@@ -1709,6 +1739,10 @@ export async function handleLocalApi(
       };
     }
     await prisma.item.delete({ where: { id } });
+    if (current?.imageUrl) {
+      const { deleteProductImage } = await import("@/lib/storage/product-images");
+      await deleteProductImage(current.imageUrl);
+    }
     return { success: true, soft_deleted: false };
   }
 

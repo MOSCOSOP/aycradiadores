@@ -3,6 +3,8 @@ import { handleLocalApi } from "@/lib/api/local/router";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
+export const runtime = "nodejs";
+
 async function handler(req: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const search = req.nextUrl.searchParams;

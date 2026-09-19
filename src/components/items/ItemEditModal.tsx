@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { Modal, Field } from "@/components/ui/Modal";
 import { SelectWithAdd } from "@/components/ui/SelectWithAdd";
+import { ProductImageField } from "@/components/items/ProductImageField";
 import { api } from "@/lib/api/client";
 import { mergeCategoriesList } from "@/lib/default-categories";
+import { profitPercentFromPrices, saleFromProfitPercent } from "@/lib/items/compress-product-image";
 import {
   AFFECTATION_TYPES,
   UNIT_TYPES,
@@ -52,6 +54,42 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
       );
   }, [open, initial]);
 
+  const patch = (partial: Partial<ItemFormData>) => setForm((prev) => ({ ...prev, ...partial }));
+
+  const setPurchasePrice = (value: string) => {
+    const purchase = Number(value) || 0;
+    const percent = Number(form.profit_percent) || 0;
+    if (purchase > 0 && percent > 0) {
+      patch({ purchase_price: value, sale_unit_price: String(saleFromProfitPercent(purchase, percent)) });
+      return;
+    }
+    const sale = Number(form.sale_unit_price) || 0;
+    patch({ purchase_price: value, profit_percent: purchase || sale ? String(profitPercentFromPrices(purchase, sale)) : "" });
+  };
+
+  const setProfitPercent = (value: string) => {
+    const purchase = Number(form.purchase_price) || 0;
+    const percent = Number(value) || 0;
+    patch({
+      profit_percent: value,
+      sale_unit_price: purchase > 0 ? String(saleFromProfitPercent(purchase, percent)) : form.sale_unit_price,
+    });
+  };
+
+  const setSalePrice = (value: string) => {
+    const purchase = Number(form.purchase_price) || 0;
+    const sale = Number(value) || 0;
+    patch({
+      sale_unit_price: value,
+      profit_percent: purchase || sale ? String(profitPercentFromPrices(purchase, sale)) : "",
+    });
+  };
+
+  const purchase = Number(form.purchase_price) || 0;
+  const sale = Number(form.sale_unit_price) || 0;
+  const profitAmount = sale - purchase;
+  const profitLabel = Number(form.profit_percent || 0);
+
   const handleSave = async () => {
     if (!form.description.trim()) {
       alert("El nombre es obligatorio");
@@ -65,12 +103,14 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
         purchase_price: Number(form.purchase_price || 0),
         stock: Number(form.stock || 0),
         stock_min: Number(form.stock_min || 0),
+        weight_kg: form.weight_kg ? Number(form.weight_kg) : null,
         category_id: form.category_id ? Number(form.category_id) : null,
         brand_id: form.brand_id ? Number(form.brand_id) : null,
         line_id: form.line_id ? Number(form.line_id) : null,
-        // "¿Tiene IGV?" ya no es un campo aparte que se pueda desincronizar del tipo de
-        // afectación — se deriva siempre de él (10 = Gravado = con IGV).
         has_igv: form.sale_affectation_type_id === "10",
+        image_url: form.image_base64 ? undefined : form.image_url || null,
+        image_base64: form.image_base64 || undefined,
+        image_filename: form.image_filename || undefined,
       };
       if (editId) {
         await api.items.update(editId, payload);
@@ -87,6 +127,7 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
           stock: raw.stock ?? Number(form.stock),
           has_igv: raw.hasIgv ?? form.sale_affectation_type_id === "10",
           sale_affectation_igv_type_id: raw.saleAffectationTypeId ?? form.sale_affectation_type_id,
+          image_url: raw.imageUrl ?? form.image_url,
         });
       }
       onClose();
@@ -127,55 +168,64 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
 
       {tab === 0 && (
         <div className="grid gap-3 sm:grid-cols-2">
+          <ProductImageField
+            imageUrl={form.image_url}
+            onChange={({ imageUrl, imageBase64, imageFilename }) =>
+              patch({ image_url: imageUrl, image_base64: imageBase64, image_filename: imageFilename })
+            }
+          />
           <Field label="Nombre *" className="sm:col-span-2">
-            <input className="ify-input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <input className="ify-input" value={form.description} onChange={(e) => patch({ description: e.target.value })} />
           </Field>
           <Field label="Nombre secundario">
-            <input className="ify-input" value={form.secondary_name} onChange={(e) => setForm({ ...form, secondary_name: e.target.value })} />
+            <input className="ify-input" value={form.secondary_name} onChange={(e) => patch({ secondary_name: e.target.value })} />
           </Field>
           <Field label="Modelo">
-            <input className="ify-input" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+            <input className="ify-input" value={form.model} onChange={(e) => patch({ model: e.target.value })} />
           </Field>
           <Field label="Descripción [+ Descripción detallada]" className="sm:col-span-2">
-            <textarea className="ify-input min-h-[70px]" value={form.description_detail} onChange={(e) => setForm({ ...form, description_detail: e.target.value })} />
+            <textarea className="ify-input min-h-[70px]" value={form.description_detail} onChange={(e) => patch({ description_detail: e.target.value })} />
           </Field>
           <Field label="Unidad">
-            <select className="ify-select" value={form.unit_type_id} onChange={(e) => setForm({ ...form, unit_type_id: e.target.value })}>
+            <select className="ify-select" value={form.unit_type_id} onChange={(e) => patch({ unit_type_id: e.target.value })}>
               {UNIT_TYPES.map((u) => <option key={u.id} value={u.id}>{u.label}</option>)}
             </select>
           </Field>
           <Field label="Moneda">
-            <select className="ify-select" value={form.currency_type_id} onChange={(e) => setForm({ ...form, currency_type_id: e.target.value })}>
+            <select className="ify-select" value={form.currency_type_id} onChange={(e) => patch({ currency_type_id: e.target.value })}>
               <option value="PEN">Soles</option>
               <option value="USD">Dólares</option>
             </select>
           </Field>
           <Field label="Precio Unitario *">
-            <input type="number" step="0.01" className="ify-input" value={form.sale_unit_price} onChange={(e) => setForm({ ...form, sale_unit_price: e.target.value })} />
+            <input type="number" step="0.01" min="0" className="ify-input" value={form.sale_unit_price} onChange={(e) => setSalePrice(e.target.value)} />
           </Field>
           <Field label="Tipo de afectación">
-            <select className="ify-select" value={form.sale_affectation_type_id} onChange={(e) => setForm({ ...form, sale_affectation_type_id: e.target.value })}>
+            <select className="ify-select" value={form.sale_affectation_type_id} onChange={(e) => patch({ sale_affectation_type_id: e.target.value })}>
               {AFFECTATION_TYPES.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
             </select>
           </Field>
+          <p className="sm:col-span-2 text-[11px] text-[var(--muted)]">
+            Precio de compra y porcentaje de ganancia están en la pestaña <strong>Compra</strong>.
+          </p>
           <Field label="Stock Mínimo">
-            <input type="number" className="ify-input" value={form.stock_min} onChange={(e) => setForm({ ...form, stock_min: e.target.value })} />
+            <input type="number" className="ify-input" value={form.stock_min} onChange={(e) => patch({ stock_min: e.target.value })} />
           </Field>
           <Field label="Stock actual">
-            <input type="number" className="ify-input" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+            <input type="number" className="ify-input" value={form.stock} onChange={(e) => patch({ stock: e.target.value })} />
           </Field>
           <Field label="Código de barra">
-            <input className="ify-input" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
+            <input className="ify-input" value={form.barcode} onChange={(e) => patch({ barcode: e.target.value })} />
           </Field>
           <Field label="Código Interno">
-            <input className="ify-input" value={form.internal_id} onChange={(e) => setForm({ ...form, internal_id: e.target.value })} />
+            <input className="ify-input" value={form.internal_id} onChange={(e) => patch({ internal_id: e.target.value })} />
           </Field>
           <Field label="Marca">
             <SelectWithAdd
               value={form.brand_id}
               options={brands}
               placeholder="Marca"
-              onChange={(id, name) => setForm({ ...form, brand_id: id, brand: name })}
+              onChange={(id, name) => patch({ brand_id: id, brand: name })}
               onCreate={async (name) => {
                 try {
                   const res = (await api.brands.create({ name })) as { data?: { id: number; name: string } };
@@ -192,16 +242,22 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
             />
           </Field>
           <Field label="Categoría">
-            <select className="ify-select" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
+            <select className="ify-select" value={form.category_id} onChange={(e) => patch({ category_id: e.target.value })}>
               <option value="">Sin categoría</option>
               {categories.map((c) => <option key={String(c.id)} value={String(c.id)}>{String(c.name)}</option>)}
             </select>
           </Field>
           <Field label="Ubicación">
-            <input className="ify-input" placeholder="A1, B2, C3, etc." value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+            <input className="ify-input" placeholder="A1, B2, C3, etc." value={form.location} onChange={(e) => patch({ location: e.target.value })} />
+          </Field>
+          <Field label="Peso (kg)">
+            <input type="number" step="0.01" min="0" className="ify-input" placeholder="0.00" value={form.weight_kg} onChange={(e) => patch({ weight_kg: e.target.value })} />
+          </Field>
+          <Field label="Observaciones" className="sm:col-span-2">
+            <textarea className="ify-input min-h-[64px]" placeholder="Notas internas del producto" value={form.observations} onChange={(e) => patch({ observations: e.target.value })} />
           </Field>
           <Field label="Hipervínculo" className="sm:col-span-2">
-            <input className="ify-input" placeholder="https://www.producto.com/" value={form.hyperlink} onChange={(e) => setForm({ ...form, hyperlink: e.target.value })} />
+            <input className="ify-input" placeholder="https://www.producto.com/" value={form.hyperlink} onChange={(e) => patch({ hyperlink: e.target.value })} />
           </Field>
         </div>
       )}
@@ -237,7 +293,7 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
               value={form.line_id}
               options={lines}
               placeholder="Línea"
-              onChange={(id) => setForm({ ...form, line_id: id })}
+              onChange={(id, name) => patch({ line_id: id, product_line: name })}
               onCreate={async (name) => {
                 try {
                   const res = (await api.lines.create({ name })) as { data?: { id: number; name: string } };
@@ -253,25 +309,46 @@ export function ItemEditModal({ open, editId, initial, onClose, onSaved }: ItemE
               }}
             />
           </Field>
-          <Field label="Especificaciones"><input className="ify-input" placeholder="Especificaciones" /></Field>
-          <Field label="Código Sunat"><input className="ify-input" placeholder="Código Sunat" /></Field>
-          <Field label="Género"><input className="ify-input" placeholder="Género" /></Field>
+          <Field label="Especificaciones">
+            <input className="ify-input" placeholder="Medidas, material, compatibilidad" value={form.specifications} onChange={(e) => patch({ specifications: e.target.value })} />
+          </Field>
+          <Field label="Código Sunat">
+            <input className="ify-input" placeholder="Código Sunat" value={form.sunat_code} onChange={(e) => patch({ sunat_code: e.target.value })} />
+          </Field>
+          <Field label="Peso (kg)">
+            <input type="number" step="0.01" min="0" className="ify-input" value={form.weight_kg} onChange={(e) => patch({ weight_kg: e.target.value })} />
+          </Field>
         </div>
       )}
 
       {tab === 4 && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Precio Unitario (Compra)">
-            <input type="number" step="0.01" className="ify-input" value={form.purchase_price} onChange={(e) => setForm({ ...form, purchase_price: e.target.value })} />
+          <div className="sm:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
+            <p className="text-sm font-semibold text-[var(--foreground)]">Costos y ganancia</p>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Ingrese el precio de compra y el % de ganancia. El precio de venta se calcula solo. También puede escribir el precio de venta y el porcentaje se ajusta.
+            </p>
+          </div>
+          <Field label="Precio unitario (compra) *">
+            <input type="number" step="0.01" min="0" className="ify-input" value={form.purchase_price} onChange={(e) => setPurchasePrice(e.target.value)} />
+          </Field>
+          <Field label="Porcentaje de ganancia (%)">
+            <input type="number" step="0.01" className="ify-input" value={form.profit_percent} onChange={(e) => setProfitPercent(e.target.value)} />
+          </Field>
+          <Field label="Precio unitario (venta)">
+            <input type="number" step="0.01" min="0" className="ify-input" value={form.sale_unit_price} onChange={(e) => setSalePrice(e.target.value)} />
+          </Field>
+          <Field label="Ganancia por unidad">
+            <input className="ify-input" readOnly value={`S/ ${profitAmount.toFixed(2)}  ·  ${profitLabel.toFixed(2)}%`} />
           </Field>
           <Field label="Moneda compra">
-            <select className="ify-select" value={form.currency_type_id} onChange={(e) => setForm({ ...form, currency_type_id: e.target.value })}>
+            <select className="ify-select" value={form.currency_type_id} onChange={(e) => patch({ currency_type_id: e.target.value })}>
               <option value="PEN">Soles</option>
               <option value="USD">Dólares</option>
             </select>
           </Field>
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" defaultChecked />
+            <input type="checkbox" checked={form.has_igv} onChange={(e) => patch({ has_igv: e.target.checked })} />
             ¿La compra tiene el 18% de IGV?
           </label>
         </div>
